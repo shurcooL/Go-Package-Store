@@ -48,62 +48,84 @@ var checkedRepos = make(map[string]bool)
 
 var gh = github.NewClient(nil)
 
+func commonHat(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/html; charset=us-ascii")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	// TODO: Serve and use own css
+	io.WriteString(w, `<html><head></head><body>`)
+}
+func commonTail(w http.ResponseWriter) {
+	io.WriteString(w, "</body></html>")
+}
+
 func debugHandler(w http.ResponseWriter, r *http.Request) {
+	commonHat(w)
+	defer commonTail(w)
+
 	importPath := r.URL.Path[1:]
 
-	fmt.Fprintln(w, importPath)
-	fmt.Fprintln(w)
-
 	if goPackage := GoPackageFromImportPath(importPath); goPackage != nil {
-		if strings.HasPrefix(importPath, "github.com/") {
-			if goPackage.UpdateVcs(); goPackage.Vcs != nil {
-
-				goPackage.UpdateVcsFields()
-
-				if goPackage.LocalBranch == goPackage.Vcs.GetDefaultBranch() &&
-					goPackage.Status == "" &&
-					goPackage.Local != goPackage.Remote {
-
-					importPathElements := strings.Split(importPath, "/")
-					if cc, _, err := gh.Repositories.CompareCommits(importPathElements[1], path.Join(importPathElements[2:]...), goPackage.Local, goPackage.Remote); err == nil {
-
-						for _, repositoryCommit := range cc.Commits {
-							if repositoryCommit.Commit != nil && repositoryCommit.Commit.Message != nil {
-								fmt.Fprintln(w, *repositoryCommit.Commit.Message)
-							}
-						}
-					}
-				}
-			}
-		}
+		doStuffWithPackage(w, goPackage)
 	}
 }
 
-func doStuffWithPackage(w io.Writer, goPackage *GoPackage) {
-	if goPackage != nil {
-		if !goPackage.Standard {
-			// HACK: Check that the same repo hasn't already been done
-			if goPackage.UpdateVcs(); goPackage.Vcs != nil {
-				rootPath := goPackage.Vcs.RootPath()
-				lock.Lock()
-				if !checkedRepos[rootPath] {
-					checkedRepos[rootPath] = true
-					lock.Unlock()
-				} else {
-					lock.Unlock()
-					// TODO: Instead of skipping repos that were done, cache their state and reuse it
-					return
-				}
-			}
+func shouldPresentGithub(goPackage *GoPackage) bool {
+	return strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/") &&
+		goPackage.LocalBranch == goPackage.Vcs.GetDefaultBranch() &&
+		goPackage.Status == "" &&
+		goPackage.Local != goPackage.Remote
+}
 
-			goPackage.UpdateVcsFields()
-			if shouldShow(goPackage) == false {
-				return
+func presentGithubHtml(w io.Writer, goPackage *GoPackage) {
+	importPath := goPackage.Bpkg.ImportPath
+
+	fmt.Fprintf(w, `<h3 class="commit-group-heading">%s</h3>`, importPath)
+	fmt.Fprintf(w, `<ol class="commit-group">`)
+
+	importPathElements := strings.Split(importPath, "/")
+	if cc, _, err := gh.Repositories.CompareCommits(importPathElements[1], path.Join(importPathElements[2:]...), goPackage.Local, goPackage.Remote); err == nil {
+
+		for index := range cc.Commits {
+			repositoryCommit := cc.Commits[len(cc.Commits)-1-index]
+			if repositoryCommit.Commit != nil && repositoryCommit.Commit.Message != nil {
+				fmt.Fprintln(w, *repositoryCommit.Commit.Message)
+				fmt.Fprintln(w, "<br>")
 			}
-			io.WriteString(w, "<p>"+presenter(goPackage)+"</p>")
 		}
 	} else {
-		panic("Unexpected")
+		fmt.Fprintln(w, "couldn't compare")
+	}
+
+	fmt.Fprintf(w, `</ol>`)
+}
+
+func doStuffWithPackage(w io.Writer, goPackage *GoPackage) {
+	if !goPackage.Standard {
+		// HACK: Check that the same repo hasn't already been done
+		if goPackage.UpdateVcs(); goPackage.Vcs != nil {
+			rootPath := goPackage.Vcs.RootPath()
+			lock.Lock()
+			if !checkedRepos[rootPath] {
+				checkedRepos[rootPath] = true
+				lock.Unlock()
+			} else {
+				lock.Unlock()
+				// TODO: Instead of skipping repos that were done, cache their state and reuse it
+				return
+			}
+		}
+
+		goPackage.UpdateVcsFields()
+		if shouldShow(goPackage) == false {
+			return
+		}
+		if shouldPresentGithub(goPackage) {
+			presentGithubHtml(w, goPackage)
+		} else {
+			io.WriteString(w, "<p>"+presenter(goPackage)+"</p>")
+		}
+		return
 	}
 }
 
@@ -122,21 +144,11 @@ func doStuff(w io.Writer) {
 }
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=us-ascii")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
+	commonHat(w)
+	defer commonTail(w)
 
 	fw := &FlushWriter{w: w, f: w.(http.Flusher)}
-
-	io.WriteString(fw, `<html><head></head><body>`)
-
 	doStuff(fw)
-
-	/*for i := 0; i < 10; i++ {
-		io.WriteString(fw, "<p>blah blah</p><br>")
-		time.Sleep(time.Second)
-	}*/
-
-	io.WriteString(fw, "</body></html>")
 }
 
 func main() {
