@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os/exec"
 	"path"
 	"strings"
 	"sync"
@@ -53,7 +54,7 @@ func commonHat(w http.ResponseWriter) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	// TODO: Serve and use own css
-	io.WriteString(w, `<html><head></head><body>`)
+	io.WriteString(w, `<html><head><title>Go Package Store</title></head><body>`)
 }
 func commonTail(w http.ResponseWriter) {
 	io.WriteString(w, "</body></html>")
@@ -79,25 +80,39 @@ func shouldPresentGithub(goPackage *GoPackage) bool {
 
 func presentGithubHtml(w io.Writer, goPackage *GoPackage) {
 	importPath := goPackage.Bpkg.ImportPath
-
-	fmt.Fprintf(w, `<h3 class="commit-group-heading">%s</h3>`, importPath)
-	fmt.Fprintf(w, `<ol class="commit-group">`)
-
 	importPathElements := strings.Split(importPath, "/")
-	if cc, _, err := gh.Repositories.CompareCommits(importPathElements[1], path.Join(importPathElements[2:]...), goPackage.Local, goPackage.Remote); err == nil {
-
-		for index := range cc.Commits {
-			repositoryCommit := cc.Commits[len(cc.Commits)-1-index]
-			if repositoryCommit.Commit != nil && repositoryCommit.Commit.Message != nil {
-				fmt.Fprintln(w, *repositoryCommit.Commit.Message)
-				fmt.Fprintln(w, "<br>")
-			}
-		}
-	} else {
+	cc, _, err := gh.Repositories.CompareCommits(importPathElements[1], path.Join(importPathElements[2:]...), goPackage.Local, goPackage.Remote)
+	if err != nil {
 		fmt.Fprintln(w, "couldn't compare")
+		return
 	}
 
-	fmt.Fprintf(w, `</ol>`)
+	GenerateGithubHtml(w, goPackage, cc)
+}
+
+func GenerateGithubHtml(w io.Writer, goPackage *GoPackage, cc *github.CommitsComparison) {
+	//goon.DumpExpr(goPackage, cc)
+
+	importPath := goPackage.Bpkg.ImportPath
+
+	fmt.Fprintf(w, `<h3>%s</h3>`, importPath)
+
+	// TODO: Make the forn name unique, because there'll be many on same page
+	fmt.Fprintf(w, `<form name="x-update" method="POST" action="/-/update"><input type="hidden" name="import_path" value="%s"></form>`, importPath)
+	fmt.Fprintf(w, `<a href="javascript:document.getElementsByName('x-update')[0].submit();" title="%s">Update</a>`, fmt.Sprintf("go get -u -d %s", importPath))
+
+	fmt.Fprint(w, `<ol>`)
+
+	for index := range cc.Commits {
+		repositoryCommit := cc.Commits[len(cc.Commits)-1-index]
+		if repositoryCommit.Commit != nil && repositoryCommit.Commit.Message != nil {
+			fmt.Fprint(w, "<li>")
+			fmt.Fprint(w, *repositoryCommit.Commit.Message)
+			fmt.Fprint(w, "</li>")
+		}
+	}
+
+	fmt.Fprint(w, `</ol>`)
 }
 
 func doStuffWithPackage(w io.Writer, goPackage *GoPackage) {
@@ -143,6 +158,16 @@ func doStuff(w io.Writer) {
 	}
 }
 
+func updateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		importPath := r.PostFormValue("import_path")
+
+		// TODO: Activate
+		fmt.Println("go", "get", "-u", "-d", importPath)
+		_ = exec.Command("go", "get", "-u", "-d", importPath)
+	}
+}
+
 func mainHandler(w http.ResponseWriter, r *http.Request) {
 	commonHat(w)
 	defer commonTail(w)
@@ -153,6 +178,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/all", mainHandler)
+	http.HandleFunc("/-/update", updateHandler)
 	http.HandleFunc("/", debugHandler)
 
 	err := http.ListenAndServe(":8080", nil)
