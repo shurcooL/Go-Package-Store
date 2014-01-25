@@ -97,9 +97,16 @@ func GenerateGithubHtml(w io.Writer, goPackage *GoPackage, cc *github.CommitsCom
 
 	fmt.Fprintf(w, `<h3>%s</h3>`, importPath)
 
+	if cc.BaseCommit != nil && cc.BaseCommit.Author != nil && cc.BaseCommit.Author.AvatarURL != nil {
+		fmt.Fprintf(w, `<img src="%s" width="48" height="48">`, *cc.BaseCommit.Author.AvatarURL)
+	}
+
 	// TODO: Make the forn name unique, because there'll be many on same page
-	fmt.Fprintf(w, `<form name="x-update" method="POST" action="/-/update"><input type="hidden" name="import_path" value="%s"></form>`, importPath)
+	// TODO: Factor out styles into css
+	fmt.Fprint(w, `<div style="float: right;">`)
+	fmt.Fprintf(w, `<form style="display: none;" name="x-update" method="POST" action="/-/update"><input type="hidden" name="import_path" value="%s"></form>`, importPath)
 	fmt.Fprintf(w, `<a href="javascript:document.getElementsByName('x-update')[0].submit();" title="%s">Update</a>`, fmt.Sprintf("go get -u -d %s", importPath))
+	fmt.Fprint(w, `</div>`)
 
 	fmt.Fprint(w, `<ol>`)
 
@@ -172,6 +179,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	commonHat(w)
 	defer commonTail(w)
 
+	// TODO: Don't flush after every write, instead flush strategically at logical times, etc.
 	fw := &FlushWriter{w: w, f: w.(http.Flusher)}
 	doStuff(fw)
 }
