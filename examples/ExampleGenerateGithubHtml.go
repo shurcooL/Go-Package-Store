@@ -756,5 +756,5 @@ func main() {
 	})))
 
 	// Output:
-	//<h3>github.com/BurntSushi/toml</h3><form name="x-update" method="POST" action="/-/update"><input type="hidden" name="import_path" value="github.com/BurntSushi/toml"></form><a href="javascript:document.getElementsByName('x-update')[0].submit();" title="go get -u -d github.com/BurntSushi/toml">Update</a><ol><li>We want %s since errorf escapes some characters (like new lines), which turns them into strings.</li><li>fix go vet warnings</li><li>gofmt</li></ol>
+	//<h3>github.com/BurntSushi/toml</h3><img style="float: left; border-radius: 4px;" src="https://gravatar.com/avatar/c07104de771c3b6f6c30be8f592ef8f7?d=https%3A%2F%2Fidenticons.github.com%2Fa4f98968984cf211c9cdfdb95e1e4fbd.png&r=x" width="36" height="36"><div style="float: right;"><form style="display: none;" name="x-update" method="POST" action="/-/update"><input type="hidden" name="import_path" value="github.com/BurntSushi/toml"></form><a href="javascript:document.getElementsByName('x-update')[0].submit();" title="go get -u -d github.com/BurntSushi/toml">Update</a></div><div style="padding-left: 36px;"><ol><li>We want %s since errorf escapes some characters (like new lines), which turns them into strings.</li><li>fix go vet warnings</li><li>gofmt</li></ol></div>
 }

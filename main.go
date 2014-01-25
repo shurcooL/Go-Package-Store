@@ -98,7 +98,8 @@ func GenerateGithubHtml(w io.Writer, goPackage *GoPackage, cc *github.CommitsCom
 	fmt.Fprintf(w, `<h3>%s</h3>`, importPath)
 
 	if cc.BaseCommit != nil && cc.BaseCommit.Author != nil && cc.BaseCommit.Author.AvatarURL != nil {
-		fmt.Fprintf(w, `<img src="%s" width="48" height="48">`, *cc.BaseCommit.Author.AvatarURL)
+		// TODO: Factor out styles into css
+		fmt.Fprintf(w, `<img style="float: left; border-radius: 4px;" src="%s" width="36" height="36">`, *cc.BaseCommit.Author.AvatarURL)
 	}
 
 	// TODO: Make the forn name unique, because there'll be many on same page
@@ -108,6 +109,9 @@ func GenerateGithubHtml(w io.Writer, goPackage *GoPackage, cc *github.CommitsCom
 	fmt.Fprintf(w, `<a href="javascript:document.getElementsByName('x-update')[0].submit();" title="%s">Update</a>`, fmt.Sprintf("go get -u -d %s", importPath))
 	fmt.Fprint(w, `</div>`)
 
+	// TODO: Factor out styles into css
+	// HACK: Manually aligned to the left of the image, this should be done via proper html layout
+	fmt.Fprint(w, `<div style="padding-left: 36px;">`)
 	fmt.Fprint(w, `<ol>`)
 
 	for index := range cc.Commits {
@@ -120,6 +124,7 @@ func GenerateGithubHtml(w io.Writer, goPackage *GoPackage, cc *github.CommitsCom
 	}
 
 	fmt.Fprint(w, `</ol>`)
+	fmt.Fprint(w, `</div>`)
 }
 
 func doStuffWithPackage(w io.Writer, goPackage *GoPackage) {
