@@ -159,7 +159,7 @@ func doStuffWithPackage(w io.Writer, goPackage *GoPackage) {
 func doStuff(w io.Writer) {
 	goPackages := make(chan *GoPackage, 64)
 
-	go gist8018045.GetGoPackages2(goPackages)
+	go gist8018045.GetGoPackages(goPackages)
 
 	for {
 		if goPackage, ok := <-goPackages; ok {
