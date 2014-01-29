@@ -1,0 +1,28 @@
+{
+    "packages": [
+        {
+            "importPath": "github.com/BurntSushi/toml",
+            "image": "https://1.gravatar.com/avatar/c07104de771c3b6f6c30be8f592ef8f7?d=https%3A%2F%2Fidenticons.github.com%2Fa4f98968984cf211c9cdfdb95e1e4fbd.png",
+            "commitMessages": [
+                "We want %s since errorf escapes some characters (like new lines), which turns them into strings.",
+                "fix go vet warnings",
+                "gofmt"
+            ]       
+        },
+        {
+            "importPath": "github.com/Jragonmiris/mathgl",
+            "image": "https://identicons.github.com/42de14ab90e8c526c5d389a47bede4f5.png",
+            "commitMessages": [
+                "Added the most important function",
+                "Added the most important function",
+                "Added the most important function",
+                "Added bezier spline interpolation",
+                "Minor documentation fix",
+                "Added explicit support for quadratic and cubic bezier curves, should be faster than general method",
+                "Fixed a few build errors after refactoring",
+                "Added basic support for some 2D shapes, bezier curves, and bezier surfaces",
+                "Added Euler angle to quat conversion"
+            ]
+        }
+    ]
+}

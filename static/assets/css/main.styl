@@ -1,0 +1,40 @@
+@import '_settings'
+
+normalize()
+base()
+
+body
+  padding: 50px
+  background: url('/img/noise.png')
+  font-family: 'Helvetica Neue'
+
+h1
+  margin-top: 10px
+
+.box
+  border: 1px solid #DDDDDD
+  box-shadow: 0px 1px 3px rgba(#3F444C, .1)
+  border-radius: 5px
+  clearfix()
+  h2
+    background-color: #F8F8F8
+    margin: 0px
+    border-bottom: 1px solid #DDDDDD
+    padding: 5px
+  .avatar
+    float: left
+    width: 150px
+    padding: 5px
+    text-align: center
+  .message
+    border-left: 1px solid #DDDDDD
+    min-width: 200px
+    max-width: 600px
+    float: left
+    padding: 10px
+  .actions
+    float: right
+    // width: 200px
+    padding: 5px
+    .btn
+      button(#DFDFDF, small)
