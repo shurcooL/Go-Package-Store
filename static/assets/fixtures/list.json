@@ -7,7 +7,7 @@
                 "We want %s since errorf escapes some characters (like new lines), which turns them into strings.",
                 "fix go vet warnings",
                 "gofmt"
-            ]       
+            ]
         },
         {
             "importPath": "github.com/Jragonmiris/mathgl",
