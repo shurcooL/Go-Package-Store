@@ -5,47 +5,27 @@ import (
 	"io"
 	"net/http"
 	"os/exec"
-	"path"
 	"strings"
-	"sync"
 
 	. "gist.github.com/5286084.git"
 	. "gist.github.com/7480523.git"
-	//. "gist.github.com/7519227.git"
+	. "gist.github.com/7802150.git"
 
-	"gist.github.com/8018045.git"
+	//. "gist.github.com/7519227.git"
 	"github.com/google/go-github/github"
-	"github.com/shurcooL/gostatus/status"
+	"github.com/shurcooL/go/exp/13"
+	"github.com/shurcooL/go/exp/14"
 )
 
-var _ = github.Bool
-
-// ---
-
-type FlushWriter struct {
-	w io.Writer
-	f http.Flusher
-}
-
-func (fw *FlushWriter) Write(p []byte) (n int, err error) {
-	defer fw.f.Flush()
-	return fw.w.Write(p)
-}
-
-// ---
-
-var presenter GoPackageStringer = status.PorcelainPresenter
+//var presenter GoPackageStringer = status.PorcelainPresenter
 
 var shouldShow = func(goPackage *GoPackage) bool {
 	// Check for notable status
-	return goPackage.Vcs != nil &&
-		(goPackage.LocalBranch != goPackage.Vcs.GetDefaultBranch() ||
-			goPackage.Status != "" ||
-			goPackage.Local != goPackage.Remote)
+	return goPackage.Vcs.VcsState != nil &&
+		(goPackage.Vcs.VcsState.VcsLocal.LocalBranch != goPackage.Vcs.VcsState.Vcs.GetDefaultBranch() ||
+			goPackage.Vcs.VcsState.VcsLocal.Status != "" ||
+			goPackage.Vcs.VcsState.VcsLocal.LocalRev != goPackage.Vcs.VcsState.VcsRemote.RemoteRev)
 }
-
-var lock sync.Mutex
-var checkedRepos = make(map[string]bool)
 
 var gh = github.NewClient(nil)
 
@@ -71,23 +51,61 @@ func debugHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ---
+
+type GithubComparison struct {
+	importPath string
+
+	cc  *github.CommitsComparison
+	err error
+
+	DepNode2
+}
+
+func (this *GithubComparison) Update() {
+	localRev := this.GetSources()[0].(*exp13.VcsLocal).LocalRev
+	remoteRev := this.GetSources()[1].(*exp13.VcsRemote).RemoteRev
+
+	importPathElements := strings.Split(this.importPath, "/")
+	this.cc, _, this.err = gh.Repositories.CompareCommits(importPathElements[1], importPathElements[2], localRev, remoteRev)
+
+	fmt.Println("GithubComparison) Update() {, err:", this.err)
+}
+
+func NewGithubComparison(importPath string, local *exp13.VcsLocal, remote *exp13.VcsRemote) *GithubComparison {
+	this := &GithubComparison{importPath: importPath}
+	this.AddSources(local, remote)
+	return this
+}
+
+// rootPath -> *VcsState
+var githubComparisons = make(map[string]*GithubComparison)
+
+// ---
+
 func shouldPresentGithub(goPackage *GoPackage) bool {
 	return strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/") &&
-		goPackage.LocalBranch == goPackage.Vcs.GetDefaultBranch() &&
-		goPackage.Status == "" &&
-		goPackage.Local != goPackage.Remote
+		goPackage.Vcs.VcsState != nil &&
+		goPackage.Vcs.VcsState.VcsLocal.LocalBranch == goPackage.Vcs.VcsState.Vcs.GetDefaultBranch() &&
+		goPackage.Vcs.VcsState.VcsLocal.Status == "" &&
+		goPackage.Vcs.VcsState.VcsLocal.LocalRev != goPackage.Vcs.VcsState.VcsRemote.RemoteRev
 }
 
 func presentGithubHtml(w io.Writer, goPackage *GoPackage) {
 	importPath := goPackage.Bpkg.ImportPath
-	importPathElements := strings.Split(importPath, "/")
-	cc, _, err := gh.Repositories.CompareCommits(importPathElements[1], path.Join(importPathElements[2:]...), goPackage.Local, goPackage.Remote)
-	if err != nil {
-		fmt.Fprintln(w, "couldn't compare")
-		return
+	rootPath := goPackage.Vcs.VcsState.Vcs.RootPath()
+
+	comparison, ok := githubComparisons[rootPath]
+	if !ok {
+		comparison = NewGithubComparison(importPath, goPackage.Vcs.VcsState.VcsLocal, goPackage.Vcs.VcsState.VcsRemote)
+		githubComparisons[rootPath] = comparison
 	}
 
-	GenerateGithubHtml(w, goPackage, cc)
+	if MakeUpdated(comparison); comparison.err != nil {
+		fmt.Fprintln(w, "couldn't compare:", comparison.err)
+	} else {
+		GenerateGithubHtml(w, goPackage, comparison.cc)
+	}
 }
 
 func GenerateGithubHtml(w io.Writer, goPackage *GoPackage, cc *github.CommitsComparison) {
@@ -128,47 +146,27 @@ func GenerateGithubHtml(w io.Writer, goPackage *GoPackage, cc *github.CommitsCom
 }
 
 func doStuffWithPackage(w io.Writer, goPackage *GoPackage) {
-	if !goPackage.Standard {
-		// HACK: Check that the same repo hasn't already been done
-		if goPackage.UpdateVcs(); goPackage.Vcs != nil {
-			rootPath := goPackage.Vcs.RootPath()
-			lock.Lock()
-			if !checkedRepos[rootPath] {
-				checkedRepos[rootPath] = true
-				lock.Unlock()
-			} else {
-				lock.Unlock()
-				// TODO: Instead of skipping repos that were done, cache their state and reuse it
-				return
-			}
-		}
-
-		goPackage.UpdateVcsFields()
-		if shouldShow(goPackage) == false {
-			return
-		}
-		if shouldPresentGithub(goPackage) {
-			presentGithubHtml(w, goPackage)
-		} else {
-			io.WriteString(w, "<p>"+presenter(goPackage)+"</p>")
-		}
+	if goPackage.Standard {
 		return
 	}
-}
 
-func doStuff(w io.Writer) {
-	goPackages := make(chan *GoPackage, 64)
-
-	go gist8018045.GetGoPackages(goPackages)
-
-	for {
-		if goPackage, ok := <-goPackages; ok {
-			doStuffWithPackage(w, goPackage)
-		} else {
-			break
-		}
+	goPackage.UpdateVcs()
+	if goPackage.Vcs.VcsState == nil {
+		return
 	}
+
+	goPackage.UpdateVcsFields()
+	if shouldShow(goPackage) == false {
+		return
+	}
+	if shouldPresentGithub(goPackage) {
+		presentGithubHtml(w, goPackage)
+	} /*else {
+		io.WriteString(w, "<p>"+presenter(goPackage)+"</p>")
+	}*/
 }
+
+var goPackages = &exp14.GoPackages{}
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
@@ -184,9 +182,13 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	commonHat(w)
 	defer commonTail(w)
 
-	// TODO: Don't flush after every write, instead flush strategically at logical times, etc.
-	fw := &FlushWriter{w: w, f: w.(http.Flusher)}
-	doStuff(fw)
+	flusher := w.(http.Flusher)
+
+	MakeUpdated(goPackages)
+	for _, goPackage := range goPackages.Entries {
+		doStuffWithPackage(w, goPackage)
+		flusher.Flush()
+	}
 }
 
 func main() {
