@@ -200,6 +200,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		for _, goPackage := range goPackages.Entries {
 			if goPackage.Bpkg.ImportPath == importPath {
 				ExternallyUpdated(goPackage.Vcs.VcsState.VcsLocal.GetSources()[1].(DepNode2ManualI))
+				break
 			}
 		}
 
