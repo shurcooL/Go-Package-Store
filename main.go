@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"os/exec"
 	"strings"
 
@@ -44,11 +45,33 @@ func debugHandler(w http.ResponseWriter, r *http.Request) {
 	commonHat(w)
 	defer commonTail(w)
 
-	importPath := r.URL.Path[1:]
+	/*importPath := r.URL.Path[1:]
 
 	if goPackage := GoPackageFromImportPath(importPath); goPackage != nil {
 		doStuffWithPackage(w, goPackage)
+	}*/
+
+	/*MakeUpdated(goPackages)
+	for _, goPackage := range goPackages.Entries {
+		fmt.Fprint(w, goPackage.Bpkg.ImportPath, "<br>")
+	}*/
+
+	/*// rootPath -> []*GoPackage
+	var x = make(map[string][]*GoPackage)
+
+	MakeUpdated(goPackages)
+	for _, goPackage := range goPackages.Entries {
+		if rootPath, ok := doStuffWithPackage(goPackage); ok {
+			x[rootPath] = append(x[rootPath], goPackage)
+		}
 	}
+
+	for rootPath, goPackages := range x {
+		fmt.Fprint(w, "<b>", rootPath, "</b><br>")
+		for _, goPackage := range goPackages {
+			fmt.Fprint(w, goPackage.Bpkg.ImportPath, "<br>")
+		}
+	}*/
 }
 
 // ---
@@ -69,7 +92,8 @@ func (this *GithubComparison) Update() {
 	importPathElements := strings.Split(this.importPath, "/")
 	this.cc, _, this.err = gh.Repositories.CompareCommits(importPathElements[1], importPathElements[2], localRev, remoteRev)
 
-	fmt.Println("GithubComparison) Update() {, err:", this.err)
+	//goon.DumpExpr("GithubComparison.Update()", this.importPath, localRev, remoteRev)
+	//fmt.Println(this.err)
 }
 
 func NewGithubComparison(importPath string, local *exp13.VcsLocal, remote *exp13.VcsRemote) *GithubComparison {
@@ -91,9 +115,9 @@ func shouldPresentGithub(goPackage *GoPackage) bool {
 		goPackage.Vcs.VcsState.VcsLocal.LocalRev != goPackage.Vcs.VcsState.VcsRemote.RemoteRev
 }
 
-func presentGithubHtml(w io.Writer, goPackage *GoPackage) {
+func updateGithubHtml(goPackage *GoPackage) (rootPath string) {
 	importPath := goPackage.Bpkg.ImportPath
-	rootPath := goPackage.Vcs.VcsState.Vcs.RootPath()
+	rootPath = goPackage.Vcs.VcsState.Vcs.RootPath()
 
 	comparison, ok := githubComparisons[rootPath]
 	if !ok {
@@ -101,19 +125,26 @@ func presentGithubHtml(w io.Writer, goPackage *GoPackage) {
 		githubComparisons[rootPath] = comparison
 	}
 
-	if MakeUpdated(comparison); comparison.err != nil {
-		fmt.Fprintln(w, "couldn't compare:", comparison.err)
-	} else {
-		GenerateGithubHtml(w, goPackage, comparison.cc)
-	}
+	MakeUpdated(comparison)
+
+	return rootPath
 }
 
-func GenerateGithubHtml(w io.Writer, goPackage *GoPackage, cc *github.CommitsComparison) {
+func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.CommitsComparison) {
 	//goon.DumpExpr(goPackage, cc)
 
-	importPath := goPackage.Bpkg.ImportPath
+	var importPaths []string
+	for _, goPackage := range goPackages {
+		importPaths = append(importPaths, goPackage.Bpkg.ImportPath)
+	}
 
-	fmt.Fprintf(w, `<h3>%s</h3>`, importPath)
+	importPath := goPackages[0].Bpkg.ImportPath
+
+	if len(goPackages) == 1 {
+		fmt.Fprintf(w, `<h3>%s</h3>`, importPath)
+	} else if len(goPackages) > 1 {
+		fmt.Fprintf(w, `<h3>%s and <span title="%s">%d more</span></h3>`, importPath, strings.Join(importPaths[1:], "\n"), len(goPackages)-1)
+	}
 
 	if cc.BaseCommit != nil && cc.BaseCommit.Author != nil && cc.BaseCommit.Author.AvatarURL != nil {
 		// TODO: Factor out styles into css
@@ -145,25 +176,27 @@ func GenerateGithubHtml(w io.Writer, goPackage *GoPackage, cc *github.CommitsCom
 	fmt.Fprint(w, `</div>`)
 }
 
-func doStuffWithPackage(w io.Writer, goPackage *GoPackage) {
+func doStuffWithPackage(goPackage *GoPackage) (rootPath string, ok bool) {
 	if goPackage.Standard {
-		return
+		return "", false
 	}
 
 	goPackage.UpdateVcs()
 	if goPackage.Vcs.VcsState == nil {
-		return
+		return "", false
 	}
 
 	goPackage.UpdateVcsFields()
 	if shouldShow(goPackage) == false {
-		return
+		return "", false
 	}
 	if shouldPresentGithub(goPackage) {
-		presentGithubHtml(w, goPackage)
+		rootPath := updateGithubHtml(goPackage)
+		return rootPath, true
 	} /*else {
 		io.WriteString(w, "<p>"+presenter(goPackage)+"</p>")
 	}*/
+	return "", false
 }
 
 var goPackages = &exp14.GoPackages{}
@@ -179,14 +212,33 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
+	b, err := httputil.DumpRequest(r, false)
+	CheckError(err)
+	fmt.Println(string(b))
+
 	commonHat(w)
 	defer commonTail(w)
 
 	flusher := w.(http.Flusher)
 
+	// rootPath -> []*GoPackage
+	var x = make(map[string][]*GoPackage)
+
 	MakeUpdated(goPackages)
 	for _, goPackage := range goPackages.Entries {
-		doStuffWithPackage(w, goPackage)
+		if rootPath, ok := doStuffWithPackage(goPackage); ok {
+			x[rootPath] = append(x[rootPath], goPackage)
+		}
+	}
+
+	for rootPath, goPackages := range x {
+		comparison := githubComparisons[rootPath]
+		if comparison.err != nil {
+			fmt.Fprintln(w, "couldn't compare:", comparison.err)
+		} else {
+			GenerateGithubHtml(w, goPackages, comparison.cc)
+		}
+
 		flusher.Flush()
 	}
 }
@@ -194,7 +246,8 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/all", mainHandler)
 	http.HandleFunc("/-/update", updateHandler)
-	http.HandleFunc("/", debugHandler)
+	//http.HandleFunc("/debug", debugHandler)
+	http.Handle("/favicon.ico", http.NotFoundHandler())
 
 	err := http.ListenAndServe(":8080", nil)
 	CheckError(err)
