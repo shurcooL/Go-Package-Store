@@ -7,7 +7,6 @@ import (
 	"net/http/httputil"
 	"os/exec"
 	"strings"
-	"time"
 
 	. "gist.github.com/5286084.git"
 	. "gist.github.com/7480523.git"
@@ -15,6 +14,7 @@ import (
 
 	//. "gist.github.com/7519227.git"
 	"github.com/google/go-github/github"
+	"github.com/shurcooL/go-goon"
 	"github.com/shurcooL/go/exp/13"
 	"github.com/shurcooL/go/exp/14"
 )
@@ -189,11 +189,19 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		importPath := r.PostFormValue("import_path")
 
-		// TODO: Activate
 		fmt.Println("go", "get", "-u", "-d", importPath)
-		_ = exec.Command("go", "get", "-u", "-d", importPath)
 
-		time.Sleep(3 * time.Second)
+		cmd := exec.Command("go", "get", "-u", "-d", importPath)
+
+		out, err := cmd.CombinedOutput()
+		goon.DumpExpr(out, err)
+
+		MakeUpdated(goPackages)
+		for _, goPackage := range goPackages.Entries {
+			if goPackage.Bpkg.ImportPath == importPath {
+				ExternallyUpdated(goPackage.Vcs.VcsState.VcsLocal.GetSources()[1].(DepNode2ManualI))
+			}
+		}
 
 		fmt.Println("done", importPath)
 	}
