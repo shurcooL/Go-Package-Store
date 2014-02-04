@@ -7,6 +7,7 @@ import (
 	"net/http/httputil"
 	"os/exec"
 	"strings"
+	"time"
 
 	. "gist.github.com/5286084.git"
 	. "gist.github.com/7480523.git"
@@ -18,24 +19,32 @@ import (
 	"github.com/shurcooL/go/exp/14"
 )
 
-//var presenter GoPackageStringer = status.PorcelainPresenter
-
-var shouldShow = func(goPackage *GoPackage) bool {
-	// Check for notable status
-	return goPackage.Vcs.VcsState != nil &&
-		(goPackage.Vcs.VcsState.VcsLocal.LocalBranch != goPackage.Vcs.VcsState.Vcs.GetDefaultBranch() ||
-			goPackage.Vcs.VcsState.VcsLocal.Status != "" ||
-			goPackage.Vcs.VcsState.VcsLocal.LocalRev != goPackage.Vcs.VcsState.VcsRemote.RemoteRev)
-}
-
 var gh = github.NewClient(nil)
 
 func commonHat(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=us-ascii")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	// TODO: Serve and use own css
-	io.WriteString(w, `<html><head><title>Go Package Store</title></head><body>`)
+	io.WriteString(w, `<html><head><title>Go Package Store</title>
+<style type="text/css">
+	a.disabled {
+		pointer-events: none;
+		cursor: default;
+		color: gray;
+		text-decoration: none;
+	}
+</style>
+<script type="text/javascript">
+	update_go_package = function(go_package_button) {
+		go_package_button.innerText = "Updating...";
+		go_package_button.className = "disabled";
+		request = new XMLHttpRequest;
+		request.open('POST', 'http://localhost:8080/-/update', true);
+		request.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+		request.send("import_path=" + go_package_button.id);
+	}
+</script>
+</head><body>`)
 }
 func commonTail(w http.ResponseWriter) {
 	io.WriteString(w, "</body></html>")
@@ -71,6 +80,7 @@ func debugHandler(w http.ResponseWriter, r *http.Request) {
 		for _, goPackage := range goPackages {
 			fmt.Fprint(w, goPackage.Bpkg.ImportPath, "<br>")
 		}
+		fmt.Fprint(w, "<br>")
 	}*/
 }
 
@@ -115,21 +125,6 @@ func shouldPresentGithub(goPackage *GoPackage) bool {
 		goPackage.Vcs.VcsState.VcsLocal.LocalRev != goPackage.Vcs.VcsState.VcsRemote.RemoteRev
 }
 
-func updateGithubHtml(goPackage *GoPackage) (rootPath string) {
-	importPath := goPackage.Bpkg.ImportPath
-	rootPath = goPackage.Vcs.VcsState.Vcs.RootPath()
-
-	comparison, ok := githubComparisons[rootPath]
-	if !ok {
-		comparison = NewGithubComparison(importPath, goPackage.Vcs.VcsState.VcsLocal, goPackage.Vcs.VcsState.VcsRemote)
-		githubComparisons[rootPath] = comparison
-	}
-
-	MakeUpdated(comparison)
-
-	return rootPath
-}
-
 func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.CommitsComparison) {
 	//goon.DumpExpr(goPackage, cc)
 
@@ -154,8 +149,7 @@ func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.Commits
 	// TODO: Make the forn name unique, because there'll be many on same page
 	// TODO: Factor out styles into css
 	fmt.Fprint(w, `<div style="float: right;">`)
-	fmt.Fprintf(w, `<form style="display: none;" name="x-update" method="POST" action="/-/update"><input type="hidden" name="import_path" value="%s"></form>`, importPath)
-	fmt.Fprintf(w, `<a href="javascript:document.getElementsByName('x-update')[0].submit();" title="%s">Update</a>`, fmt.Sprintf("go get -u -d %s", importPath))
+	fmt.Fprintf(w, `<a href="javascript:void(0)" onclick="update_go_package(this);" id="%s" title="%s">Update</a>`, importPath, fmt.Sprintf("go get -u -d %s", importPath))
 	fmt.Fprint(w, `</div>`)
 
 	// TODO: Factor out styles into css
@@ -176,7 +170,7 @@ func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.Commits
 	fmt.Fprint(w, `</div>`)
 }
 
-func doStuffWithPackage(goPackage *GoPackage) (rootPath string, ok bool) {
+func doLittleStuffWithPackage(goPackage *GoPackage) (rootPath string, ok bool) {
 	if goPackage.Standard {
 		return "", false
 	}
@@ -184,19 +178,9 @@ func doStuffWithPackage(goPackage *GoPackage) (rootPath string, ok bool) {
 	goPackage.UpdateVcs()
 	if goPackage.Vcs.VcsState == nil {
 		return "", false
+	} else {
+		return goPackage.Vcs.VcsState.Vcs.RootPath(), true
 	}
-
-	goPackage.UpdateVcsFields()
-	if shouldShow(goPackage) == false {
-		return "", false
-	}
-	if shouldPresentGithub(goPackage) {
-		rootPath := updateGithubHtml(goPackage)
-		return rootPath, true
-	} /*else {
-		io.WriteString(w, "<p>"+presenter(goPackage)+"</p>")
-	}*/
-	return "", false
 }
 
 var goPackages = &exp14.GoPackages{}
@@ -208,6 +192,10 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		// TODO: Activate
 		fmt.Println("go", "get", "-u", "-d", importPath)
 		_ = exec.Command("go", "get", "-u", "-d", importPath)
+
+		time.Sleep(3 * time.Second)
+
+		fmt.Println("done", importPath)
 	}
 }
 
@@ -226,13 +214,26 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 	MakeUpdated(goPackages)
 	for _, goPackage := range goPackages.Entries {
-		if rootPath, ok := doStuffWithPackage(goPackage); ok {
+		if rootPath, ok := doLittleStuffWithPackage(goPackage); ok {
 			x[rootPath] = append(x[rootPath], goPackage)
 		}
 	}
 
 	for rootPath, goPackages := range x {
-		comparison := githubComparisons[rootPath]
+		goPackage := goPackages[0]
+		goPackage.UpdateVcsFields()
+		if !shouldPresentGithub(goPackage) {
+			continue
+		}
+
+		// updateGithubHtml
+		comparison, ok := githubComparisons[rootPath]
+		if !ok {
+			comparison = NewGithubComparison(goPackage.Bpkg.ImportPath, goPackage.Vcs.VcsState.VcsLocal, goPackage.Vcs.VcsState.VcsRemote)
+			githubComparisons[rootPath] = comparison
+		}
+		MakeUpdated(comparison)
+
 		if comparison.err != nil {
 			fmt.Fprintln(w, "couldn't compare:", comparison.err)
 		} else {
