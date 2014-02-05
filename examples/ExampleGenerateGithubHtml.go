@@ -401,12 +401,8 @@ func main() {
 			XTestImports:   ([]string)([]string{}),
 			XTestImportPos: (map[string][]token.Position)(map[string][]token.Position{}),
 		}),
-		Standard:    (bool)(false),
-		Vcs:         (nil),
-		Status:      (string)(""),
-		LocalBranch: (string)("master"),
-		Local:       (string)("d7b4e27ae7df432264ca4ecf2dbec313ed01c330"),
-		Remote:      (string)("f8260fb5e94dba7ed68a2621b5c4fdc675bd3861"),
+		Standard: (bool)(false),
+		Vcs:      (nil),
 	})
 	cc := (*github.CommitsComparison)(&github.CommitsComparison{
 		BaseCommit: (*github.RepositoryCommit)(&github.RepositoryCommit{
@@ -748,12 +744,18 @@ func main() {
 		}),
 	})
 
-	GenerateGithubHtml(buf, goPackage, cc)
+	GenerateGithubHtml(buf, []*gist7480523.GoPackage{goPackage}, cc)
 
-	CheckError(http.ListenAndServe(":8081", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
+	http.Handle("/assets/", http.FileServer(http.Dir(".")))
+
+	http.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		CommonHat(w)
+		defer CommonTail(w)
+
 		io.Copy(io.MultiWriter(w, os.Stdout), bytes.NewReader(buf.Bytes()))
-	})))
+	})
+
+	CheckError(http.ListenAndServe("localhost:8081", nil))
 
 	// Output:
 	//<h3>github.com/BurntSushi/toml</h3><img style="float: left; border-radius: 4px;" src="https://gravatar.com/avatar/c07104de771c3b6f6c30be8f592ef8f7?d=https%3A%2F%2Fidenticons.github.com%2Fa4f98968984cf211c9cdfdb95e1e4fbd.png&r=x" width="36" height="36"><div style="float: right;"><form style="display: none;" name="x-update" method="POST" action="/-/update"><input type="hidden" name="import_path" value="github.com/BurntSushi/toml"></form><a href="javascript:document.getElementsByName('x-update')[0].submit();" title="go get -u -d github.com/BurntSushi/toml">Update</a></div><div style="padding-left: 36px;"><ol><li>We want %s since errorf escapes some characters (like new lines), which turns them into strings.</li><li>fix go vet warnings</li><li>gofmt</li></ol></div>

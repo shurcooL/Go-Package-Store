@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -21,38 +22,22 @@ import (
 
 var gh = github.NewClient(nil)
 
-func commonHat(w http.ResponseWriter) {
+func CommonHat(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=us-ascii")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	io.WriteString(w, `<html><head><title>Go Package Store</title>
-<style type="text/css">
-	a.disabled {
-		pointer-events: none;
-		cursor: default;
-		color: gray;
-		text-decoration: none;
-	}
-</style>
-<script type="text/javascript">
-	update_go_package = function(go_package_button) {
-		go_package_button.innerText = "Updating...";
-		go_package_button.className = "disabled";
-		request = new XMLHttpRequest;
-		request.open('POST', 'http://localhost:8080/-/update', true);
-		request.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-		request.send("import_path=" + go_package_button.id);
-	}
-</script>
+<link href="assets/style.css" rel="stylesheet" type="text/css" />
+<script src="assets/script.js" type="text/javascript"></script>
 </head><body>`)
 }
-func commonTail(w http.ResponseWriter) {
+func CommonTail(w http.ResponseWriter) {
 	io.WriteString(w, "</body></html>")
 }
 
 func debugHandler(w http.ResponseWriter, r *http.Request) {
-	commonHat(w)
-	defer commonTail(w)
+	CommonHat(w)
+	defer CommonTail(w)
 
 	/*importPath := r.URL.Path[1:]
 
@@ -138,7 +123,7 @@ func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.Commits
 	if len(goPackages) == 1 {
 		fmt.Fprintf(w, `<h3>%s</h3>`, importPath)
 	} else if len(goPackages) > 1 {
-		fmt.Fprintf(w, `<h3>%s and <span title="%s">%d more</span></h3>`, importPath, strings.Join(importPaths[1:], "\n"), len(goPackages)-1)
+		fmt.Fprintf(w, `<h3>%s <span class="smaller" title="%s">and %d more</span></h3>`, importPath, strings.Join(importPaths[1:], "\n"), len(goPackages)-1)
 	}
 
 	if cc.BaseCommit != nil && cc.BaseCommit.Author != nil && cc.BaseCommit.Author.AvatarURL != nil {
@@ -213,22 +198,28 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	CheckError(err)
 	fmt.Println(string(b))
 
-	commonHat(w)
-	defer commonTail(w)
+	CommonHat(w)
+	defer CommonTail(w)
+
+	io.WriteString(w, `<div id="checking_updates"><h2 style="text-align: center;">Checking for updates...</h2></div>`)
+	defer io.WriteString(w, `<script>document.getElementById("checking_updates").style.display = "none";</script>`)
 
 	flusher := w.(http.Flusher)
+	flusher.Flush()
 
 	// rootPath -> []*GoPackage
-	var x = make(map[string][]*GoPackage)
+	var goPackagesInRepo = make(map[string][]*GoPackage)
 
 	MakeUpdated(goPackages)
 	for _, goPackage := range goPackages.Entries {
 		if rootPath, ok := doLittleStuffWithPackage(goPackage); ok {
-			x[rootPath] = append(x[rootPath], goPackage)
+			goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
 		}
 	}
 
-	for rootPath, goPackages := range x {
+	updatesAvailable := 0
+
+	for rootPath, goPackages := range goPackagesInRepo {
 		goPackage := goPackages[0]
 		goPackage.UpdateVcsFields()
 		if !shouldPresentGithub(goPackage) {
@@ -246,19 +237,32 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		if comparison.err != nil {
 			fmt.Fprintln(w, "couldn't compare:", comparison.err)
 		} else {
+			updatesAvailable++
 			GenerateGithubHtml(w, goPackages, comparison.cc)
 		}
 
 		flusher.Flush()
 	}
+
+	if updatesAvailable == 0 {
+		io.WriteString(w, `<div><h2 style="text-align: center;">No Updates Available</h2></div>`)
+	}
 }
 
 func main() {
-	http.HandleFunc("/all", mainHandler)
+	goon.DumpExpr(os.Getenv("PATH"), os.Getenv("GOPATH"))
+
+	http.HandleFunc("/index", mainHandler)
 	http.HandleFunc("/-/update", updateHandler)
 	//http.HandleFunc("/debug", debugHandler)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
+	http.Handle("/assets/", http.FileServer(http.Dir(".")))
 
-	err := http.ListenAndServe(":8080", nil)
+	go func() {
+		cmd := exec.Command("open", "http://localhost:7043/index")
+		_ = cmd.Run()
+	}()
+
+	err := http.ListenAndServe("localhost:7043", nil)
 	CheckError(err)
 }
