@@ -102,9 +102,8 @@ var githubComparisons = make(map[string]*GithubComparison)
 
 // ---
 
-func shouldPresentGithub(goPackage *GoPackage) bool {
-	return strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/") &&
-		goPackage.Vcs.VcsState != nil &&
+func shouldPresentUpdate(goPackage *GoPackage) bool {
+	return goPackage.Vcs.VcsState != nil &&
 		goPackage.Vcs.VcsState.VcsLocal.LocalBranch == goPackage.Vcs.VcsState.Vcs.GetDefaultBranch() &&
 		goPackage.Vcs.VcsState.VcsLocal.Status == "" &&
 		goPackage.Vcs.VcsState.VcsLocal.LocalRev != goPackage.Vcs.VcsState.VcsRemote.RemoteRev
@@ -131,7 +130,6 @@ func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.Commits
 		fmt.Fprintf(w, `<img style="float: left; border-radius: 4px;" src="%s" width="36" height="36">`, *cc.BaseCommit.Author.AvatarURL)
 	}
 
-	// TODO: Make the forn name unique, because there'll be many on same page
 	// TODO: Factor out styles into css
 	fmt.Fprint(w, `<div style="float: right;">`)
 	fmt.Fprintf(w, `<a href="javascript:void(0)" onclick="update_go_package(this);" id="%s" title="%s">Update</a>`, importPath, fmt.Sprintf("go get -u -d %s", importPath))
@@ -153,6 +151,28 @@ func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.Commits
 
 	fmt.Fprint(w, `</ol>`)
 	fmt.Fprint(w, `</div>`)
+}
+
+func GenerateGenericHtml(w io.Writer, goPackages []*GoPackage) {
+	var importPaths []string
+	for _, goPackage := range goPackages {
+		importPaths = append(importPaths, goPackage.Bpkg.ImportPath)
+	}
+
+	importPath := goPackages[0].Bpkg.ImportPath
+
+	if len(goPackages) == 1 {
+		fmt.Fprintf(w, `<h3>%s</h3>`, importPath)
+	} else if len(goPackages) > 1 {
+		fmt.Fprintf(w, `<h3>%s <span class="smaller" title="%s">and %d more</span></h3>`, importPath, strings.Join(importPaths[1:], "\n"), len(goPackages)-1)
+	}
+
+	// TODO: Factor out styles into css
+	fmt.Fprint(w, `<div style="float: right;">`)
+	fmt.Fprintf(w, `<a href="javascript:void(0)" onclick="update_go_package(this);" id="%s" title="%s">Update</a>`, importPath, fmt.Sprintf("go get -u -d %s", importPath))
+	fmt.Fprint(w, `</div>`)
+
+	fmt.Fprintf(w, `<div>unknown changes</div>`)
 }
 
 func doLittleStuffWithPackage(goPackage *GoPackage) (rootPath string, ok bool) {
@@ -222,23 +242,28 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	for rootPath, goPackages := range goPackagesInRepo {
 		goPackage := goPackages[0]
 		goPackage.UpdateVcsFields()
-		if !shouldPresentGithub(goPackage) {
+		if !shouldPresentUpdate(goPackage) {
 			continue
 		}
 
-		// updateGithubHtml
-		comparison, ok := githubComparisons[rootPath]
-		if !ok {
-			comparison = NewGithubComparison(goPackage.Bpkg.ImportPath, goPackage.Vcs.VcsState.VcsLocal, goPackage.Vcs.VcsState.VcsRemote)
-			githubComparisons[rootPath] = comparison
-		}
-		MakeUpdated(comparison)
+		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/") {
+			// updateGithubHtml
+			comparison, ok := githubComparisons[rootPath]
+			if !ok {
+				comparison = NewGithubComparison(goPackage.Bpkg.ImportPath, goPackage.Vcs.VcsState.VcsLocal, goPackage.Vcs.VcsState.VcsRemote)
+				githubComparisons[rootPath] = comparison
+			}
+			MakeUpdated(comparison)
 
-		if comparison.err != nil {
-			fmt.Fprintln(w, "couldn't compare:", comparison.err)
+			if comparison.err != nil {
+				fmt.Fprintln(w, "couldn't compare:", comparison.err)
+			} else {
+				updatesAvailable++
+				GenerateGithubHtml(w, goPackages, comparison.cc)
+			}
 		} else {
 			updatesAvailable++
-			GenerateGithubHtml(w, goPackages, comparison.cc)
+			GenerateGenericHtml(w, goPackages)
 		}
 
 		flusher.Flush()
@@ -250,6 +275,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	goon.DumpExpr(os.Getwd())
 	goon.DumpExpr(os.Getenv("PATH"), os.Getenv("GOPATH"))
 
 	http.HandleFunc("/index", mainHandler)
