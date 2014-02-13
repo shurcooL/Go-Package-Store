@@ -103,10 +103,10 @@ var githubComparisons = make(map[string]*GithubComparison)
 // ---
 
 func shouldPresentUpdate(goPackage *GoPackage) bool {
-	return goPackage.Vcs.VcsState != nil &&
-		goPackage.Vcs.VcsState.VcsLocal.LocalBranch == goPackage.Vcs.VcsState.Vcs.GetDefaultBranch() &&
-		goPackage.Vcs.VcsState.VcsLocal.Status == "" &&
-		goPackage.Vcs.VcsState.VcsLocal.LocalRev != goPackage.Vcs.VcsState.VcsRemote.RemoteRev
+	return goPackage.Dir.Repo != nil &&
+		goPackage.Dir.Repo.VcsLocal.LocalBranch == goPackage.Dir.Repo.Vcs.GetDefaultBranch() &&
+		goPackage.Dir.Repo.VcsLocal.Status == "" &&
+		goPackage.Dir.Repo.VcsLocal.LocalRev != goPackage.Dir.Repo.VcsRemote.RemoteRev
 }
 
 func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.CommitsComparison) {
@@ -181,10 +181,10 @@ func doLittleStuffWithPackage(goPackage *GoPackage) (rootPath string, ok bool) {
 	}
 
 	goPackage.UpdateVcs()
-	if goPackage.Vcs.VcsState == nil {
+	if goPackage.Dir.Repo == nil {
 		return "", false
 	} else {
-		return goPackage.Vcs.VcsState.Vcs.RootPath(), true
+		return goPackage.Dir.Repo.Vcs.RootPath(), true
 	}
 }
 
@@ -204,7 +204,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.Entries {
 			if goPackage.Bpkg.ImportPath == importPath {
-				ExternallyUpdated(goPackage.Vcs.VcsState.VcsLocal.GetSources()[1].(DepNode2ManualI))
+				ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(DepNode2ManualI))
 				break
 			}
 		}
@@ -250,7 +250,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 			// updateGithubHtml
 			comparison, ok := githubComparisons[rootPath]
 			if !ok {
-				comparison = NewGithubComparison(goPackage.Bpkg.ImportPath, goPackage.Vcs.VcsState.VcsLocal, goPackage.Vcs.VcsState.VcsRemote)
+				comparison = NewGithubComparison(goPackage.Bpkg.ImportPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 				githubComparisons[rootPath] = comparison
 			}
 			MakeUpdated(comparison)
