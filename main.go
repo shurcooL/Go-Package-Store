@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/http/httputil"
@@ -144,7 +145,7 @@ func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.Commits
 		repositoryCommit := cc.Commits[len(cc.Commits)-1-index]
 		if repositoryCommit.Commit != nil && repositoryCommit.Commit.Message != nil {
 			fmt.Fprint(w, "<li>")
-			fmt.Fprint(w, *repositoryCommit.Commit.Message)
+			fmt.Fprint(w, html.EscapeString(*repositoryCommit.Commit.Message))
 			fmt.Fprint(w, "</li>")
 		}
 	}
@@ -229,6 +230,8 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 	// rootPath -> []*GoPackage
 	var goPackagesInRepo = make(map[string][]*GoPackage)
+
+	// TODO: Use http.CloseNotifier, e.g. https://sourcegraph.com/github.com/donovanhide/eventsource/tree/master/server.go#L70
 
 	MakeUpdated(goPackages)
 	for _, goPackage := range goPackages.Entries {
