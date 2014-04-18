@@ -8,10 +8,13 @@ import (
 	"net/http/httputil"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
+	"time"
 
 	. "gist.github.com/5286084.git"
 	. "gist.github.com/7480523.git"
+	. "gist.github.com/7651991.git"
 	. "gist.github.com/7802150.git"
 
 	//. "gist.github.com/7519227.git"
@@ -110,6 +113,7 @@ func shouldPresentUpdate(goPackage *GoPackage) bool {
 		goPackage.Dir.Repo.VcsLocal.LocalRev != goPackage.Dir.Repo.VcsRemote.RemoteRev
 }
 
+// TODO: Should really use html/template...
 func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.CommitsComparison) {
 	//goon.DumpExpr(goPackage, cc)
 
@@ -176,19 +180,6 @@ func GenerateGenericHtml(w io.Writer, goPackages []*GoPackage) {
 	fmt.Fprintf(w, `<div>unknown changes</div>`)
 }
 
-func doLittleStuffWithPackage(goPackage *GoPackage) (rootPath string, ok bool) {
-	if goPackage.Standard {
-		return "", false
-	}
-
-	goPackage.UpdateVcs()
-	if goPackage.Dir.Repo == nil {
-		return "", false
-	} else {
-		return goPackage.Dir.Repo.Vcs.RootPath(), true
-	}
-}
-
 var goPackages = &exp14.GoPackages{}
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
@@ -214,7 +205,14 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type Repo struct {
+	rootPath   string
+	goPackages []*GoPackage
+}
+
 func mainHandler(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
+
 	b, err := httputil.DumpRequest(r, false)
 	CheckError(err)
 	fmt.Println(string(b))
@@ -228,33 +226,70 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	flusher := w.(http.Flusher)
 	flusher.Flush()
 
+	fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
+
 	// rootPath -> []*GoPackage
 	var goPackagesInRepo = make(map[string][]*GoPackage)
 
 	// TODO: Use http.CloseNotifier, e.g. https://sourcegraph.com/github.com/donovanhide/eventsource/tree/master/server.go#L70
 
+	getRootPath := func(goPackage *GoPackage) (rootPath string) {
+		if goPackage.Standard {
+			return ""
+		}
+
+		goPackage.UpdateVcs()
+		if goPackage.Dir.Repo == nil {
+			return ""
+		} else {
+			return goPackage.Dir.Repo.Vcs.RootPath()
+		}
+	}
+
 	MakeUpdated(goPackages)
+	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
 	for _, goPackage := range goPackages.Entries {
-		if rootPath, ok := doLittleStuffWithPackage(goPackage); ok {
+		if rootPath := getRootPath(goPackage); rootPath != "" {
 			goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
 		}
 	}
 
+	fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
+
 	updatesAvailable := 0
 
-	for rootPath, goPackages := range goPackagesInRepo {
-		goPackage := goPackages[0]
+	reduceFunc := func(in interface{}) interface{} {
+		repo := in.(Repo)
+
+		goPackage := repo.goPackages[0]
 		goPackage.UpdateVcsFields()
+
 		if !shouldPresentUpdate(goPackage) {
-			continue
+			return nil
 		}
+		return repo
+	}
+
+	inChan := make(chan interface{})
+	outChan := GoReduce(inChan, 8, reduceFunc)
+	for rootPath, goPackages := range goPackagesInRepo {
+		inChan <- Repo{rootPath, goPackages}
+	}
+	close(inChan)
+
+	for out := range outChan {
+		started2 := time.Now()
+
+		repo := out.(Repo)
+
+		goPackage := repo.goPackages[0]
 
 		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/") {
 			// updateGithubHtml
-			comparison, ok := githubComparisons[rootPath]
+			comparison, ok := githubComparisons[repo.rootPath]
 			if !ok {
 				comparison = NewGithubComparison(goPackage.Bpkg.ImportPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
-				githubComparisons[rootPath] = comparison
+				githubComparisons[repo.rootPath] = comparison
 			}
 			MakeUpdated(comparison)
 
@@ -262,22 +297,28 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintln(w, "couldn't compare:", comparison.err)
 			} else {
 				updatesAvailable++
-				GenerateGithubHtml(w, goPackages, comparison.cc)
+				GenerateGithubHtml(w, repo.goPackages, comparison.cc)
 			}
 		} else {
 			updatesAvailable++
-			GenerateGenericHtml(w, goPackages)
+			GenerateGenericHtml(w, repo.goPackages)
 		}
 
 		flusher.Flush()
+
+		fmt.Printf("Part 2b: %v ms.\n", time.Since(started2).Seconds()*1000)
 	}
 
 	if updatesAvailable == 0 {
 		io.WriteString(w, `<div><h2 style="text-align: center;">No Updates Available</h2></div>`)
 	}
+
+	fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	goon.DumpExpr(os.Getwd())
 	goon.DumpExpr(os.Getenv("PATH"), os.Getenv("GOPATH"))
 
