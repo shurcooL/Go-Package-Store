@@ -272,10 +272,12 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 	inChan := make(chan interface{})
 	outChan := GoReduce(inChan, 8, reduceFunc)
-	for rootPath, goPackages := range goPackagesInRepo {
-		inChan <- Repo{rootPath, goPackages}
-	}
-	close(inChan)
+	go func() { // This needs to happen in the background because sending input will be blocked on reading output.
+		for rootPath, goPackages := range goPackagesInRepo {
+			inChan <- Repo{rootPath, goPackages}
+		}
+		close(inChan)
+	}()
 
 	for out := range outChan {
 		started2 := time.Now()
