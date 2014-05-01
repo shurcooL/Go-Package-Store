@@ -143,7 +143,7 @@ func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.Commits
 	// TODO: Factor out styles into css
 	// HACK: Manually aligned to the left of the image, this should be done via proper html layout
 	fmt.Fprint(w, `<div style="padding-left: 36px;">`)
-	fmt.Fprint(w, `<ol>`)
+	fmt.Fprint(w, `<ul>`)
 
 	for index := range cc.Commits {
 		repositoryCommit := cc.Commits[len(cc.Commits)-1-index]
@@ -154,7 +154,7 @@ func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.Commits
 		}
 	}
 
-	fmt.Fprint(w, `</ol>`)
+	fmt.Fprint(w, `</ul>`)
 	fmt.Fprint(w, `</div>`)
 }
 
