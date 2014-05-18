@@ -22,6 +22,7 @@ import (
 	"github.com/shurcooL/go-goon"
 	"github.com/shurcooL/go/exp/13"
 	"github.com/shurcooL/go/exp/14"
+	"github.com/shurcooL/go/u/u4"
 )
 
 var gh = github.NewClient(nil)
@@ -180,7 +181,7 @@ func GenerateGenericHtml(w io.Writer, goPackages []*GoPackage) {
 	fmt.Fprintf(w, `<div>unknown changes</div>`)
 }
 
-var goPackages = &exp14.GoPackages{}
+var goPackages = &exp14.GoPackages{SkipGoroot: true}
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
@@ -330,10 +331,7 @@ func main() {
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.Handle("/assets/", http.FileServer(http.Dir(".")))
 
-	go func() {
-		cmd := exec.Command("open", "http://localhost:7043/index")
-		_ = cmd.Run()
-	}()
+	u4.Open("http://localhost:7043/index")
 
 	err := http.ListenAndServe("localhost:7043", nil)
 	CheckError(err)
