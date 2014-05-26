@@ -40,40 +40,6 @@ func CommonTail(w http.ResponseWriter) {
 	io.WriteString(w, "</body></html>")
 }
 
-func debugHandler(w http.ResponseWriter, r *http.Request) {
-	CommonHat(w)
-	defer CommonTail(w)
-
-	/*importPath := r.URL.Path[1:]
-
-	if goPackage := GoPackageFromImportPath(importPath); goPackage != nil {
-		doStuffWithPackage(w, goPackage)
-	}*/
-
-	/*MakeUpdated(goPackages)
-	for _, goPackage := range goPackages.Entries {
-		fmt.Fprint(w, goPackage.Bpkg.ImportPath, "<br>")
-	}*/
-
-	/*// rootPath -> []*GoPackage
-	var x = make(map[string][]*GoPackage)
-
-	MakeUpdated(goPackages)
-	for _, goPackage := range goPackages.Entries {
-		if rootPath, ok := doStuffWithPackage(goPackage); ok {
-			x[rootPath] = append(x[rootPath], goPackage)
-		}
-	}
-
-	for rootPath, goPackages := range x {
-		fmt.Fprint(w, "<b>", rootPath, "</b><br>")
-		for _, goPackage := range goPackages {
-			fmt.Fprint(w, goPackage.Bpkg.ImportPath, "<br>")
-		}
-		fmt.Fprint(w, "<br>")
-	}*/
-}
-
 // ---
 
 type GithubComparison struct {
@@ -327,7 +293,6 @@ func main() {
 
 	http.HandleFunc("/index", mainHandler)
 	http.HandleFunc("/-/update", updateHandler)
-	//http.HandleFunc("/debug", debugHandler)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.Handle("/assets/", http.FileServer(http.Dir(".")))
 
