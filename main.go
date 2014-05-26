@@ -172,6 +172,19 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getRootPath(goPackage *GoPackage) (rootPath string) {
+	if goPackage.Standard {
+		return ""
+	}
+
+	goPackage.UpdateVcs()
+	if goPackage.Dir.Repo == nil {
+		return ""
+	} else {
+		return goPackage.Dir.Repo.Vcs.RootPath()
+	}
+}
+
 type Repo struct {
 	rootPath   string
 	goPackages []*GoPackage
@@ -200,24 +213,33 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Use http.CloseNotifier, e.g. https://sourcegraph.com/github.com/donovanhide/eventsource/tree/master/server.go#L70
 
-	getRootPath := func(goPackage *GoPackage) (rootPath string) {
-		if goPackage.Standard {
-			return ""
-		}
-
-		goPackage.UpdateVcs()
-		if goPackage.Dir.Repo == nil {
-			return ""
-		} else {
-			return goPackage.Dir.Repo.Vcs.RootPath()
-		}
-	}
-
 	MakeUpdated(goPackages)
 	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
-	for _, goPackage := range goPackages.Entries {
-		if rootPath := getRootPath(goPackage); rootPath != "" {
-			goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
+	if false {
+		for _, goPackage := range goPackages.Entries {
+			if rootPath := getRootPath(goPackage); rootPath != "" {
+				goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
+			}
+		}
+	} else {
+		inChan := make(chan interface{})
+		go func() { // This needs to happen in the background because sending input will be blocked on reading output.
+			for _, goPackage := range goPackages.Entries {
+				inChan <- goPackage
+			}
+			close(inChan)
+		}()
+		reduceFunc := func(in interface{}) interface{} {
+			goPackage := in.(*GoPackage)
+			if rootPath := getRootPath(goPackage); rootPath != "" {
+				return Repo{rootPath, []*GoPackage{goPackage}}
+			}
+			return nil
+		}
+		outChan := GoReduce(inChan, 64, reduceFunc)
+		for out := range outChan {
+			repo := out.(Repo)
+			goPackagesInRepo[repo.rootPath] = append(goPackagesInRepo[repo.rootPath], repo.goPackages[0])
 		}
 	}
 
