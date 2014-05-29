@@ -215,7 +215,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 	MakeUpdated(goPackages)
 	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
-	if false {
+	if true {
 		for _, goPackage := range goPackages.Entries {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
 				goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
@@ -242,6 +242,8 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 			goPackagesInRepo[repo.rootPath] = append(goPackagesInRepo[repo.rootPath], repo.goPackages[0])
 		}
 	}
+
+	goon.DumpExpr(len(goPackagesInRepo))
 
 	fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
 
