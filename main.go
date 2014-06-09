@@ -215,7 +215,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 	MakeUpdated(goPackages)
 	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
-	if true {
+	if false {
 		for _, goPackage := range goPackages.Entries {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
 				goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
