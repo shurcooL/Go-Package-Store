@@ -86,7 +86,7 @@ func writeRepoCommonHat(w io.Writer, repo Repo) {
 		importPaths = append(importPaths, goPackage.Bpkg.ImportPath)
 	}
 
-	fmt.Fprintf(w, `<h3>%s <span class="smaller" title="%s">(%d packages)</span></h3>`, repo.ImportPathPattern(), strings.Join(importPaths, "\n"), len(goPackages))
+	fmt.Fprintf(w, `<h3><span title="%s">%s <span class="smaller">(%d packages)</span></span></h3>`, strings.Join(importPaths, "\n"), repo.ImportPathPattern(), len(goPackages))
 }
 
 // TODO: Should really use html/template...
