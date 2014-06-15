@@ -4,5 +4,5 @@ update_go_package = function(go_package_button) {
 	request = new XMLHttpRequest;
 	request.open('POST', 'http://localhost:7043/-/update', true);
 	request.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-	request.send("import_path=" + go_package_button.id);
+	request.send("import_path_pattern=" + go_package_button.id);
 }

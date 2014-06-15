@@ -23,6 +23,7 @@ import (
 	"github.com/shurcooL/go/exp/13"
 	"github.com/shurcooL/go/exp/14"
 	"github.com/shurcooL/go/u/u4"
+	"github.com/shurcooL/gostatus/status"
 )
 
 var gh = github.NewClient(nil)
@@ -74,28 +75,25 @@ var githubComparisons = make(map[string]*GithubComparison)
 // ---
 
 func shouldPresentUpdate(goPackage *GoPackage) bool {
-	return goPackage.Dir.Repo != nil &&
-		goPackage.Dir.Repo.VcsLocal.LocalBranch == goPackage.Dir.Repo.Vcs.GetDefaultBranch() &&
-		goPackage.Dir.Repo.VcsLocal.Status == "" &&
-		goPackage.Dir.Repo.VcsLocal.LocalRev != goPackage.Dir.Repo.VcsRemote.RemoteRev
+	return status.PorcelainPresenter(goPackage)[:3] == "  +" // Assumes status.PorcelainPresenter output is always at least 3 bytes.
 }
 
-// TODO: Should really use html/template...
-func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.CommitsComparison) {
-	//goon.DumpExpr(goPackage, cc)
+func writeRepoCommonHat(w io.Writer, repo Repo) {
+	goPackages := repo.goPackages
 
 	var importPaths []string
 	for _, goPackage := range goPackages {
 		importPaths = append(importPaths, goPackage.Bpkg.ImportPath)
 	}
 
-	importPath := goPackages[0].Bpkg.ImportPath
+	fmt.Fprintf(w, `<h3>%s <span class="smaller" title="%s">(%d packages)</span></h3>`, repo.ImportPathPattern(), strings.Join(importPaths, "\n"), len(goPackages))
+}
 
-	if len(goPackages) == 1 {
-		fmt.Fprintf(w, `<h3>%s</h3>`, importPath)
-	} else if len(goPackages) > 1 {
-		fmt.Fprintf(w, `<h3>%s <span class="smaller" title="%s">and %d more</span></h3>`, importPath, strings.Join(importPaths[1:], "\n"), len(goPackages)-1)
-	}
+// TODO: Should really use html/template...
+func GenerateGithubHtml(w io.Writer, repo Repo, cc *github.CommitsComparison) {
+	//goon.DumpExpr(goPackage, cc)
+
+	writeRepoCommonHat(w, repo)
 
 	if cc.BaseCommit != nil && cc.BaseCommit.Author != nil && cc.BaseCommit.Author.AvatarURL != nil {
 		// TODO: Factor out styles into css
@@ -104,7 +102,7 @@ func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.Commits
 
 	// TODO: Factor out styles into css
 	fmt.Fprint(w, `<div style="float: right;">`)
-	fmt.Fprintf(w, `<a href="javascript:void(0)" onclick="update_go_package(this);" id="%s" title="%s">Update</a>`, importPath, fmt.Sprintf("go get -u -d %s", importPath))
+	fmt.Fprintf(w, `<a href="javascript:void(0)" onclick="update_go_package(this);" id="%s" title="%s">Update</a>`, repo.ImportPathPattern(), fmt.Sprintf("go get -u -d %s", repo.ImportPathPattern()))
 	fmt.Fprint(w, `</div>`)
 
 	// TODO: Factor out styles into css
@@ -125,23 +123,12 @@ func GenerateGithubHtml(w io.Writer, goPackages []*GoPackage, cc *github.Commits
 	fmt.Fprint(w, `</div>`)
 }
 
-func GenerateGenericHtml(w io.Writer, goPackages []*GoPackage) {
-	var importPaths []string
-	for _, goPackage := range goPackages {
-		importPaths = append(importPaths, goPackage.Bpkg.ImportPath)
-	}
-
-	importPath := goPackages[0].Bpkg.ImportPath
-
-	if len(goPackages) == 1 {
-		fmt.Fprintf(w, `<h3>%s</h3>`, importPath)
-	} else if len(goPackages) > 1 {
-		fmt.Fprintf(w, `<h3>%s <span class="smaller" title="%s">and %d more</span></h3>`, importPath, strings.Join(importPaths[1:], "\n"), len(goPackages)-1)
-	}
+func GenerateGenericHtml(w io.Writer, repo Repo) {
+	writeRepoCommonHat(w, repo)
 
 	// TODO: Factor out styles into css
 	fmt.Fprint(w, `<div style="float: right;">`)
-	fmt.Fprintf(w, `<a href="javascript:void(0)" onclick="update_go_package(this);" id="%s" title="%s">Update</a>`, importPath, fmt.Sprintf("go get -u -d %s", importPath))
+	fmt.Fprintf(w, `<a href="javascript:void(0)" onclick="update_go_package(this);" id="%s" title="%s">Update</a>`, repo.ImportPathPattern(), fmt.Sprintf("go get -u -d %s", repo.ImportPathPattern()))
 	fmt.Fprint(w, `</div>`)
 
 	fmt.Fprintf(w, `<div>unknown changes</div>`)
@@ -151,24 +138,25 @@ var goPackages = &exp14.GoPackages{SkipGoroot: true}
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		importPath := r.PostFormValue("import_path")
+		importPathPattern := r.PostFormValue("import_path_pattern")
 
-		fmt.Println("go", "get", "-u", "-d", importPath)
+		fmt.Println("go", "get", "-u", "-d", importPathPattern)
 
-		cmd := exec.Command("go", "get", "-u", "-d", importPath)
+		cmd := exec.Command("go", "get", "-u", "-d", importPathPattern)
 
 		out, err := cmd.CombinedOutput()
 		goon.DumpExpr(out, err)
 
 		MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.Entries {
-			if goPackage.Bpkg.ImportPath == importPath {
+			if strings.TrimPrefix(goPackage.Dir.Repo.Vcs.RootPath(), goPackage.Bpkg.SrcRoot+"/")+"/..." == importPathPattern {
+				fmt.Println("ExternallyUpdated", importPathPattern)
 				ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(DepNode2ManualI))
 				break
 			}
 		}
 
-		fmt.Println("done", importPath)
+		fmt.Println("done", importPathPattern)
 	}
 }
 
@@ -188,6 +176,11 @@ func getRootPath(goPackage *GoPackage) (rootPath string) {
 type Repo struct {
 	rootPath   string
 	goPackages []*GoPackage
+}
+
+func (repo Repo) ImportPathPattern() string {
+	//title := strings.TrimPrefix(repo.Vcs.RootPath(), goPackage.Bpkg.SrcRoot+"/") + "/..."
+	return strings.TrimPrefix(repo.rootPath, repo.goPackages[0].Bpkg.SrcRoot+"/") + "/..."
 }
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
@@ -287,14 +280,14 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 			MakeUpdated(comparison)
 
 			if comparison.err != nil {
-				fmt.Fprintln(w, "couldn't compare:", comparison.err)
+				fmt.Println("couldn't compare:", comparison.err)
 			} else {
 				updatesAvailable++
-				GenerateGithubHtml(w, repo.goPackages, comparison.cc)
+				GenerateGithubHtml(w, repo, comparison.cc)
 			}
 		} else {
 			updatesAvailable++
-			GenerateGenericHtml(w, repo.goPackages)
+			GenerateGenericHtml(w, repo)
 		}
 
 		flusher.Flush()
