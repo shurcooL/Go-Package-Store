@@ -149,7 +149,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 		MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.Entries {
-			if strings.TrimPrefix(goPackage.Dir.Repo.Vcs.RootPath(), goPackage.Bpkg.SrcRoot+"/")+"/..." == importPathPattern {
+			if GetRepoImportPathPattern(goPackage.Dir.Repo.Vcs.RootPath(), goPackage.Bpkg.SrcRoot) == importPathPattern {
 				fmt.Println("ExternallyUpdated", importPathPattern)
 				ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(DepNode2ManualI))
 				break
@@ -179,8 +179,8 @@ type Repo struct {
 }
 
 func (repo Repo) ImportPathPattern() string {
-	//title := strings.TrimPrefix(repo.Vcs.RootPath(), goPackage.Bpkg.SrcRoot+"/") + "/..."
-	return strings.TrimPrefix(repo.rootPath, repo.goPackages[0].Bpkg.SrcRoot+"/") + "/..."
+	//title := GetRepoImportPathPattern(repo.Vcs.RootPath(), goPackage.Bpkg.SrcRoot)
+	return GetRepoImportPathPattern(repo.rootPath, repo.goPackages[0].Bpkg.SrcRoot)
 }
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
