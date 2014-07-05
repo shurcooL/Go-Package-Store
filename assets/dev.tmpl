@@ -1,0 +1,29 @@
+{{define "T1"}}
+	<div class="border-rounded">
+		<h3><span title="{{.Repo.ImportPaths}}">{{.Repo.ImportPathPattern}} <span class="smaller">({{len .Repo.GoPackages}} packages)</span></span></h3>
+
+		{{/* TODO: nil check. */}}
+		{{/* if cc.BaseCommit != nil && cc.BaseCommit.Author != nil && cc.BaseCommit.Author.AvatarURL != nil { */}}
+		<img style="float: left; border-radius: 4px;" src="{{.Cc.BaseCommit.Author.AvatarURL}}" width="36" height="36">
+
+		<div style="float: right;">
+			<a href="javascript:void(0)" onclick="update_go_package(this);" id="{{.Repo.ImportPathPattern}}" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
+		</div>
+
+		<div style="padding-left: 36px;">
+		<ul>
+			{{range .Cc.Commits}}<li>{{.Commit.Message}}</li>
+			{{end}}
+		</ul>
+	</div>
+{{end}}<html>
+	<head>
+		<title>Go Package Store</title>
+		<link href="assets/style.css" rel="stylesheet" type="text/css" />
+		<script src="assets/script.js" type="text/javascript"></script>
+	</head>
+	<body>
+		{{range .RepoCcs}}{{template "T1" .}}{{end}}
+		<div class="border-rounded">Hello there, {{range .Names}}{{.}},<br>{{end}}!</div>
+	</body>
+</html>

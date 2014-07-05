@@ -12,3 +12,16 @@ span.smaller {
 	font-size: 12px;
 	color: gray;
 }
+
+div.border-rounded {
+	border: 1px solid #cccccc;
+	border-radius: 4px;
+
+	padding: 10px;
+}
+h3 {
+	margin-top: 0px;
+}
+div.list-entry {
+	margin-bottom: 8px;
+}
