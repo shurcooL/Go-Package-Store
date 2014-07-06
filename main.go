@@ -10,6 +10,7 @@ import (
 	"net/http/httputil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -535,8 +536,15 @@ func dev2Handler(w http.ResponseWriter, req *http.Request) {
 var t *template.Template
 
 func loadTemplates() {
+	const filename = "./assets/dev2.tmpl"
+
+	funcMap := template.FuncMap{
+		"revIndex": func(index, length int) (revIndex int) { return (length - 1) - index },
+	}
+
 	var err error
-	t, err = template.ParseFiles("./assets/dev2.tmpl")
+	//t, err = template.ParseFiles(filename)
+	t, err = template.New(filepath.Base(filename)).Funcs(funcMap).ParseFiles(filename)
 	if err != nil {
 		log.Println("loadTemplates: ./assets/dev2.tmpl:", err)
 	}

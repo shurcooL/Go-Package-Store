@@ -28,3 +28,8 @@ h3 {
 div.list-entry {
 	margin-bottom: 12px;
 }
+.update-button {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+}
