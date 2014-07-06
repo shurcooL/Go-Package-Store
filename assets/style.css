@@ -1,6 +1,9 @@
 body {
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-size: 14px;
+	margin: 12px;
+	margin-top: 20px;
+	margin-bottom: 80px;
 }
 a.disabled {
 	pointer-events: none;
@@ -23,5 +26,5 @@ h3 {
 	margin-top: 0px;
 }
 div.list-entry {
-	margin-bottom: 8px;
+	margin-bottom: 12px;
 }
