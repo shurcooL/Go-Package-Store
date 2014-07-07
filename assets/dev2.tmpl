@@ -2,21 +2,26 @@
 	{{if eq (len .Repo.GoPackages) 1}}<h3><span title="{{.Repo.ImportPaths}}">{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</span></span></h3>{{else}}
 	<h3><span title="{{.Repo.ImportPaths}}">{{.Repo.ImportPathPattern}} <span class="smaller">({{len .Repo.GoPackages}} packages)</span></span></h3>{{end}}
 
-	{{/* TODO: nil check. */}}
-	{{/* if cc.BaseCommit != nil && cc.BaseCommit.Author != nil && cc.BaseCommit.Author.AvatarURL != nil { */}}
-	<img style="float: left; border-radius: 4px;" src="{{.Cc.BaseCommit.Author.AvatarURL}}" width="36" height="36">
+	<img style="float: left; border-radius: 4px;" src="{{.AvatarUrl}}" width="36" height="36">
 
 	<div class="update-button">
 		<a href="javascript:void(0)" onclick="update_go_package(this);" id="{{.Repo.ImportPathPattern}}" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
 	</div>
 
-	<div style="padding-left: 36px;">
-		<ul>
-			{{/*{{range .Cc.Commits}}<li>{{.Commit.Message}}</li>
-			{{end}}*/}}
+	<div>
+		{{if .Cc}}
+			<ul style="margin-bottom: 0px; padding-left: 64px;">
+				{{/*{{range .Cc.Commits}}<li>{{.Commit.Message}}</li>
+				{{end}}*/}}
 
-			{{range $i, $_ := .Cc.Commits}}<li>{{(index $.Cc.Commits (revIndex $i (len $.Cc.Commits))).Commit.Message}}</li>
-			{{end}}
-		</ul>
+				{{range $i, $_ := .Cc.Commits}}<li>{{(index $.Cc.Commits (revIndex $i (len $.Cc.Commits))).Commit.Message}}</li>
+				{{end}}
+			</ul>
+		{{else}}
+			<div style="margin-bottom: 0px; padding-left: 64px;">
+				unknown changes
+			</div>
+		{{end}}
 	</div>
+	<div style="clear: both;"></div>
 </div>

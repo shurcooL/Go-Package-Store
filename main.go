@@ -129,6 +129,7 @@ func GenerateGithubHtml(w io.Writer, repo Repo, cc *github.CommitsComparison) {
 	fmt.Fprint(w, `</div>`)
 }
 
+// TODO: Rename this to be more generic, since it will be used to handle all repos.
 func GenerateGithubHtml2(w http.ResponseWriter, repo Repo, cc *github.CommitsComparison) {
 	data := RepoCc{
 		repo,
@@ -439,7 +440,7 @@ func main2Handler(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			updatesAvailable++
-			GenerateGenericHtml(w, repo)
+			GenerateGithubHtml2(w, repo, nil)
 		}
 
 		flusher.Flush()
@@ -511,6 +512,14 @@ func devHandler(w http.ResponseWriter, req *http.Request) {
 type RepoCc struct {
 	Repo Repo
 	Cc   *github.CommitsComparison
+}
+
+func (repoCc RepoCc) AvatarUrl() template.URL {
+	// THINK: Maybe use the repo owner avatar, instead of committer?
+	if repoCc.Cc != nil && repoCc.Cc.BaseCommit != nil && repoCc.Cc.BaseCommit.Author != nil && repoCc.Cc.BaseCommit.Author.AvatarURL != nil {
+		return template.URL(*repoCc.Cc.BaseCommit.Author.AvatarURL)
+	}
+	return "https://github.com/images/gravatars/gravatar-user-420.png"
 }
 
 func dev2Handler(w http.ResponseWriter, req *http.Request) {
