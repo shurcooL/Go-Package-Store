@@ -447,11 +447,41 @@ func main2Handler(w http.ResponseWriter, r *http.Request) {
 
 		goPackage := repo.goPackages[0]
 
+		// TODO: Factor these out into a nice interface...
 		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/") {
-			// updateGithubHtml
 			comparison, ok := githubComparisons[repo.rootPath]
 			if !ok {
 				comparison = NewGithubComparison(goPackage.Bpkg.ImportPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
+				githubComparisons[repo.rootPath] = comparison
+			}
+			MakeUpdated(comparison)
+
+			if comparison.err != nil {
+				fmt.Println("couldn't compare:", comparison.err)
+			} else {
+				updatesAvailable++
+				GenerateGithubHtml2(w, repo, comparison.cc)
+			}
+		} else if strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/") {
+			// TODO: gopkg.in needs to be supported in a better, less duplicated, and ensured to be correct way.
+			//       In fact, it's a good test point for support for generic change-description interface (i.e., for github repos, code.google.com, etc.).
+			comparison, ok := githubComparisons[repo.rootPath]
+			if !ok {
+				afterPrefix := goPackage.Bpkg.ImportPath[len("gopkg.in/"):]
+				importPathElements0 := strings.Split(afterPrefix, ".")
+				if len(importPathElements0) != 2 {
+					log.Panicln("len(importPathElements0) != 2", importPathElements0)
+				}
+				importPathElements1 := strings.Split(importPathElements0[0], "/")
+				importPath := "github.com/"
+				if len(importPathElements1) == 1 { // gopkg.in/pkg.v3 -> github.com/go-pkg/pkg
+					importPath += "go-" + importPathElements1[0] + "/" + importPathElements1[0]
+				} else if len(importPathElements1) == 2 { // gopkg.in/user/pkg.v3 -> github.com/user/pkg
+					importPath += importPathElements1[0] + "/" + importPathElements1[1]
+				} else {
+					log.Panicln("len(importPathElements1) != 1 nor 2", importPathElements1)
+				}
+				comparison = NewGithubComparison(importPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 				githubComparisons[repo.rootPath] = comparison
 			}
 			MakeUpdated(comparison)
