@@ -164,7 +164,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		cmd := exec.Command("go", "get", "-u", "-d", importPathPattern)
 
 		out, err := cmd.CombinedOutput()
-		goon.DumpExpr(out, err)
+		goon.DumpExpr(string(out), err)
 
 		MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.Entries {
