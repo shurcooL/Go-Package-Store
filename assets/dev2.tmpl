@@ -5,7 +5,11 @@
 	<img style="float: left; border-radius: 4px;" src="{{.AvatarUrl}}" width="36" height="36">
 
 	<div class="update-button">
+		{{if true}}
 		<a href="javascript:void(0)" onclick="update_go_package(this);" id="{{.Repo.ImportPathPattern}}" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
+		{{else}}
+		<span class="disabled">Updating...</span>
+		{{end}}
 	</div>
 
 	<div>
