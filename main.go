@@ -168,6 +168,11 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 		MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.Entries {
+			// DEBUG: Make sure there are no nils and print them if there are...
+			if err := debugCheckForNil(goPackage); err != nil {
+				fmt.Println("debugCheckForNil:", err)
+				continue
+			}
 			if GetRepoImportPathPattern(goPackage.Dir.Repo.Vcs.RootPath(), goPackage.Bpkg.SrcRoot) == importPathPattern {
 				fmt.Println("ExternallyUpdated", importPathPattern)
 				ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(DepNode2ManualI))
@@ -177,6 +182,25 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println("done", importPathPattern)
 	}
+}
+
+func debugCheckForNil(goPackage *GoPackage) error {
+	if goPackage == nil {
+		return fmt.Errorf("goPackage == nil")
+	}
+	if goPackage.Dir == nil {
+		return fmt.Errorf("goPackage.Dir == nil")
+	}
+	if goPackage.Dir.Repo == nil {
+		return fmt.Errorf("goPackage.Dir.Repo == nil")
+	}
+	if goPackage.Dir.Repo.Vcs == nil {
+		return fmt.Errorf("goPackage.Dir.Repo.Vcs == nil")
+	}
+	if goPackage.Bpkg == nil {
+		return fmt.Errorf("goPackage.Bpkg == nil")
+	}
+	return nil
 }
 
 func getRootPath(goPackage *GoPackage) (rootPath string) {
