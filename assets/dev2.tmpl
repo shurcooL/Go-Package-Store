@@ -1,6 +1,22 @@
 <div class="border-rounded list-entry" style="position: relative;">
-	{{if eq (len .Repo.GoPackages) 1}}<h3><span title="{{.Repo.ImportPaths}}">{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</span></span></h3>{{else}}
-	<h3><span title="{{.Repo.ImportPaths}}">{{.Repo.ImportPathPattern}} <span class="smaller">({{len .Repo.GoPackages}} packages)</span></span></h3>{{end}}
+	{{/* TODO: Make this simpler. */}}
+	{{if eq (len .Repo.GoPackages) 1}}
+		<h3><span title="{{.Repo.ImportPaths}}">
+			{{if .Repo.WebLink}}
+				<a href="{{.Repo.WebLink}}" target="_blank">{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</a>
+			{{else}}
+				{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}
+			{{end}}
+		</span></span></h3>
+	{{else}}
+		<h3><span title="{{.Repo.ImportPaths}}">
+			{{if .Repo.WebLink}}
+				<a href="{{.Repo.WebLink}}" target="_blank">{{.Repo.ImportPathPattern}}</a>
+			{{else}}
+				{{.Repo.ImportPathPattern}}
+			{{end}}
+			<span class="smaller">({{len .Repo.GoPackages}} packages)</span></span></h3>
+	{{end}}
 
 	<img style="float: left; border-radius: 4px;" src="{{.AvatarUrl}}" width="36" height="36">
 

@@ -219,6 +219,23 @@ func (repo Repo) ImportPaths() string {
 	return strings.Join(importPaths, "\n")
 }
 
+func (repo Repo) WebLink() *template.URL {
+	goPackage := repo.goPackages[0]
+
+	// TODO: Factor these out into a nice interface...
+	switch {
+	case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
+		importPathElements := strings.Split(goPackage.Bpkg.ImportPath, "/")
+		url := template.URL("https://github.com/" + importPathElements[1] + "/" + importPathElements[2])
+		return &url
+	case strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/"):
+		// TODO
+		return nil
+	default:
+		return nil
+	}
+}
+
 func mainHandler(w http.ResponseWriter, r *http.Request) {
 	started := time.Now()
 

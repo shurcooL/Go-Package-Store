@@ -5,6 +5,14 @@ body {
 	margin-top: 20px;
 	margin-bottom: 80px;
 }
+a {
+	color: #4183c4;
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+
 .disabled {
 	pointer-events: none;
 	cursor: default;
