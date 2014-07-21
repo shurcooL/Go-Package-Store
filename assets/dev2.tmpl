@@ -31,11 +31,11 @@
 	<div>
 		{{if .Cc}}
 			<ul style="margin-bottom: 0px; padding-left: 64px;">
-				{{/*{{range .Cc.Commits}}<li>{{.Commit.Message}}</li>
-				{{end}}*/}}
-
-				{{range $i, $_ := .Cc.Commits}}<li>{{(index $.Cc.Commits (revIndex $i (len $.Cc.Commits))).Commit.Message}}</li>
+				{{range .Changes}}<li>{{.Commit.Message}}</li>
 				{{end}}
+
+				{{/*{{range $i, $_ := .Cc.Commits}}<li>{{(index $.Cc.Commits (revIndex $i (len $.Cc.Commits))).Commit.Message}}</li>
+				{{end}}*/}}
 			</ul>
 		{{else}}
 			<div style="margin-bottom: 0px; padding-left: 64px;">

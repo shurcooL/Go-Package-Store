@@ -532,15 +532,15 @@ func (_ data) Names() chan string {
 }
 
 func (_ data) RepoCcs() chan RepoCc {
-	ch := make(chan RepoCc)
+	out := make(chan RepoCc)
 	go func() {
-		ch <- RepoCc{
+		out <- RepoCc{
 			NewRepo("/Users/Dmitri/Dropbox/Work/2013/GoLanding/src/github.com/BurntSushi/toml", []*GoPackage{goPackageXxx}),
 			ccXxx,
 		}
-		close(ch)
+		close(out)
 	}()
-	return ch
+	return out
 }
 
 func devHandler(w http.ResponseWriter, req *http.Request) {
@@ -569,6 +569,18 @@ func (repoCc RepoCc) AvatarUrl() template.URL {
 		return template.URL(*repoCc.Cc.BaseCommit.Author.AvatarURL)
 	}
 	return "https://github.com/images/gravatars/gravatar-user-420.png"
+}
+
+// List of changes, starting with the most recent.
+func (this RepoCc) Changes() <-chan github.RepositoryCommit {
+	out := make(chan github.RepositoryCommit)
+	go func() {
+		for index := range this.Cc.Commits {
+			out <- this.Cc.Commits[len(this.Cc.Commits)-1-index]
+		}
+		close(out)
+	}()
+	return out
 }
 
 func dev2Handler(w http.ResponseWriter, req *http.Request) {
