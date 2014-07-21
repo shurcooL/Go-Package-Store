@@ -81,7 +81,7 @@ var githubComparisons = make(map[string]*GithubComparison)
 // ---
 
 func shouldPresentUpdate(goPackage *GoPackage) bool {
-	return status.PorcelainPresenter(goPackage)[:3] == "  +" // Assumes status.PorcelainPresenter output is always at least 3 bytes.
+	return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
 }
 
 func writeRepoCommonHat(w io.Writer, repo Repo) {
