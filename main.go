@@ -45,6 +45,7 @@ func CommonTail(w io.Writer) {
 
 type GithubComparison struct {
 	importPath string
+	owner      string
 
 	cc  *github.CommitsComparison
 	err error
@@ -58,6 +59,9 @@ func (this *GithubComparison) Update() {
 
 	importPathElements := strings.Split(this.importPath, "/")
 	this.cc, _, this.err = gh.Repositories.CompareCommits(importPathElements[1], importPathElements[2], localRev, remoteRev)
+
+	// TODO: Do this better (in the right place, etc.).
+	this.owner = importPathElements[1]
 
 	//goon.DumpExpr("GithubComparison.Update()", this.importPath, localRev, remoteRev)
 	//fmt.Println(this.err)
@@ -78,10 +82,10 @@ func shouldPresentUpdate(goPackage *GoPackage) bool {
 	return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
 }
 
-func WriteRepoHtml(w http.ResponseWriter, repo Repo, cc *github.CommitsComparison) {
+func WriteRepoHtml(w http.ResponseWriter, repo Repo, comparison *GithubComparison) {
 	data := RepoCc{
-		repo,
-		cc,
+		Repo:       repo,
+		Comparison: comparison,
 	}
 	err := t.Execute(w, data)
 	if err != nil {
@@ -224,6 +228,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	goon.DumpExpr(len(goPackages.Entries))
 	goon.DumpExpr(len(goPackagesInRepo))
 
 	fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
@@ -271,7 +276,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("couldn't compare:", comparison.err)
 			} else {
 				updatesAvailable++
-				WriteRepoHtml(w, repo, comparison.cc)
+				WriteRepoHtml(w, repo, comparison)
 			}
 		} else if strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/") {
 			// TODO: gopkg.in needs to be supported in a better, less duplicated, and ensured to be correct way.
@@ -301,7 +306,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("couldn't compare:", comparison.err)
 			} else {
 				updatesAvailable++
-				WriteRepoHtml(w, repo, comparison.cc)
+				WriteRepoHtml(w, repo, comparison)
 			}
 		} else if strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/") {
 			comparison, ok := githubComparisons[repo.rootPath]
@@ -317,7 +322,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("couldn't compare:", comparison.err)
 			} else {
 				updatesAvailable++
-				WriteRepoHtml(w, repo, comparison.cc)
+				WriteRepoHtml(w, repo, comparison)
 			}
 		} else {
 			updatesAvailable++
@@ -339,24 +344,27 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 // ---
 
 type RepoCc struct {
-	Repo Repo
-	Cc   *github.CommitsComparison
+	Repo       Repo
+	Comparison *GithubComparison
 }
 
 func (this RepoCc) AvatarUrl() template.URL {
-	// THINK: Maybe use the repo owner avatar, instead of committer?
-	if this.Cc != nil && this.Cc.BaseCommit != nil && this.Cc.BaseCommit.Author != nil && this.Cc.BaseCommit.Author.AvatarURL != nil {
-		return template.URL(*this.Cc.BaseCommit.Author.AvatarURL)
+	// Use the repo owner avatar image.
+	if this.Comparison != nil {
+		if user, _, err := gh.Users.Get(this.Comparison.owner); err == nil && user.AvatarURL != nil {
+			return template.URL(*user.AvatarURL)
+		}
 	}
 	return "https://github.com/images/gravatars/gravatar-user-420.png"
 }
 
 // List of changes, starting with the most recent.
+// Precondition is that this.Comparison != nil.
 func (this RepoCc) Changes() <-chan github.RepositoryCommit {
 	out := make(chan github.RepositoryCommit)
 	go func() {
-		for index := range this.Cc.Commits {
-			out <- this.Cc.Commits[len(this.Cc.Commits)-1-index]
+		for index := range this.Comparison.cc.Commits {
+			out <- this.Comparison.cc.Commits[len(this.Comparison.cc.Commits)-1-index]
 		}
 		close(out)
 	}()
