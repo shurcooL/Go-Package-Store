@@ -167,6 +167,9 @@ func (repo Repo) WebLink() *template.URL {
 	case strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/"):
 		// TODO
 		return nil
+	case strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/"):
+		url := template.URL(strings.TrimSuffix(goPackage.Dir.Repo.VcsLocal.Remote, ".git"))
+		return &url
 	default:
 		return nil
 	}
@@ -289,6 +292,22 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 				} else {
 					log.Panicln("len(importPathElements1) != 1 nor 2", importPathElements1)
 				}
+				comparison = NewGithubComparison(importPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
+				githubComparisons[repo.rootPath] = comparison
+			}
+			MakeUpdated(comparison)
+
+			if comparison.err != nil {
+				fmt.Println("couldn't compare:", comparison.err)
+			} else {
+				updatesAvailable++
+				WriteRepoHtml(w, repo, comparison.cc)
+			}
+		} else if strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/") {
+			comparison, ok := githubComparisons[repo.rootPath]
+			if !ok {
+				afterPrefix := goPackage.Dir.Repo.VcsLocal.Remote[len("https://"):]
+				importPath := strings.TrimSuffix(afterPrefix, ".git")
 				comparison = NewGithubComparison(importPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 				githubComparisons[repo.rootPath] = comparison
 			}
