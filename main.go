@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	. "gist.github.com/5286084.git"
-	. "gist.github.com/7480523.git"
-	. "gist.github.com/7651991.git"
-	. "gist.github.com/7802150.git"
+	. "github.com/shurcooL/go/gists/gist5286084"
+	. "github.com/shurcooL/go/gists/gist7480523"
+	. "github.com/shurcooL/go/gists/gist7651991"
+	. "github.com/shurcooL/go/gists/gist7802150"
 
 	//. "gist.github.com/7519227.git"
 	"github.com/google/go-github/github"
