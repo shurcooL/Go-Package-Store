@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -94,10 +95,15 @@ func WriteRepoHtml(w http.ResponseWriter, repo Repo, comparison *GithubCompariso
 	}
 }
 
-var goPackages = &exp14.GoPackages{SkipGoroot: true}
+var goPackages exp14.GoPackageList = &exp14.GoPackages{SkipGoroot: true}
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
+		if *godepsFlag != "" {
+			// TODO: Implement updating Godeps packages.
+			log.Fatalln("updating Godeps packages isn't supported yet")
+		}
+
 		importPathPattern := r.PostFormValue("import_path_pattern")
 
 		fmt.Println("go", "get", "-u", "-d", importPathPattern)
@@ -108,7 +114,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		goon.DumpExpr(string(out), err)
 
 		MakeUpdated(goPackages)
-		for _, goPackage := range goPackages.Entries {
+		for _, goPackage := range goPackages.List() {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
 				if GetRepoImportPathPattern(rootPath, goPackage.Bpkg.SrcRoot) == importPathPattern {
 					fmt.Println("ExternallyUpdated", importPathPattern)
@@ -201,7 +207,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	MakeUpdated(goPackages)
 	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
 	if false {
-		for _, goPackage := range goPackages.Entries {
+		for _, goPackage := range goPackages.List() {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
 				goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
 			}
@@ -209,7 +215,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		inChan := make(chan interface{})
 		go func() { // This needs to happen in the background because sending input will be blocked on reading output.
-			for _, goPackage := range goPackages.Entries {
+			for _, goPackage := range goPackages.List() {
 				inChan <- goPackage
 			}
 			close(inChan)
@@ -228,7 +234,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	goon.DumpExpr(len(goPackages.Entries))
+	goon.DumpExpr(len(goPackages.List()))
 	goon.DumpExpr(len(goPackagesInRepo))
 
 	fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
@@ -383,12 +389,20 @@ func loadTemplates() error {
 	return err
 }
 
+var godepsFlag = flag.String("godeps", "", "Path to Godeps file to use.")
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	err := loadTemplates()
 	if err != nil {
 		log.Fatalln("loadTemplates:", err)
+	}
+
+	flag.Parse()
+	if *godepsFlag != "" {
+		fmt.Println("Using Godeps file:", *godepsFlag)
+		goPackages = NewGoPackagesFromGodeps(*godepsFlag)
 	}
 
 	goon.DumpExpr(os.Getwd())
@@ -401,6 +415,6 @@ func main() {
 
 	u4.Open("http://localhost:7043/index")
 
-	err := http.ListenAndServe("localhost:7043", nil)
+	err = http.ListenAndServe("localhost:7043", nil)
 	CheckError(err)
 }
