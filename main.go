@@ -375,20 +375,21 @@ func (this RepoCc) Changes() <-chan github.RepositoryCommit {
 
 var t *template.Template
 
-func loadTemplates() {
+func loadTemplates() error {
 	const filename = "./assets/repo.tmpl"
 
 	var err error
 	t, err = template.ParseFiles(filename)
-	if err != nil {
-		log.Println("loadTemplates:", filename, err)
-	}
+	return err
 }
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	loadTemplates()
+	err := loadTemplates()
+	if err != nil {
+		log.Fatalln("loadTemplates:", err)
+	}
 
 	goon.DumpExpr(os.Getwd())
 	goon.DumpExpr(os.Getenv("PATH"), os.Getenv("GOPATH"))
