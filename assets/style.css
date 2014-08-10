@@ -1,6 +1,7 @@
 body {
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-size: 14px;
+	line-height: 1.428571429;
 	margin: 12px;
 	margin-top: 20px;
 	margin-bottom: 80px;
@@ -24,20 +25,21 @@ span.smaller {
 	color: gray;
 }
 
-div.border-rounded {
+div.list-entry {
 	border: 1px solid #cccccc;
 	border-radius: 4px;
-
-	padding: 10px;
-}
-h3 {
-	margin-top: 0px;
-}
-div.list-entry {
 	margin-bottom: 12px;
 }
-.update-button {
-	position: absolute;
-	top: 12px;
-	right: 12px;
+div.list-entry-header {
+	background-color: #eeeeee;
+	padding: 10px;
+	border-radius: 4px 4px 0 0;
+}
+div.list-entry-body {
+	padding: 10px;
+}
+.changes-list {
+	margin-top: 0px;
+	margin-bottom: 0px;
+	padding-left: 64px;
 }

@@ -1,47 +1,50 @@
-<div class="border-rounded list-entry" style="position: relative;">
+<div class="list-entry" style="position: relative;">
+	<div class="list-entry-header">
 	{{/* TODO: Make this simpler. */}}
 	{{if eq (len .Repo.GoPackages) 1}}
-		<h3><span title="{{.Repo.ImportPaths}}">
+		<span title="{{.Repo.ImportPaths}}">
 			{{if .Repo.WebLink}}
-				<a href="{{.Repo.WebLink}}" target="_blank">{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</a>
+				<a href="{{.Repo.WebLink}}" target="_blank"><strong>{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</strong></a>
 			{{else}}
 				{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}
 			{{end}}
-		</span></span></h3>
+		</span></span>
 	{{else}}
-		<h3><span title="{{.Repo.ImportPaths}}">
+		<span title="{{.Repo.ImportPaths}}">
 			{{if .Repo.WebLink}}
-				<a href="{{.Repo.WebLink}}" target="_blank">{{.Repo.ImportPathPattern}}</a>
+				<a href="{{.Repo.WebLink}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
 			{{else}}
 				{{.Repo.ImportPathPattern}}
 			{{end}}
-			<span class="smaller">({{len .Repo.GoPackages}} packages)</span></span></h3>
+			<span class="smaller">({{len .Repo.GoPackages}} packages)</span></span>
 	{{end}}
 
-	<img style="float: left; border-radius: 4px;" src="{{.AvatarUrl}}" width="36" height="36">
-
-	<div class="update-button">
-		{{if true}}
-		<a href="javascript:void(0)" onclick="update_go_package(this);" id="{{.Repo.ImportPathPattern}}" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
-		{{else}}
-		<span class="disabled">Updating...</span>
-		{{end}}
+		<div style="float: right;">
+			{{if true}}
+				<a href="javascript:void(0)" onclick="update_go_package(this);" id="{{.Repo.ImportPathPattern}}" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
+			{{else}}
+				<span class="disabled">Updating...</span>
+			{{end}}
+		</div>
 	</div>
+	<div class="list-entry-body">
+		<img style="float: left; border-radius: 4px;" src="{{.AvatarUrl}}" width="36" height="36">
 
-	<div>
-		{{if .Comparison}}
-			<ul style="margin-bottom: 0px; padding-left: 64px;">
-				{{range .Changes}}<li>{{.Commit.Message}}</li>
-				{{end}}
+		<div>
+			{{if .Comparison}}
+				<ul class="changes-list">
+					{{range .Changes}}<li>{{.Commit.Message}}</li>
+					{{end}}
 
-				{{/*{{range $i, $_ := .Cc.Commits}}<li>{{(index $.Cc.Commits (revIndex $i (len $.Cc.Commits))).Commit.Message}}</li>
-				{{end}}*/}}
-			</ul>
-		{{else}}
-			<div style="margin-bottom: 0px; padding-left: 64px;">
-				unknown changes
-			</div>
-		{{end}}
+					{{/*{{range $i, $_ := .Cc.Commits}}<li>{{(index $.Cc.Commits (revIndex $i (len $.Cc.Commits))).Commit.Message}}</li>
+					{{end}}*/}}
+				</ul>
+			{{else}}
+				<div class="changes-list">
+					unknown changes
+				</div>
+			{{end}}
+		</div>
+		<div style="clear: both;"></div>
 	</div>
-	<div style="clear: both;"></div>
 </div>

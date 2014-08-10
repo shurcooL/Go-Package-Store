@@ -186,6 +186,12 @@ func (repo Repo) WebLink() *template.URL {
 }
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: When "finished", should not reload templates from disk on each request... Unless using a dev flag?
+	if err := loadTemplates(); err != nil {
+		fmt.Fprintln(w, "loadTemplates:", err)
+		return
+	}
+
 	started := time.Now()
 
 	CommonHat(w)
