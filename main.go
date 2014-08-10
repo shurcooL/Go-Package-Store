@@ -30,7 +30,7 @@ import (
 var gh = github.NewClient(nil)
 
 func CommonHat(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "text/html; charset=us-ascii")
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	io.WriteString(w, `<html><head><title>Go Package Store</title>
