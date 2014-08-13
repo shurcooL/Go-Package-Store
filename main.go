@@ -85,9 +85,12 @@ func shouldPresentUpdate(goPackage *GoPackage) bool {
 
 func WriteRepoHtml(w http.ResponseWriter, repo Repo, comparison *GithubComparison) {
 	data := RepoCc{
-		Repo:       repo,
-		Comparison: comparison,
+		Repo: repo,
 	}
+	if comparison.err == nil {
+		data.Comparison = comparison
+	}
+
 	err := t.Execute(w, data)
 	if err != nil {
 		log.Println("t.Execute:", err)
@@ -111,7 +114,8 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		cmd := exec.Command("go", "get", "-u", "-d", importPathPattern)
 
 		out, err := cmd.CombinedOutput()
-		goon.DumpExpr(string(out), err)
+		fmt.Println("out:", string(out))
+		goon.DumpExpr(err)
 
 		MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.List() {
@@ -276,8 +280,10 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		goPackage := repo.goPackages[0]
 
 		// TODO: Factor these out into a nice interface...
+		var comparison *GithubComparison
 		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/") {
-			comparison, ok := githubComparisons[repo.rootPath]
+			var ok bool
+			comparison, ok = githubComparisons[repo.rootPath]
 			if !ok {
 				comparison = NewGithubComparison(goPackage.Bpkg.ImportPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 				githubComparisons[repo.rootPath] = comparison
@@ -286,14 +292,12 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 			if comparison.err != nil {
 				fmt.Println("couldn't compare:", comparison.err)
-			} else {
-				updatesAvailable++
-				WriteRepoHtml(w, repo, comparison)
 			}
 		} else if strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/") {
 			// TODO: gopkg.in needs to be supported in a better, less duplicated, and ensured to be correct way.
 			//       In fact, it's a good test point for support for generic change-description interface (i.e., for github repos, code.google.com, etc.).
-			comparison, ok := githubComparisons[repo.rootPath]
+			var ok bool
+			comparison, ok = githubComparisons[repo.rootPath]
 			if !ok {
 				afterPrefix := goPackage.Bpkg.ImportPath[len("gopkg.in/"):]
 				importPathElements0 := strings.Split(afterPrefix, ".")
@@ -316,12 +320,10 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 			if comparison.err != nil {
 				fmt.Println("couldn't compare:", comparison.err)
-			} else {
-				updatesAvailable++
-				WriteRepoHtml(w, repo, comparison)
 			}
 		} else if strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/") {
-			comparison, ok := githubComparisons[repo.rootPath]
+			var ok bool
+			comparison, ok = githubComparisons[repo.rootPath]
 			if !ok {
 				afterPrefix := goPackage.Dir.Repo.VcsLocal.Remote[len("https://"):]
 				importPath := strings.TrimSuffix(afterPrefix, ".git")
@@ -332,14 +334,11 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 			if comparison.err != nil {
 				fmt.Println("couldn't compare:", comparison.err)
-			} else {
-				updatesAvailable++
-				WriteRepoHtml(w, repo, comparison)
 			}
-		} else {
-			updatesAvailable++
-			WriteRepoHtml(w, repo, nil)
 		}
+
+		updatesAvailable++
+		WriteRepoHtml(w, repo, comparison)
 
 		flusher.Flush()
 
