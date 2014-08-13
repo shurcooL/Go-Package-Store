@@ -87,7 +87,7 @@ func WriteRepoHtml(w http.ResponseWriter, repo Repo, comparison *GithubCompariso
 	data := RepoCc{
 		Repo: repo,
 	}
-	if comparison.err == nil {
+	if comparison != nil && comparison.err == nil {
 		data.Comparison = comparison
 	}
 
