@@ -13,10 +13,9 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/shurcooL/go/gists/gist5286084"
-	. "github.com/shurcooL/go/gists/gist7480523"
-	. "github.com/shurcooL/go/gists/gist7651991"
-	. "github.com/shurcooL/go/gists/gist7802150"
+	"github.com/shurcooL/go/gists/gist7480523"
+	"github.com/shurcooL/go/gists/gist7651991"
+	"github.com/shurcooL/go/gists/gist7802150"
 
 	//. "gist.github.com/7519227.git"
 	"github.com/google/go-github/github"
@@ -51,7 +50,7 @@ type GithubComparison struct {
 	cc  *github.CommitsComparison
 	err error
 
-	DepNode2
+	gist7802150.DepNode2
 }
 
 func (this *GithubComparison) Update() {
@@ -79,7 +78,7 @@ var githubComparisons = make(map[string]*GithubComparison)
 
 // ---
 
-func shouldPresentUpdate(goPackage *GoPackage) bool {
+func shouldPresentUpdate(goPackage *gist7480523.GoPackage) bool {
 	return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
 }
 
@@ -117,12 +116,12 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("out:", string(out))
 		goon.DumpExpr(err)
 
-		MakeUpdated(goPackages)
+		gist7802150.MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.List() {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
-				if GetRepoImportPathPattern(rootPath, goPackage.Bpkg.SrcRoot) == importPathPattern {
+				if gist7480523.GetRepoImportPathPattern(rootPath, goPackage.Bpkg.SrcRoot) == importPathPattern {
 					fmt.Println("ExternallyUpdated", importPathPattern)
-					ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(DepNode2ManualI))
+					gist7802150.ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(gist7802150.DepNode2ManualI))
 					break
 				}
 			}
@@ -132,7 +131,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getRootPath(goPackage *GoPackage) (rootPath string) {
+func getRootPath(goPackage *gist7480523.GoPackage) (rootPath string) {
 	if goPackage.Standard {
 		return ""
 	}
@@ -147,19 +146,19 @@ func getRootPath(goPackage *GoPackage) (rootPath string) {
 
 type Repo struct {
 	rootPath   string
-	goPackages []*GoPackage
+	goPackages []*gist7480523.GoPackage
 }
 
-func NewRepo(rootPath string, goPackages []*GoPackage) Repo {
+func NewRepo(rootPath string, goPackages []*gist7480523.GoPackage) Repo {
 	return Repo{rootPath, goPackages}
 }
 
 func (repo Repo) ImportPathPattern() string {
-	return GetRepoImportPathPattern(repo.rootPath, repo.goPackages[0].Bpkg.SrcRoot)
+	return gist7480523.GetRepoImportPathPattern(repo.rootPath, repo.goPackages[0].Bpkg.SrcRoot)
 }
 
-func (repo Repo) RootPath() string         { return repo.rootPath }
-func (repo Repo) GoPackages() []*GoPackage { return repo.goPackages }
+func (repo Repo) RootPath() string                     { return repo.rootPath }
+func (repo Repo) GoPackages() []*gist7480523.GoPackage { return repo.goPackages }
 
 func (repo Repo) ImportPaths() string {
 	var importPaths []string
@@ -209,12 +208,12 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
 
-	// rootPath -> []*GoPackage
-	var goPackagesInRepo = make(map[string][]*GoPackage)
+	// rootPath -> []*gist7480523.GoPackage
+	var goPackagesInRepo = make(map[string][]*gist7480523.GoPackage)
 
 	// TODO: Use http.CloseNotifier, e.g. https://sourcegraph.com/github.com/donovanhide/eventsource/tree/master/server.go#L70
 
-	MakeUpdated(goPackages)
+	gist7802150.MakeUpdated(goPackages)
 	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
 	if false {
 		for _, goPackage := range goPackages.List() {
@@ -231,13 +230,13 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 			close(inChan)
 		}()
 		reduceFunc := func(in interface{}) interface{} {
-			goPackage := in.(*GoPackage)
+			goPackage := in.(*gist7480523.GoPackage)
 			if rootPath := getRootPath(goPackage); rootPath != "" {
-				return Repo{rootPath, []*GoPackage{goPackage}}
+				return Repo{rootPath, []*gist7480523.GoPackage{goPackage}}
 			}
 			return nil
 		}
-		outChan := GoReduce(inChan, 64, reduceFunc)
+		outChan := gist7651991.GoReduce(inChan, 64, reduceFunc)
 		for out := range outChan {
 			repo := out.(Repo)
 			goPackagesInRepo[repo.rootPath] = append(goPackagesInRepo[repo.rootPath], repo.goPackages[0])
@@ -270,7 +269,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		close(inChan)
 	}()
-	outChan := GoReduce(inChan, 8, reduceFunc)
+	outChan := gist7651991.GoReduce(inChan, 8, reduceFunc)
 
 	for out := range outChan {
 		started2 := time.Now()
@@ -288,7 +287,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 				comparison = NewGithubComparison(goPackage.Bpkg.ImportPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 				githubComparisons[repo.rootPath] = comparison
 			}
-			MakeUpdated(comparison)
+			gist7802150.MakeUpdated(comparison)
 
 			if comparison.err != nil {
 				fmt.Println("couldn't compare:", comparison.err)
@@ -316,7 +315,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 				comparison = NewGithubComparison(importPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 				githubComparisons[repo.rootPath] = comparison
 			}
-			MakeUpdated(comparison)
+			gist7802150.MakeUpdated(comparison)
 
 			if comparison.err != nil {
 				fmt.Println("couldn't compare:", comparison.err)
@@ -330,7 +329,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 				comparison = NewGithubComparison(importPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 				githubComparisons[repo.rootPath] = comparison
 			}
-			MakeUpdated(comparison)
+			gist7802150.MakeUpdated(comparison)
 
 			if comparison.err != nil {
 				fmt.Println("couldn't compare:", comparison.err)
@@ -421,5 +420,7 @@ func main() {
 	u4.Open("http://localhost:7043/index")
 
 	err = http.ListenAndServe("localhost:7043", nil)
-	CheckError(err)
+	if err != nil {
+		panic(err)
+	}
 }
