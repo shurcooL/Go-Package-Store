@@ -1,8 +1,20 @@
 body {
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-size: 14px;
+	line-height: 1.428571429;
+	margin: 12px;
+	margin-top: 20px;
+	margin-bottom: 80px;
 }
-a.disabled {
+a {
+	color: #4183c4;
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+
+.disabled {
 	pointer-events: none;
 	cursor: default;
 	color: gray;
@@ -11,4 +23,23 @@ a.disabled {
 span.smaller {
 	font-size: 12px;
 	color: gray;
+}
+
+div.list-entry {
+	border: 1px solid #cccccc;
+	border-radius: 4px;
+	margin-bottom: 12px;
+}
+div.list-entry-header {
+	background-color: #eeeeee;
+	padding: 10px;
+	border-radius: 4px 4px 0 0;
+}
+div.list-entry-body {
+	padding: 10px;
+}
+.changes-list {
+	margin-top: 0px;
+	margin-bottom: 0px;
+	padding-left: 64px;
 }

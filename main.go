@@ -1,21 +1,21 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"html"
+	"html/template"
 	"io"
+	"log"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 	"time"
 
-	. "gist.github.com/5286084.git"
-	. "gist.github.com/7480523.git"
-	. "gist.github.com/7651991.git"
-	. "gist.github.com/7802150.git"
+	"github.com/shurcooL/go/gists/gist7480523"
+	"github.com/shurcooL/go/gists/gist7651991"
+	"github.com/shurcooL/go/gists/gist7802150"
 
 	//. "gist.github.com/7519227.git"
 	"github.com/google/go-github/github"
@@ -29,7 +29,7 @@ import (
 var gh = github.NewClient(nil)
 
 func CommonHat(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "text/html; charset=us-ascii")
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	io.WriteString(w, `<html><head><title>Go Package Store</title>
@@ -37,7 +37,7 @@ func CommonHat(w http.ResponseWriter) {
 <script src="assets/script.js" type="text/javascript"></script>
 </head><body>`)
 }
-func CommonTail(w http.ResponseWriter) {
+func CommonTail(w io.Writer) {
 	io.WriteString(w, "</body></html>")
 }
 
@@ -45,11 +45,12 @@ func CommonTail(w http.ResponseWriter) {
 
 type GithubComparison struct {
 	importPath string
+	owner      string
 
 	cc  *github.CommitsComparison
 	err error
 
-	DepNode2
+	gist7802150.DepNode2
 }
 
 func (this *GithubComparison) Update() {
@@ -58,6 +59,9 @@ func (this *GithubComparison) Update() {
 
 	importPathElements := strings.Split(this.importPath, "/")
 	this.cc, _, this.err = gh.Repositories.CompareCommits(importPathElements[1], importPathElements[2], localRev, remoteRev)
+
+	// TODO: Do this better (in the right place, etc.).
+	this.owner = importPathElements[1]
 
 	//goon.DumpExpr("GithubComparison.Update()", this.importPath, localRev, remoteRev)
 	//fmt.Println(this.err)
@@ -74,70 +78,34 @@ var githubComparisons = make(map[string]*GithubComparison)
 
 // ---
 
-func shouldPresentUpdate(goPackage *GoPackage) bool {
-	return status.PorcelainPresenter(goPackage)[:3] == "  +" // Assumes status.PorcelainPresenter output is always at least 3 bytes.
+func shouldPresentUpdate(goPackage *gist7480523.GoPackage) bool {
+	return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
 }
 
-func writeRepoCommonHat(w io.Writer, repo Repo) {
-	goPackages := repo.goPackages
-
-	var importPaths []string
-	for _, goPackage := range goPackages {
-		importPaths = append(importPaths, goPackage.Bpkg.ImportPath)
+func WriteRepoHtml(w http.ResponseWriter, repo Repo, comparison *GithubComparison) {
+	data := RepoCc{
+		Repo: repo,
+	}
+	if comparison != nil && comparison.err == nil {
+		data.Comparison = comparison
 	}
 
-	fmt.Fprintf(w, `<h3><span title="%s">%s <span class="smaller">(%d packages)</span></span></h3>`, strings.Join(importPaths, "\n"), repo.ImportPathPattern(), len(goPackages))
-}
-
-// TODO: Should really use html/template...
-func GenerateGithubHtml(w io.Writer, repo Repo, cc *github.CommitsComparison) {
-	//goon.DumpExpr(goPackage, cc)
-
-	writeRepoCommonHat(w, repo)
-
-	if cc.BaseCommit != nil && cc.BaseCommit.Author != nil && cc.BaseCommit.Author.AvatarURL != nil {
-		// TODO: Factor out styles into css
-		fmt.Fprintf(w, `<img style="float: left; border-radius: 4px;" src="%s" width="36" height="36">`, *cc.BaseCommit.Author.AvatarURL)
+	err := t.Execute(w, data)
+	if err != nil {
+		log.Println("t.Execute:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
-	// TODO: Factor out styles into css
-	fmt.Fprint(w, `<div style="float: right;">`)
-	fmt.Fprintf(w, `<a href="javascript:void(0)" onclick="update_go_package(this);" id="%s" title="%s">Update</a>`, repo.ImportPathPattern(), fmt.Sprintf("go get -u -d %s", repo.ImportPathPattern()))
-	fmt.Fprint(w, `</div>`)
-
-	// TODO: Factor out styles into css
-	// HACK: Manually aligned to the left of the image, this should be done via proper html layout
-	fmt.Fprint(w, `<div style="padding-left: 36px;">`)
-	fmt.Fprint(w, `<ul>`)
-
-	for index := range cc.Commits {
-		repositoryCommit := cc.Commits[len(cc.Commits)-1-index]
-		if repositoryCommit.Commit != nil && repositoryCommit.Commit.Message != nil {
-			fmt.Fprint(w, "<li>")
-			fmt.Fprint(w, html.EscapeString(*repositoryCommit.Commit.Message))
-			fmt.Fprint(w, "</li>")
-		}
-	}
-
-	fmt.Fprint(w, `</ul>`)
-	fmt.Fprint(w, `</div>`)
 }
 
-func GenerateGenericHtml(w io.Writer, repo Repo) {
-	writeRepoCommonHat(w, repo)
-
-	// TODO: Factor out styles into css
-	fmt.Fprint(w, `<div style="float: right;">`)
-	fmt.Fprintf(w, `<a href="javascript:void(0)" onclick="update_go_package(this);" id="%s" title="%s">Update</a>`, repo.ImportPathPattern(), fmt.Sprintf("go get -u -d %s", repo.ImportPathPattern()))
-	fmt.Fprint(w, `</div>`)
-
-	fmt.Fprintf(w, `<div>unknown changes</div>`)
-}
-
-var goPackages = &exp14.GoPackages{SkipGoroot: true}
+var goPackages exp14.GoPackageList = &exp14.GoPackages{SkipGoroot: true}
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
+		if *godepsFlag != "" {
+			// TODO: Implement updating Godeps packages.
+			log.Fatalln("updating Godeps packages isn't supported yet")
+		}
+
 		importPathPattern := r.PostFormValue("import_path_pattern")
 
 		fmt.Println("go", "get", "-u", "-d", importPathPattern)
@@ -145,14 +113,17 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		cmd := exec.Command("go", "get", "-u", "-d", importPathPattern)
 
 		out, err := cmd.CombinedOutput()
-		goon.DumpExpr(out, err)
+		fmt.Println("out:", string(out))
+		goon.DumpExpr(err)
 
-		MakeUpdated(goPackages)
-		for _, goPackage := range goPackages.Entries {
-			if GetRepoImportPathPattern(goPackage.Dir.Repo.Vcs.RootPath(), goPackage.Bpkg.SrcRoot) == importPathPattern {
-				fmt.Println("ExternallyUpdated", importPathPattern)
-				ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(DepNode2ManualI))
-				break
+		gist7802150.MakeUpdated(goPackages)
+		for _, goPackage := range goPackages.List() {
+			if rootPath := getRootPath(goPackage); rootPath != "" {
+				if gist7480523.GetRepoImportPathPattern(rootPath, goPackage.Bpkg.SrcRoot) == importPathPattern {
+					fmt.Println("ExternallyUpdated", importPathPattern)
+					gist7802150.ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(gist7802150.DepNode2ManualI))
+					break
+				}
 			}
 		}
 
@@ -160,7 +131,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getRootPath(goPackage *GoPackage) (rootPath string) {
+func getRootPath(goPackage *gist7480523.GoPackage) (rootPath string) {
 	if goPackage.Standard {
 		return ""
 	}
@@ -175,20 +146,56 @@ func getRootPath(goPackage *GoPackage) (rootPath string) {
 
 type Repo struct {
 	rootPath   string
-	goPackages []*GoPackage
+	goPackages []*gist7480523.GoPackage
+}
+
+func NewRepo(rootPath string, goPackages []*gist7480523.GoPackage) Repo {
+	return Repo{rootPath, goPackages}
 }
 
 func (repo Repo) ImportPathPattern() string {
-	//title := GetRepoImportPathPattern(repo.Vcs.RootPath(), goPackage.Bpkg.SrcRoot)
-	return GetRepoImportPathPattern(repo.rootPath, repo.goPackages[0].Bpkg.SrcRoot)
+	return gist7480523.GetRepoImportPathPattern(repo.rootPath, repo.goPackages[0].Bpkg.SrcRoot)
+}
+
+func (repo Repo) RootPath() string                     { return repo.rootPath }
+func (repo Repo) GoPackages() []*gist7480523.GoPackage { return repo.goPackages }
+
+func (repo Repo) ImportPaths() string {
+	var importPaths []string
+	for _, goPackage := range repo.goPackages {
+		importPaths = append(importPaths, goPackage.Bpkg.ImportPath)
+	}
+	return strings.Join(importPaths, "\n")
+}
+
+func (repo Repo) WebLink() *template.URL {
+	goPackage := repo.goPackages[0]
+
+	// TODO: Factor these out into a nice interface...
+	switch {
+	case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
+		importPathElements := strings.Split(goPackage.Bpkg.ImportPath, "/")
+		url := template.URL("https://github.com/" + importPathElements[1] + "/" + importPathElements[2])
+		return &url
+	case strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/"):
+		// TODO
+		return nil
+	case strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/"):
+		url := template.URL(strings.TrimSuffix(goPackage.Dir.Repo.VcsLocal.Remote, ".git"))
+		return &url
+	default:
+		return nil
+	}
 }
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
-	started := time.Now()
+	// TODO: When "finished", should not reload templates from disk on each request... Unless using a dev flag?
+	if err := loadTemplates(); err != nil {
+		fmt.Fprintln(w, "loadTemplates:", err)
+		return
+	}
 
-	b, err := httputil.DumpRequest(r, false)
-	CheckError(err)
-	fmt.Println(string(b))
+	started := time.Now()
 
 	CommonHat(w)
 	defer CommonTail(w)
@@ -201,15 +208,15 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
 
-	// rootPath -> []*GoPackage
-	var goPackagesInRepo = make(map[string][]*GoPackage)
+	// rootPath -> []*gist7480523.GoPackage
+	var goPackagesInRepo = make(map[string][]*gist7480523.GoPackage)
 
 	// TODO: Use http.CloseNotifier, e.g. https://sourcegraph.com/github.com/donovanhide/eventsource/tree/master/server.go#L70
 
-	MakeUpdated(goPackages)
+	gist7802150.MakeUpdated(goPackages)
 	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
 	if false {
-		for _, goPackage := range goPackages.Entries {
+		for _, goPackage := range goPackages.List() {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
 				goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
 			}
@@ -217,25 +224,26 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		inChan := make(chan interface{})
 		go func() { // This needs to happen in the background because sending input will be blocked on reading output.
-			for _, goPackage := range goPackages.Entries {
+			for _, goPackage := range goPackages.List() {
 				inChan <- goPackage
 			}
 			close(inChan)
 		}()
 		reduceFunc := func(in interface{}) interface{} {
-			goPackage := in.(*GoPackage)
+			goPackage := in.(*gist7480523.GoPackage)
 			if rootPath := getRootPath(goPackage); rootPath != "" {
-				return Repo{rootPath, []*GoPackage{goPackage}}
+				return Repo{rootPath, []*gist7480523.GoPackage{goPackage}}
 			}
 			return nil
 		}
-		outChan := GoReduce(inChan, 64, reduceFunc)
+		outChan := gist7651991.GoReduce(inChan, 64, reduceFunc)
 		for out := range outChan {
 			repo := out.(Repo)
 			goPackagesInRepo[repo.rootPath] = append(goPackagesInRepo[repo.rootPath], repo.goPackages[0])
 		}
 	}
 
+	goon.DumpExpr(len(goPackages.List()))
 	goon.DumpExpr(len(goPackagesInRepo))
 
 	fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
@@ -261,7 +269,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		close(inChan)
 	}()
-	outChan := GoReduce(inChan, 8, reduceFunc)
+	outChan := gist7651991.GoReduce(inChan, 8, reduceFunc)
 
 	for out := range outChan {
 		started2 := time.Now()
@@ -270,25 +278,66 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 		goPackage := repo.goPackages[0]
 
+		// TODO: Factor these out into a nice interface...
+		var comparison *GithubComparison
 		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/") {
-			// updateGithubHtml
-			comparison, ok := githubComparisons[repo.rootPath]
+			var ok bool
+			comparison, ok = githubComparisons[repo.rootPath]
 			if !ok {
 				comparison = NewGithubComparison(goPackage.Bpkg.ImportPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 				githubComparisons[repo.rootPath] = comparison
 			}
-			MakeUpdated(comparison)
+			gist7802150.MakeUpdated(comparison)
 
 			if comparison.err != nil {
 				fmt.Println("couldn't compare:", comparison.err)
-			} else {
-				updatesAvailable++
-				GenerateGithubHtml(w, repo, comparison.cc)
 			}
-		} else {
-			updatesAvailable++
-			GenerateGenericHtml(w, repo)
+		} else if strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/") {
+			// TODO: gopkg.in needs to be supported in a better, less duplicated, and ensured to be correct way.
+			//       In fact, it's a good test point for support for generic change-description interface (i.e., for github repos, code.google.com, etc.).
+			var ok bool
+			comparison, ok = githubComparisons[repo.rootPath]
+			if !ok {
+				afterPrefix := goPackage.Bpkg.ImportPath[len("gopkg.in/"):]
+				importPathElements0 := strings.Split(afterPrefix, ".")
+				if len(importPathElements0) != 2 {
+					log.Panicln("len(importPathElements0) != 2", importPathElements0)
+				}
+				importPathElements1 := strings.Split(importPathElements0[0], "/")
+				importPath := "github.com/"
+				if len(importPathElements1) == 1 { // gopkg.in/pkg.v3 -> github.com/go-pkg/pkg
+					importPath += "go-" + importPathElements1[0] + "/" + importPathElements1[0]
+				} else if len(importPathElements1) == 2 { // gopkg.in/user/pkg.v3 -> github.com/user/pkg
+					importPath += importPathElements1[0] + "/" + importPathElements1[1]
+				} else {
+					log.Panicln("len(importPathElements1) != 1 nor 2", importPathElements1)
+				}
+				comparison = NewGithubComparison(importPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
+				githubComparisons[repo.rootPath] = comparison
+			}
+			gist7802150.MakeUpdated(comparison)
+
+			if comparison.err != nil {
+				fmt.Println("couldn't compare:", comparison.err)
+			}
+		} else if strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/") {
+			var ok bool
+			comparison, ok = githubComparisons[repo.rootPath]
+			if !ok {
+				afterPrefix := goPackage.Dir.Repo.VcsLocal.Remote[len("https://"):]
+				importPath := strings.TrimSuffix(afterPrefix, ".git")
+				comparison = NewGithubComparison(importPath, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
+				githubComparisons[repo.rootPath] = comparison
+			}
+			gist7802150.MakeUpdated(comparison)
+
+			if comparison.err != nil {
+				fmt.Println("couldn't compare:", comparison.err)
+			}
 		}
+
+		updatesAvailable++
+		WriteRepoHtml(w, repo, comparison)
 
 		flusher.Flush()
 
@@ -302,8 +351,63 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)
 }
 
+// ---
+
+type RepoCc struct {
+	Repo       Repo
+	Comparison *GithubComparison
+}
+
+func (this RepoCc) AvatarUrl() template.URL {
+	// Use the repo owner avatar image.
+	if this.Comparison != nil {
+		if user, _, err := gh.Users.Get(this.Comparison.owner); err == nil && user.AvatarURL != nil {
+			return template.URL(*user.AvatarURL)
+		}
+	}
+	return "https://github.com/images/gravatars/gravatar-user-420.png"
+}
+
+// List of changes, starting with the most recent.
+// Precondition is that this.Comparison != nil.
+func (this RepoCc) Changes() <-chan github.RepositoryCommit {
+	out := make(chan github.RepositoryCommit)
+	go func() {
+		for index := range this.Comparison.cc.Commits {
+			out <- this.Comparison.cc.Commits[len(this.Comparison.cc.Commits)-1-index]
+		}
+		close(out)
+	}()
+	return out
+}
+
+// ---
+
+var t *template.Template
+
+func loadTemplates() error {
+	const filename = "./assets/repo.tmpl"
+
+	var err error
+	t, err = template.ParseFiles(filename)
+	return err
+}
+
+var godepsFlag = flag.String("godeps", "", "Path to Godeps file to use.")
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	err := loadTemplates()
+	if err != nil {
+		log.Fatalln("loadTemplates:", err)
+	}
+
+	flag.Parse()
+	if *godepsFlag != "" {
+		fmt.Println("Using Godeps file:", *godepsFlag)
+		goPackages = NewGoPackagesFromGodeps(*godepsFlag)
+	}
 
 	goon.DumpExpr(os.Getwd())
 	goon.DumpExpr(os.Getenv("PATH"), os.Getenv("GOPATH"))
@@ -315,6 +419,8 @@ func main() {
 
 	u4.Open("http://localhost:7043/index")
 
-	err := http.ListenAndServe("localhost:7043", nil)
-	CheckError(err)
+	err = http.ListenAndServe("localhost:7043", nil)
+	if err != nil {
+		panic(err)
+	}
 }
