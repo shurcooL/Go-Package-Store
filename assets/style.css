@@ -26,14 +26,15 @@ span.smaller {
 }
 
 div.list-entry {
-	border: 1px solid #cccccc;
+	border: 1px solid #ddd;
 	border-radius: 4px;
 	margin-bottom: 12px;
 }
 div.list-entry-header {
-	background-color: #eeeeee;
+	background-color: #f8f8f8;
 	padding: 10px;
 	border-radius: 4px 4px 0 0;
+	border-bottom: 1px solid #eee;
 }
 div.list-entry-body {
 	padding: 10px;
