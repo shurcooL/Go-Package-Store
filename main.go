@@ -43,7 +43,7 @@ func shouldPresentUpdate(goPackage *gist7480523.GoPackage) bool {
 	return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
 }
 
-func WriteRepoHtml(w http.ResponseWriter, repoPresenter presenter.Change) {
+func WriteRepoHtml(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 	err := t.Execute(w, repoPresenter)
 	if err != nil {
 		log.Println("t.Execute:", err)

@@ -10,7 +10,7 @@ import (
 	"github.com/shurcooL/go/gists/gist7802150"
 )
 
-type changeProvider func(repo *gist7480523.GoPackageRepo) Change
+type changeProvider func(repo *gist7480523.GoPackageRepo) Presenter
 
 var changeProviders []changeProvider
 
@@ -18,18 +18,7 @@ func addProvider(p changeProvider) {
 	changeProviders = append(changeProviders, p)
 }
 
-type Change interface {
-	Repo() *gist7480523.GoPackageRepo
-
-	WebLink() *template.URL
-	AvatarUrl() template.URL
-	Changes() <-chan github.RepositoryCommit
-
-	Comparison() *GithubComparison
-}
-
-func New(repo *gist7480523.GoPackageRepo) Change {
-	// TODO: Try to figure out vcs provider with a more constant-time operation.
+func New(repo *gist7480523.GoPackageRepo) Presenter {
 	// TODO: Potentially check in parallel.
 	for _, provider := range changeProviders {
 		if presenter := provider(repo); presenter != nil {
@@ -40,114 +29,99 @@ func New(repo *gist7480523.GoPackageRepo) Change {
 	return genericPresenter{repo: repo}
 }
 
-/*func init() {
-	// GitHub
-	addProvider(func(repo *gist7480523.GoPackageRepo) Change {
-		goPackage := repo.GoPackages()[0]
-		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/") {
-			return NewGitHubChangePresenter(goPackage)
+func init() {
+	// GitHub.
+	addProvider(func(repo *gist7480523.GoPackageRepo) Presenter {
+		switch goPackage := repo.GoPackages()[0]; {
+		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
+			importPathElements := strings.Split(goPackage.Bpkg.ImportPath, "/")
+			return NewGitHubPresenter(repo, importPathElements[1], importPathElements[2])
+		// gopkg.in package.
+		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/"):
+			gitHubOwner, gitHubRepo := gopkgInImportPathToGitHub(goPackage.Bpkg.ImportPath)
+			return NewGitHubPresenter(repo, gitHubOwner, gitHubRepo)
+		// Underlying GitHub remote.
+		case strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/"):
+			importPathElements := strings.Split(strings.TrimSuffix(goPackage.Dir.Repo.VcsLocal.Remote[len("https://"):], ".git"), "/")
+			return NewGitHubPresenter(repo, importPathElements[1], importPathElements[2])
 		}
 		return nil
 	})
 
-	// gopkg.in
-	addProvider(func(repo *gist7480523.GoPackageRepo) Change {
+	// code.google.com.
+	addProvider(func(repo *gist7480523.GoPackageRepo) Presenter {
 		goPackage := repo.GoPackages()[0]
-		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/") {
-			return NewGopkgInChangePresenter(goPackage)
+		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "code.google.com/") {
+			// TODO: Add presenter support for code.google.com?
+			return nil
 		}
 		return nil
 	})
-
-	// TODO: code.google.com?
-}*/
+}
 
 // =====
 
-type genericPresenter struct {
-	repo *gist7480523.GoPackageRepo
+type gitHubPresenter struct {
+	repo        *gist7480523.GoPackageRepo
+	gitHubOwner string
+	gitHubRepo  string
+
+	comparison *GithubComparison
 }
 
-func (this genericPresenter) Repo() *gist7480523.GoPackageRepo {
-	return this.repo
-}
-func (_ genericPresenter) WebLink() *template.URL { return nil }
-func (_ genericPresenter) AvatarUrl() template.URL {
-	return "https://github.com/images/gravatars/gravatar-user-420.png"
-}
-func (_ genericPresenter) Changes() <-chan github.RepositoryCommit { return nil }
-func (_ genericPresenter) Comparison() *GithubComparison           { return nil }
+func NewGitHubPresenter(repo *gist7480523.GoPackageRepo, gitHubOwner, gitHubRepo string) Presenter {
+	goPackage := repo.GoPackages()[0]
+	comparison := NewGithubComparison(gitHubOwner, gitHubRepo, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
+	gist7802150.MakeUpdated(comparison)
 
-// =====
-
-type gitHubChangePresenter struct {
-	repo *gist7480523.GoPackageRepo
-}
-
-func NewGitHubChangePresenter(repo *gist7480523.GoPackageRepo) Change {
-	p := &gitHubChangePresenter{repo: repo}
+	p := &gitHubPresenter{repo: repo, gitHubOwner: gitHubOwner, gitHubRepo: gitHubRepo, comparison: comparison}
 	return p
 }
 
-func (this gitHubChangePresenter) Repo() *gist7480523.GoPackageRepo {
+func (this gitHubPresenter) Repo() *gist7480523.GoPackageRepo {
 	return this.repo
 }
 
-func (this gitHubChangePresenter) WebLink() *template.URL {
-	goPackage := this.repo.GoPackages()[0]
-
-	// TODO: Factor these out into a nice interface...
-	switch {
-	case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
-		importPathElements := strings.Split(goPackage.Bpkg.ImportPath, "/")
-		url := template.URL("https://github.com/" + importPathElements[1] + "/" + importPathElements[2])
-		return &url
-	case strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/"):
-		// TODO
-		return nil
-	case strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/"):
-		url := template.URL(strings.TrimSuffix(goPackage.Dir.Repo.VcsLocal.Remote, ".git"))
-		return &url
-	default:
-		return nil
-	}
+func (this gitHubPresenter) WebLink() *template.URL {
+	url := template.URL("https://github.com/" + this.gitHubOwner + "/" + this.gitHubRepo)
+	return &url
 }
 
-func (this gitHubChangePresenter) AvatarUrl() template.URL {
+func (this gitHubPresenter) AvatarUrl() template.URL {
 	// Use the repo owner avatar image.
-	if this.Comparison() != nil {
-		if user, _, err := gh.Users.Get(this.Comparison().owner); err == nil && user.AvatarURL != nil {
-			return template.URL(*user.AvatarURL)
-		}
+	if user, _, err := gh.Users.Get(this.gitHubOwner); err == nil && user.AvatarURL != nil {
+		return template.URL(*user.AvatarURL)
 	}
 	return "https://github.com/images/gravatars/gravatar-user-420.png"
 }
 
-func (this gitHubChangePresenter) Comparison() *GithubComparison {
-	// TODO
-	return nil
-}
-
-// List of changes, starting with the most recent.
-// Precondition is that this.Comparison != nil.
-func (this gitHubChangePresenter) Changes() <-chan github.RepositoryCommit {
-	out := make(chan github.RepositoryCommit)
+func (this gitHubPresenter) Changes() <-chan Change {
+	if this.comparison.err != nil {
+		return nil
+	}
+	out := make(chan Change)
 	go func() {
-		for index := range this.Comparison().cc.Commits {
-			out <- this.Comparison().cc.Commits[len(this.Comparison().cc.Commits)-1-index]
+		for index := range this.comparison.cc.Commits {
+			out <- changeMessage(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].Commit.Message)
 		}
 		close(out)
 	}()
 	return out
 }
 
-// =====
+// ---
 
 var gh = github.NewClient(nil)
 
+func NewGithubComparison(gitHubOwner, gitHubRepo string, local *exp13.VcsLocal, remote *exp13.VcsRemote) *GithubComparison {
+	this := &GithubComparison{gitHubOwner: gitHubOwner, gitHubRepo: gitHubRepo}
+	this.AddSources(local, remote)
+	return this
+}
+
 type GithubComparison struct {
-	importPath string
-	owner      string
+	gitHubOwner string
+	gitHubRepo  string
 
 	cc  *github.CommitsComparison
 	err error
@@ -159,31 +133,5 @@ func (this *GithubComparison) Update() {
 	localRev := this.GetSources()[0].(*exp13.VcsLocal).LocalRev
 	remoteRev := this.GetSources()[1].(*exp13.VcsRemote).RemoteRev
 
-	importPathElements := strings.Split(this.importPath, "/")
-	this.cc, _, this.err = gh.Repositories.CompareCommits(importPathElements[1], importPathElements[2], localRev, remoteRev)
-
-	// TODO: Do this better (in the right place, etc.).
-	this.owner = importPathElements[1]
-
-	//goon.DumpExpr("GithubComparison.Update()", this.importPath, localRev, remoteRev)
-	//fmt.Println(this.err)
-}
-
-func NewGithubComparison(importPath string, local *exp13.VcsLocal, remote *exp13.VcsRemote) *GithubComparison {
-	this := &GithubComparison{importPath: importPath}
-	this.AddSources(local, remote)
-	return this
-}
-
-// rootPath -> *VcsState
-var githubComparisons = make(map[string]*GithubComparison)
-
-// =====
-
-type gopkgInChangePresenter struct {
-	Change
-}
-
-func NewGopkgInChangePresenter(repo *gist7480523.GoPackageRepo) Change {
-	return NewGitHubChangePresenter(repo)
+	this.cc, _, this.err = gh.Repositories.CompareCommits(this.gitHubOwner, this.gitHubRepo, localRev, remoteRev)
 }

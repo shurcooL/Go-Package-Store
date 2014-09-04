@@ -31,12 +31,12 @@
 		<img style="float: left; border-radius: 4px;" src="{{.AvatarUrl}}" width="36" height="36">
 
 		<div>
-			{{if .Comparison}}
+			{{if .Changes}}
 				<ul class="changes-list">
-					{{range .Changes}}<li>{{.Commit.Message}}</li>
+					{{range .Changes}}<li>{{.Message}}</li>
 					{{end}}
 
-					{{/*{{range $i, $_ := .Cc.Commits}}<li>{{(index $.Cc.Commits (revIndex $i (len $.Cc.Commits))).Commit.Message}}</li>
+					{{/*{{range $i, $_ := .Cc.Commits}}<li>{{(index $.Cc.Commits (revIndex $i (len $.Cc.Commits))).Message}}</li>
 					{{end}}*/}}
 				</ul>
 			{{else}}
