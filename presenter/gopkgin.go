@@ -5,14 +5,6 @@ import (
 	"strings"
 )
 
-/*type gopkgInChangePresenter struct {
-	Presenter
-}
-
-func NewGopkgInChangePresenter(repo *gist7480523.GoPackageRepo) Presenter {
-	return NewGitHubChangePresenter(repo)
-}*/
-
 func gopkgInImportPathToGitHub(gopkgInImportPath string) (gitHubOwner, gitHubRepo string) {
 	afterPrefix := gopkgInImportPath[len("gopkg.in/"):]
 	importPathElements0 := strings.Split(afterPrefix, ".")

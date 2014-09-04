@@ -82,15 +82,15 @@ func (this gitHubPresenter) Repo() *gist7480523.GoPackageRepo {
 	return this.repo
 }
 
-func (this gitHubPresenter) WebLink() *template.URL {
+func (this gitHubPresenter) HomePage() *template.URL {
 	url := template.URL("https://github.com/" + this.gitHubOwner + "/" + this.gitHubRepo)
 	return &url
 }
 
-func (this gitHubPresenter) AvatarUrl() template.URL {
+func (this gitHubPresenter) Image() template.URL {
 	// Use the repo owner avatar image.
-	if user, _, err := gh.Users.Get(this.gitHubOwner); err == nil && user.AvatarURL != nil {
-		return template.URL(*user.AvatarURL)
+	if user, _, err := gh.Users.Get(this.gitHubOwner); err == nil && user.Image != nil {
+		return template.URL(*user.Image)
 	}
 	return "https://github.com/images/gravatars/gravatar-user-420.png"
 }

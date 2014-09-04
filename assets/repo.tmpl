@@ -3,16 +3,16 @@
 	{{/* TODO: Make this simpler. */}}
 	{{if eq (len .Repo.GoPackages) 1}}
 		<span title="{{.Repo.ImportPaths}}">
-			{{if .WebLink}}
-				<a href="{{.WebLink}}" target="_blank"><strong>{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</strong></a>
+			{{if .HomePage}}
+				<a href="{{.HomePage}}" target="_blank"><strong>{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</strong></a>
 			{{else}}
 				{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}
 			{{end}}
 		</span></span>
 	{{else}}
 		<span title="{{.Repo.ImportPaths}}">
-			{{if .WebLink}}
-				<a href="{{.WebLink}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
+			{{if .HomePage}}
+				<a href="{{.HomePage}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
 			{{else}}
 				{{.Repo.ImportPathPattern}}
 			{{end}}
@@ -28,7 +28,7 @@
 		</div>
 	</div>
 	<div class="list-entry-body">
-		<img style="float: left; border-radius: 4px;" src="{{.AvatarUrl}}" width="36" height="36">
+		<img style="float: left; border-radius: 4px;" src="{{.Image}}" width="36" height="36">
 
 		<div>
 			{{if .Changes}}

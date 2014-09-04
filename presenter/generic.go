@@ -13,8 +13,8 @@ type genericPresenter struct {
 func (this genericPresenter) Repo() *gist7480523.GoPackageRepo {
 	return this.repo
 }
-func (_ genericPresenter) WebLink() *template.URL { return nil }
-func (_ genericPresenter) AvatarUrl() template.URL {
+func (_ genericPresenter) HomePage() *template.URL { return nil }
+func (_ genericPresenter) Image() template.URL {
 	return "https://github.com/images/gravatars/gravatar-user-420.png"
 }
 func (_ genericPresenter) Changes() <-chan Change { return nil }
