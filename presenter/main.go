@@ -89,8 +89,8 @@ func (this gitHubPresenter) HomePage() *template.URL {
 
 func (this gitHubPresenter) Image() template.URL {
 	// Use the repo owner avatar image.
-	if user, _, err := gh.Users.Get(this.gitHubOwner); err == nil && user.Image != nil {
-		return template.URL(*user.Image)
+	if user, _, err := gh.Users.Get(this.gitHubOwner); err == nil && user.AvatarURL != nil {
+		return template.URL(*user.AvatarURL)
 	}
 	return "https://github.com/images/gravatars/gravatar-user-420.png"
 }
