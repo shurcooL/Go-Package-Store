@@ -12,7 +12,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/shurcooL/Go-Package-Store/presenters"
+	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/go/gists/gist7480523"
 	"github.com/shurcooL/go/gists/gist7651991"
 	"github.com/shurcooL/go/gists/gist7802150"
