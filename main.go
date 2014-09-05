@@ -53,6 +53,37 @@ func WriteRepoHtml(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 
 var goPackages exp14.GoPackageList = &exp14.GoPackages{SkipGoroot: true}
 
+type updateRequest struct {
+	importPathPattern string
+	resultChan        chan error
+}
+
+var updateRequestChan = make(chan updateRequest)
+
+func updateWorker() {
+	for updateRequest := range updateRequestChan {
+		fmt.Println("go", "get", "-u", "-d", updateRequest.importPathPattern)
+
+		cmd := exec.Command("go", "get", "-u", "-d", updateRequest.importPathPattern)
+
+		out, err := cmd.CombinedOutput()
+		fmt.Println("out:", string(out))
+
+		gist7802150.MakeUpdated(goPackages)
+		for _, goPackage := range goPackages.List() {
+			if rootPath := getRootPath(goPackage); rootPath != "" {
+				if gist7480523.GetRepoImportPathPattern(rootPath, goPackage.Bpkg.SrcRoot) == updateRequest.importPathPattern {
+					fmt.Println("ExternallyUpdated", updateRequest.importPathPattern)
+					gist7802150.ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(gist7802150.DepNode2ManualI))
+					break
+				}
+			}
+		}
+
+		updateRequest.resultChan <- err
+	}
+}
+
 func updateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		if *godepsFlag != "" {
@@ -60,28 +91,15 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatalln("updating Godeps packages isn't supported yet")
 		}
 
-		importPathPattern := r.PostFormValue("import_path_pattern")
-
-		fmt.Println("go", "get", "-u", "-d", importPathPattern)
-
-		cmd := exec.Command("go", "get", "-u", "-d", importPathPattern)
-
-		out, err := cmd.CombinedOutput()
-		fmt.Println("out:", string(out))
-		goon.DumpExpr(err)
-
-		gist7802150.MakeUpdated(goPackages)
-		for _, goPackage := range goPackages.List() {
-			if rootPath := getRootPath(goPackage); rootPath != "" {
-				if gist7480523.GetRepoImportPathPattern(rootPath, goPackage.Bpkg.SrcRoot) == importPathPattern {
-					fmt.Println("ExternallyUpdated", importPathPattern)
-					gist7802150.ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(gist7802150.DepNode2ManualI))
-					break
-				}
-			}
+		updateRequest := updateRequest{
+			importPathPattern: r.PostFormValue("import_path_pattern"),
+			resultChan:        make(chan error),
 		}
+		updateRequestChan <- updateRequest
 
-		fmt.Println("done", importPathPattern)
+		err := <-updateRequest.resultChan
+		goon.DumpExpr(err)
+		fmt.Println("done", updateRequest.importPathPattern)
 	}
 }
 
@@ -208,7 +226,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 var t *template.Template
 
 func loadTemplates() error {
-	const filename = "./assets/repo.tmpl"
+	const filename = "./assets/repo.html.tmpl"
 
 	var err error
 	t, err = template.ParseFiles(filename)
@@ -238,6 +256,7 @@ func main() {
 	http.HandleFunc("/-/update", updateHandler)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.Handle("/assets/", http.FileServer(http.Dir(".")))
+	go updateWorker()
 
 	u4.Open("http://localhost:7043/index")
 
