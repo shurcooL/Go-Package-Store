@@ -11,11 +11,9 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"time"
 
 	"code.google.com/p/go.net/websocket"
 	"github.com/shurcooL/Go-Package-Store/presenter"
-	"github.com/shurcooL/go-goon"
 	"github.com/shurcooL/go/exp/14"
 	"github.com/shurcooL/go/gists/gist7480523"
 	"github.com/shurcooL/go/gists/gist7651991"
@@ -83,7 +81,7 @@ func updateWorker() {
 		for _, goPackage := range goPackages.List() {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
 				if gist7480523.GetRepoImportPathPattern(rootPath, goPackage.Bpkg.SrcRoot) == updateRequest.importPathPattern {
-					fmt.Println("ExternallyUpdated", updateRequest.importPathPattern)
+					//fmt.Println("ExternallyUpdated", updateRequest.importPathPattern)
 					gist7802150.ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(gist7802150.DepNode2ManualI))
 					break
 				}
@@ -109,6 +107,8 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 
 		err := <-updateRequest.resultChan
 		_ = err // Don't do anything about the error for now.
+
+		fmt.Println("Done.")
 	}
 }
 
@@ -132,7 +132,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	started := time.Now()
+	//started := time.Now()
 
 	CommonHat(w)
 	defer CommonTail(w)
@@ -150,13 +150,13 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		os.Exit(0)
 	}()
 
-	fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
+	//fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
 
 	// rootPath -> []*gist7480523.GoPackage
 	var goPackagesInRepo = make(map[string][]*gist7480523.GoPackage)
 
 	gist7802150.MakeUpdated(goPackages)
-	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
+	//fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
 	if false {
 		for _, goPackage := range goPackages.List() {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
@@ -185,10 +185,10 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	goon.DumpExpr(len(goPackages.List()))
-	goon.DumpExpr(len(goPackagesInRepo))
+	//goon.DumpExpr(len(goPackages.List()))
+	//goon.DumpExpr(len(goPackagesInRepo))
 
-	fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
+	//fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
 
 	updatesAvailable := 0
 
@@ -214,7 +214,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	outChan := gist7651991.GoReduce(inChan, 8, reduceFunc)
 
 	for out := range outChan {
-		started2 := time.Now()
+		//started2 := time.Now()
 
 		repoPresenter := out.(presenter.Presenter)
 
@@ -223,14 +223,14 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 		flusher.Flush()
 
-		fmt.Printf("Part 2b: %v ms.\n", time.Since(started2).Seconds()*1000)
+		//fmt.Printf("Part 2b: %v ms.\n", time.Since(started2).Seconds()*1000)
 	}
 
 	if updatesAvailable == 0 {
 		io.WriteString(w, `<script>document.getElementById("no_updates").style.display = "";</script>`)
 	}
 
-	fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)
+	//fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)
 }
 
 func openedHandler(ws *websocket.Conn) {
@@ -268,8 +268,8 @@ func main() {
 		goPackages = NewGoPackagesFromGodeps(*godepsFlag)
 	}
 
-	goon.DumpExpr(os.Getwd())
-	goon.DumpExpr(os.Getenv("PATH"), os.Getenv("GOPATH"))
+	//goon.DumpExpr(os.Getwd())
+	//goon.DumpExpr(os.Getenv("PATH"), os.Getenv("GOPATH"))
 
 	http.HandleFunc("/index", mainHandler)
 	http.HandleFunc("/-/update", updateHandler)
