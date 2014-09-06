@@ -28,13 +28,21 @@ func CommonHat(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	io.WriteString(w, `<html><head><title>Go Package Store</title>
-<link href="assets/style.css" rel="stylesheet" type="text/css" />
-<script src="assets/script.js" type="text/javascript"></script>
-</head><body>`)
+	io.WriteString(w, `<html>
+	<head>
+		<title>Go Package Store</title>
+		<link href="assets/style.css" rel="stylesheet" type="text/css" />
+		<script src="assets/script.js" type="text/javascript"></script>
+	</head>
+	<body>
+		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%); border-bottom: 1px solid hsl(209, 51%, 88%);">
+			<span style="background-color: hsl(209, 51%, 88%); padding: 15px; display: inline-block;">Updates</span>
+		</div>
+		<div class="content">`)
 }
 func CommonTail(w io.Writer) {
-	io.WriteString(w, "</body></html>")
+	io.WriteString(w, `<div id="installed_updates" style="display: none;"><h3 style="text-align: center;">Installed Updates</h3></div>`)
+	io.WriteString(w, "</div></body></html>")
 }
 
 // ---
@@ -129,6 +137,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	defer CommonTail(w)
 
 	io.WriteString(w, `<div id="checking_updates"><h2 style="text-align: center;">Checking for updates...</h2></div>`)
+	io.WriteString(w, `<div id="no_updates" style="display: none;"><h2 style="text-align: center;">No Updates Available</h2></div>`)
 	defer io.WriteString(w, `<script>document.getElementById("checking_updates").style.display = "none";</script>`)
 
 	flusher := w.(http.Flusher)
@@ -213,7 +222,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if updatesAvailable == 0 {
-		io.WriteString(w, `<div><h2 style="text-align: center;">No Updates Available</h2></div>`)
+		io.WriteString(w, `<script>document.getElementById("no_updates").style.display = "";</script>`)
 	}
 
 	fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)

@@ -1,4 +1,4 @@
-<div class="list-entry" style="position: relative;">
+<div class="list-entry go-package-update" id="{{.Repo.ImportPathPattern}}" style="position: relative;">
 	<div class="list-entry-header">
 	{{/* TODO: Make this simpler. */}}
 	{{if eq (len .Repo.GoPackages) 1}}
@@ -21,7 +21,7 @@
 
 		<div style="float: right;">
 			{{if true}}
-				<a href="javascript:void(0)" onclick="update_go_package(this);" id="{{.Repo.ImportPathPattern}}" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
+				<a href="javascript:void(0)" onclick="update_go_package('{{.Repo.ImportPathPattern}}');" class="update-button" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
 			{{else}}
 				<span class="disabled">Updating...</span>
 			{{end}}

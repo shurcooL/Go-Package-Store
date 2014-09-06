@@ -2,6 +2,7 @@ package presenter
 
 import (
 	"html/template"
+	"strings"
 
 	"github.com/shurcooL/go/gists/gist7480523"
 )
@@ -18,4 +19,53 @@ type Presenter interface {
 // Change represents a single commit message.
 type Change interface {
 	Message() string
+}
+
+type presenterProvider func(repo *gist7480523.GoPackageRepo) Presenter
+
+var presenterProviders []presenterProvider
+
+func addProvider(p presenterProvider) {
+	presenterProviders = append(presenterProviders, p)
+}
+
+func New(repo *gist7480523.GoPackageRepo) Presenter {
+	// TODO: Potentially check in parallel.
+	for _, provider := range presenterProviders {
+		if presenter := provider(repo); presenter != nil {
+			return presenter
+		}
+	}
+
+	return genericPresenter{repo: repo}
+}
+
+func init() {
+	// GitHub.
+	addProvider(func(repo *gist7480523.GoPackageRepo) Presenter {
+		switch goPackage := repo.GoPackages()[0]; {
+		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
+			importPathElements := strings.Split(goPackage.Bpkg.ImportPath, "/")
+			return NewGitHubPresenter(repo, importPathElements[1], importPathElements[2])
+		// gopkg.in package.
+		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/"):
+			gitHubOwner, gitHubRepo := gopkgInImportPathToGitHub(goPackage.Bpkg.ImportPath)
+			return NewGitHubPresenter(repo, gitHubOwner, gitHubRepo)
+		// Underlying GitHub remote.
+		case strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/"):
+			importPathElements := strings.Split(strings.TrimSuffix(goPackage.Dir.Repo.VcsLocal.Remote[len("https://"):], ".git"), "/")
+			return NewGitHubPresenter(repo, importPathElements[1], importPathElements[2])
+		}
+		return nil
+	})
+
+	// code.google.com.
+	addProvider(func(repo *gist7480523.GoPackageRepo) Presenter {
+		goPackage := repo.GoPackages()[0]
+		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "code.google.com/") {
+			// TODO: Add presenter support for code.google.com?
+			return nil
+		}
+		return nil
+	})
 }

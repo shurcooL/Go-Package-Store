@@ -2,6 +2,9 @@ body {
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-size: 14px;
 	line-height: 1.428571429;
+	margin: 0px;
+}
+div.content {
 	margin: 12px;
 	margin-top: 20px;
 	margin-bottom: 80px;
@@ -12,6 +15,10 @@ a {
 }
 a:hover {
 	text-decoration: underline;
+}
+h2 {
+	margin-top: 40px;
+	margin-bottom: 40px;
 }
 
 .disabled {
