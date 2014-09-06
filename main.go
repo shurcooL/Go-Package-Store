@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -12,14 +13,13 @@ import (
 	"runtime"
 	"time"
 
+	"code.google.com/p/go.net/websocket"
 	"github.com/shurcooL/Go-Package-Store/presenter"
+	"github.com/shurcooL/go-goon"
+	"github.com/shurcooL/go/exp/14"
 	"github.com/shurcooL/go/gists/gist7480523"
 	"github.com/shurcooL/go/gists/gist7651991"
 	"github.com/shurcooL/go/gists/gist7802150"
-
-	//. "gist.github.com/7519227.git"
-	"github.com/shurcooL/go-goon"
-	"github.com/shurcooL/go/exp/14"
 	"github.com/shurcooL/go/u/u4"
 	"github.com/shurcooL/gostatus/status"
 )
@@ -38,6 +38,7 @@ func CommonHat(w http.ResponseWriter) {
 		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%); border-bottom: 1px solid hsl(209, 51%, 88%);">
 			<span style="background-color: hsl(209, 51%, 88%); padding: 15px; display: inline-block;">Updates</span>
 		</div>
+		<script type="text/javascript">var sock = new WebSocket("ws://localhost:7043/opened");</script>
 		<div class="content">`)
 }
 func CommonTail(w io.Writer) {
@@ -73,9 +74,10 @@ func updateWorker() {
 		fmt.Println("go", "get", "-u", "-d", updateRequest.importPathPattern)
 
 		cmd := exec.Command("go", "get", "-u", "-d", updateRequest.importPathPattern)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 
-		out, err := cmd.CombinedOutput()
-		fmt.Println("out:", string(out))
+		err := cmd.Run()
 
 		gist7802150.MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.List() {
@@ -92,22 +94,21 @@ func updateWorker() {
 	}
 }
 
-func updateHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
+func updateHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method == "POST" {
 		if *godepsFlag != "" {
 			// TODO: Implement updating Godeps packages.
 			log.Fatalln("updating Godeps packages isn't supported yet")
 		}
 
 		updateRequest := updateRequest{
-			importPathPattern: r.PostFormValue("import_path_pattern"),
+			importPathPattern: req.PostFormValue("import_path_pattern"),
 			resultChan:        make(chan error),
 		}
 		updateRequestChan <- updateRequest
 
 		err := <-updateRequest.resultChan
-		goon.DumpExpr(err)
-		fmt.Println("done", updateRequest.importPathPattern)
+		_ = err // Don't do anything about the error for now.
 	}
 }
 
@@ -124,7 +125,7 @@ func getRootPath(goPackage *gist7480523.GoPackage) (rootPath string) {
 	}
 }
 
-func mainHandler(w http.ResponseWriter, r *http.Request) {
+func mainHandler(w http.ResponseWriter, req *http.Request) {
 	// TODO: When "finished", should not reload templates from disk on each request... Unless using a dev flag?
 	if err := loadTemplates(); err != nil {
 		fmt.Fprintln(w, "loadTemplates:", err)
@@ -143,12 +144,16 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	flusher := w.(http.Flusher)
 	flusher.Flush()
 
+	notifier := w.(http.CloseNotifier)
+	go func() {
+		<-notifier.CloseNotify()
+		os.Exit(0)
+	}()
+
 	fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
 
 	// rootPath -> []*gist7480523.GoPackage
 	var goPackagesInRepo = make(map[string][]*gist7480523.GoPackage)
-
-	// TODO: Use http.CloseNotifier, e.g. https://sourcegraph.com/github.com/donovanhide/eventsource/tree/master/server.go#L70
 
 	gist7802150.MakeUpdated(goPackages)
 	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
@@ -228,6 +233,13 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)
 }
 
+func openedHandler(ws *websocket.Conn) {
+	// Wait until connection is closed.
+	io.Copy(ioutil.Discard, ws)
+
+	os.Exit(0)
+}
+
 // ---
 
 var t *template.Template
@@ -263,6 +275,7 @@ func main() {
 	http.HandleFunc("/-/update", updateHandler)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.Handle("/assets/", http.FileServer(http.Dir(".")))
+	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
 	go updateWorker()
 
 	u4.Open("http://localhost:7043/index")
