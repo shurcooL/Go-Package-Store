@@ -194,17 +194,15 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		if !shouldPresentUpdate(goPackage) {
 			return nil
 		}
-		return repo
+		repoPresenter := presenter.New(&repo)
+		return repoPresenter
 	}
 	outChan := gist7651991.GoReduce(inChan, 8, reduceFunc)
 
 	for out := range outChan {
 		started2 := time.Now()
 
-		repo := out.(gist7480523.GoPackageRepo)
-
-		// TODO: Do this in parallel?
-		repoPresenter := presenter.New(&repo)
+		repoPresenter := out.(presenter.Presenter)
 
 		updatesAvailable++
 		WriteRepoHtml(w, repoPresenter)
