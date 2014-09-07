@@ -257,15 +257,23 @@ var godepsFlag = flag.String("godeps", "", "Path to Godeps file to use.")
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	err := loadTemplates()
-	if err != nil {
-		log.Fatalln("loadTemplates:", err)
-	}
-
 	flag.Parse()
 	if *godepsFlag != "" {
 		fmt.Println("Using Godeps file:", *godepsFlag)
 		goPackages = NewGoPackagesFromGodeps(*godepsFlag)
+	}
+
+	// Set the working directory to the root of the package, so that its assets folder can be used.
+	if goPackageStore := gist7480523.GoPackageFromImportPath("github.com/shurcooL/Go-Package-Store"); goPackageStore != nil {
+		err := os.Chdir(goPackageStore.Bpkg.Dir)
+		if err != nil {
+			log.Panicln("os.Chdir:", err)
+		}
+	}
+
+	err := loadTemplates()
+	if err != nil {
+		log.Fatalln("loadTemplates:", err)
 	}
 
 	//goon.DumpExpr(os.Getwd())
