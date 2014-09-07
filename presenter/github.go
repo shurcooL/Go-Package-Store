@@ -2,6 +2,7 @@ package presenter
 
 import (
 	"html/template"
+	"strings"
 
 	"github.com/google/go-github/github"
 	"github.com/shurcooL/go/exp/13"
@@ -31,8 +32,14 @@ func (this gitHubPresenter) Repo() *gist7480523.GoPackageRepo {
 }
 
 func (this gitHubPresenter) HomePage() *template.URL {
-	url := template.URL("https://github.com/" + this.gitHubOwner + "/" + this.gitHubRepo)
-	return &url
+	switch goPackage := this.repo.GoPackages()[0]; {
+	case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
+		url := template.URL("https://github.com/" + this.gitHubOwner + "/" + this.gitHubRepo)
+		return &url
+	default:
+		url := template.URL("http://" + goPackage.Bpkg.ImportPath)
+		return &url
+	}
 }
 
 func (this gitHubPresenter) Image() template.URL {
