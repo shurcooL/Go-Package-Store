@@ -265,7 +265,12 @@ func main() {
 	}
 
 	// Set the working directory to the root of the package, so that its assets folder can be used.
-	if goPackageStore := gist7480523.GoPackageFromImportPath("github.com/shurcooL/Go-Package-Store"); goPackageStore != nil {
+	{
+		goPackageStore := gist7480523.GoPackageFromImportPath("github.com/shurcooL/Go-Package-Store")
+		if goPackageStore == nil {
+			log.Fatalln("Unable to find github.com/shurcooL/Go-Package-Store package in your GOPATH, it's needed to load assets.")
+		}
+
 		err := os.Chdir(goPackageStore.Bpkg.Dir)
 		if err != nil {
 			log.Panicln("os.Chdir:", err)
