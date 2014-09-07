@@ -1,3 +1,4 @@
+// Go Package Store displays updates for the Go packages in your GOPATH.
 package main
 
 import (

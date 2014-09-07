@@ -1,21 +1,16 @@
 Go Package Store
 ================
 
-Update your Go packages with style.
+An app that displays updates for the Go packages in your GOPATH.
 
-This package is still under development, but you can try it right now:
+Installation
+------------
 
 ```bash
-go get -u -d github.com/shurcooL/Go-Package-Store
-cd $GOPATH/src/github.com/shurcooL/Go-Package-Store
-go run main.go godep.go
+go get -u github.com/shurcooL/Go-Package-Store
 ```
-
-When finished, it will be more convenient to use (a self-contained binary). Open an issue if you find one.
 
 Screenshot
 ----------
-
-A work-in-progress screenshot.
 
 ![](Screenshot.png)
