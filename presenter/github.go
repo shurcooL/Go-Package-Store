@@ -15,12 +15,12 @@ type gitHubPresenter struct {
 	gitHubOwner string
 	gitHubRepo  string
 
-	comparison *GithubComparison
+	comparison *githubComparison
 }
 
 func NewGitHubPresenter(repo *gist7480523.GoPackageRepo, gitHubOwner, gitHubRepo string) Presenter {
 	goPackage := repo.GoPackages()[0]
-	comparison := NewGithubComparison(gitHubOwner, gitHubRepo, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
+	comparison := newGithubComparison(gitHubOwner, gitHubRepo, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 	gist7802150.MakeUpdated(comparison)
 
 	p := &gitHubPresenter{repo: repo, gitHubOwner: gitHubOwner, gitHubRepo: gitHubRepo, comparison: comparison}
@@ -68,13 +68,13 @@ func (this gitHubPresenter) Changes() <-chan Change {
 
 var gh = github.NewClient(nil)
 
-func NewGithubComparison(gitHubOwner, gitHubRepo string, local *exp13.VcsLocal, remote *exp13.VcsRemote) *GithubComparison {
-	this := &GithubComparison{gitHubOwner: gitHubOwner, gitHubRepo: gitHubRepo}
+func newGithubComparison(gitHubOwner, gitHubRepo string, local *exp13.VcsLocal, remote *exp13.VcsRemote) *githubComparison {
+	this := &githubComparison{gitHubOwner: gitHubOwner, gitHubRepo: gitHubRepo}
 	this.AddSources(local, remote)
 	return this
 }
 
-type GithubComparison struct {
+type githubComparison struct {
 	gitHubOwner string
 	gitHubRepo  string
 
@@ -84,7 +84,7 @@ type GithubComparison struct {
 	gist7802150.DepNode2
 }
 
-func (this *GithubComparison) Update() {
+func (this *githubComparison) Update() {
 	localRev := this.GetSources()[0].(*exp13.VcsLocal).LocalRev
 	remoteRev := this.GetSources()[1].(*exp13.VcsRemote).RemoteRev
 
