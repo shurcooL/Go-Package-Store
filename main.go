@@ -78,6 +78,7 @@ func updateWorker() {
 
 		err := cmd.Run()
 
+		// Invalidate cache of the package's local revision, since it's expected to change after `go get -u`.
 		gist7802150.MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.List() {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
