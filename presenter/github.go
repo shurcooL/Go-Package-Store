@@ -18,7 +18,7 @@ type gitHubPresenter struct {
 	comparison *githubComparison
 }
 
-func NewGitHubPresenter(repo *gist7480523.GoPackageRepo, gitHubOwner, gitHubRepo string) Presenter {
+func newGitHubPresenter(repo *gist7480523.GoPackageRepo, gitHubOwner, gitHubRepo string) Presenter {
 	goPackage := repo.GoPackages()[0]
 	comparison := newGithubComparison(gitHubOwner, gitHubRepo, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 	gist7802150.MakeUpdated(comparison)

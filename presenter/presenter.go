@@ -29,6 +29,9 @@ func addProvider(p presenterProvider) {
 	presenterProviders = append(presenterProviders, p)
 }
 
+// New takes a repository containing 1 or more Go packages, and returns a Presenter
+// for it. It tries to find the best Presenter for the given repository, but falls back
+// to a generic presenter if there's nothing better.
 func New(repo *gist7480523.GoPackageRepo) Presenter {
 	// TODO: Potentially check in parallel.
 	for _, provider := range presenterProviders {
@@ -46,7 +49,7 @@ func init() {
 		switch goPackage := repo.GoPackages()[0]; {
 		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
 			importPathElements := strings.Split(goPackage.Bpkg.ImportPath, "/")
-			return NewGitHubPresenter(repo, importPathElements[1], importPathElements[2])
+			return newGitHubPresenter(repo, importPathElements[1], importPathElements[2])
 		// gopkg.in package.
 		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/"):
 			gitHubOwner, gitHubRepo := gopkgInImportPathToGitHub(goPackage.Bpkg.ImportPath)
@@ -54,7 +57,7 @@ func init() {
 		// Underlying GitHub remote.
 		case strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/"):
 			importPathElements := strings.Split(strings.TrimSuffix(goPackage.Dir.Repo.VcsLocal.Remote[len("https://"):], ".git"), "/")
-			return NewGitHubPresenter(repo, importPathElements[1], importPathElements[2])
+			return newGitHubPresenter(repo, importPathElements[1], importPathElements[2])
 		}
 		return nil
 	})

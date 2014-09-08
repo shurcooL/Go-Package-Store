@@ -47,10 +47,13 @@ func CommonTail(w io.Writer) {
 
 // ---
 
+// shouldPresentUpdate determines if the given goPackage should be presented as an available update.
+// It checks that the Go package is on default branch, does not have a dirty working tree, and does not have the remote revision.
 func shouldPresentUpdate(goPackage *gist7480523.GoPackage) bool {
 	return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
 }
 
+// Writes a <div> presentation for an available update.
 func WriteRepoHtml(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 	err := t.Execute(w, repoPresenter)
 	if err != nil {
@@ -59,6 +62,7 @@ func WriteRepoHtml(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 	}
 }
 
+// A cached list of Go packages, excluding ones in GOROOT.
 var goPackages exp14.GoPackageList = &exp14.GoPackages{SkipGoroot: true}
 
 type updateRequest struct {
@@ -68,6 +72,8 @@ type updateRequest struct {
 
 var updateRequestChan = make(chan updateRequest)
 
+// updateWorker is a sequential updater of Go packages. It does not update them in parallel
+// to avoid race conditions or other problems, since `go get -u` does not seem to protect against that.
 func updateWorker() {
 	for updateRequest := range updateRequestChan {
 		fmt.Println("go", "get", "-u", "-d", updateRequest.importPathPattern)
@@ -94,6 +100,7 @@ func updateWorker() {
 	}
 }
 
+// Handler for update requests.
 func updateHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method == "POST" {
 		if *godepsFlag != "" {
@@ -114,6 +121,7 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// getRootPath returns the root path of the given goPackage.
 func getRootPath(goPackage *gist7480523.GoPackage) (rootPath string) {
 	if goPackage.Standard {
 		return ""
@@ -127,8 +135,8 @@ func getRootPath(goPackage *gist7480523.GoPackage) (rootPath string) {
 	}
 }
 
+// Main index page handler.
 func mainHandler(w http.ResponseWriter, req *http.Request) {
-	// TODO: When "finished", should not reload templates from disk on each request... Unless using a dev flag?
 	if err := loadTemplates(); err != nil {
 		fmt.Fprintln(w, "loadTemplates:", err)
 		return
@@ -235,6 +243,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	//fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)
 }
 
+// WebSocket handler, to exit when client tab is closed.
 func openedHandler(ws *websocket.Conn) {
 	// Wait until connection is closed.
 	io.Copy(ioutil.Discard, ws)
@@ -254,7 +263,7 @@ func loadTemplates() error {
 	return err
 }
 
-var godepsFlag = flag.String("godeps", "", "Path to Godeps file to use.")
+var godepsFlag = flag.String("godeps", "", "Path to Godeps file to use as a source of \"current\" local revisions.")
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -293,6 +302,7 @@ func main() {
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
 	go updateWorker()
 
+	// Open a browser tab and navigate to the main page.
 	u4.Open("http://localhost:7043/index")
 
 	err = http.ListenAndServe("localhost:7043", nil)
