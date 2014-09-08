@@ -1,15 +1,15 @@
 package presenter
 
 import (
-	"log"
+	"fmt"
 	"strings"
 )
 
-func gopkgInImportPathToGitHub(gopkgInImportPath string) (gitHubOwner, gitHubRepo string) {
+func gopkgInImportPathToGitHub(gopkgInImportPath string) (gitHubOwner, gitHubRepo string, err error) {
 	afterPrefix := gopkgInImportPath[len("gopkg.in/"):]
 	importPathElements0 := strings.Split(afterPrefix, ".")
 	if len(importPathElements0) != 2 {
-		log.Panicln("len(importPathElements0) != 2", importPathElements0)
+		return "", "", fmt.Errorf("len(importPathElements0) != 2: %v", importPathElements0)
 	}
 	importPathElements1 := strings.Split(importPathElements0[0], "/")
 	importPath := "github.com/"
@@ -18,8 +18,8 @@ func gopkgInImportPathToGitHub(gopkgInImportPath string) (gitHubOwner, gitHubRep
 	} else if len(importPathElements1) == 2 { // gopkg.in/user/pkg.v3 -> github.com/user/pkg
 		importPath += importPathElements1[0] + "/" + importPathElements1[1]
 	} else {
-		log.Panicln("len(importPathElements1) != 1 nor 2", importPathElements1)
+		return "", "", fmt.Errorf("len(importPathElements1) != 1 nor 2: %v", importPathElements1)
 	}
 	importPathElements := strings.Split(importPath, "/")
-	return importPathElements[1], importPathElements[2]
+	return importPathElements[1], importPathElements[2], nil
 }

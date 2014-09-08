@@ -52,8 +52,11 @@ func init() {
 			return newGitHubPresenter(repo, importPathElements[1], importPathElements[2])
 		// gopkg.in package.
 		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/"):
-			gitHubOwner, gitHubRepo := gopkgInImportPathToGitHub(goPackage.Bpkg.ImportPath)
-			return NewGitHubPresenter(repo, gitHubOwner, gitHubRepo)
+			gitHubOwner, gitHubRepo, err := gopkgInImportPathToGitHub(goPackage.Bpkg.ImportPath)
+			if err != nil {
+				return nil
+			}
+			return newGitHubPresenter(repo, gitHubOwner, gitHubRepo)
 		// Underlying GitHub remote.
 		case strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/"):
 			importPathElements := strings.Split(strings.TrimSuffix(goPackage.Dir.Repo.VcsLocal.Remote[len("https://"):], ".git"), "/")
