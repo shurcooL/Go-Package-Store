@@ -157,6 +157,8 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	notifier := w.(http.CloseNotifier)
 	go func() {
 		<-notifier.CloseNotify()
+
+		fmt.Println("Exiting, since the HTTP request was cancelled/interrupted.")
 		os.Exit(0)
 	}()
 
@@ -248,6 +250,7 @@ func openedHandler(ws *websocket.Conn) {
 	// Wait until connection is closed.
 	io.Copy(ioutil.Discard, ws)
 
+	fmt.Println("Exiting, since the client tab was closed (detected a closed WebSocket connection).")
 	os.Exit(0)
 }
 
