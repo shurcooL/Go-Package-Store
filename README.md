@@ -10,6 +10,8 @@ Installation
 go get -u github.com/shurcooL/Go-Package-Store
 ```
 
+That will create a binary at `$GOPATH/bin/Go-Package-Store`. You should run it from a terminal where your `$GOPATH` is set.
+
 Screenshot
 ----------
 
