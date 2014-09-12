@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"code.google.com/p/go.net/websocket"
 	"github.com/shurcooL/Go-Package-Store/presenter"
@@ -37,7 +38,10 @@ func CommonHat(w http.ResponseWriter) {
 		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%); border-bottom: 1px solid hsl(209, 51%, 88%);">
 			<span style="background-color: hsl(209, 51%, 88%); padding: 15px; display: inline-block;">Updates</span>
 		</div>
-		<script type="text/javascript">var sock = new WebSocket("ws://localhost:7043/opened");</script>
+		<script type="text/javascript">
+			var sock = new WebSocket("ws://localhost:7043/opened");
+			sock.onclose = function() { alert('Go Package Store server disconnected.'); };
+		</script>
 		<div class="content">`)
 }
 func CommonTail(w io.Writer) {
@@ -76,11 +80,11 @@ var updateRequestChan = make(chan updateRequest)
 // to avoid race conditions or other problems, since `go get -u` does not seem to protect against that.
 func updateWorker() {
 	for updateRequest := range updateRequestChan {
-		fmt.Println("go", "get", "-u", "-d", updateRequest.importPathPattern)
-
 		cmd := exec.Command("go", "get", "-u", "-d", updateRequest.importPathPattern)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+
+		fmt.Print("\n" + strings.Join(cmd.Args, " ") + " ")
 
 		err := cmd.Run()
 
@@ -97,6 +101,8 @@ func updateWorker() {
 		}
 
 		updateRequest.resultChan <- err
+
+		fmt.Println("Done.")
 	}
 }
 
@@ -116,8 +122,6 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 
 		err := <-updateRequest.resultChan
 		_ = err // Don't do anything about the error for now.
-
-		fmt.Println("Done.")
 	}
 }
 
@@ -158,8 +162,8 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	go func() {
 		<-notifier.CloseNotify()
 
-		fmt.Println("Exiting, since the HTTP request was cancelled/interrupted.")
-		os.Exit(0)
+		//fmt.Println("Exiting, since the HTTP request was cancelled/interrupted.")
+		//close(updateRequestChan)
 	}()
 
 	//fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
@@ -250,8 +254,8 @@ func openedHandler(ws *websocket.Conn) {
 	// Wait until connection is closed.
 	io.Copy(ioutil.Discard, ws)
 
-	fmt.Println("Exiting, since the client tab was closed (detected a closed WebSocket connection).")
-	os.Exit(0)
+	//fmt.Println("Exiting, since the client tab was closed (detected closed WebSocket connection).")
+	//close(updateRequestChan)
 }
 
 // ---
