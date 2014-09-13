@@ -84,7 +84,7 @@ func updateWorker() {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
-		fmt.Print("\n" + strings.Join(cmd.Args, " ") + " ")
+		fmt.Print(strings.Join(cmd.Args, " "))
 
 		err := cmd.Run()
 
@@ -102,7 +102,7 @@ func updateWorker() {
 
 		updateRequest.resultChan <- err
 
-		fmt.Println("Done.")
+		fmt.Println("\nDone.")
 	}
 }
 
