@@ -24,6 +24,8 @@ import (
 	"github.com/shurcooL/gostatus/status"
 )
 
+var httpFlag = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
+
 func CommonHat(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -39,8 +41,10 @@ func CommonHat(w http.ResponseWriter) {
 			<span style="background-color: hsl(209, 51%, 88%); padding: 15px; display: inline-block;">Updates</span>
 		</div>
 		<script type="text/javascript">
-			var sock = new WebSocket("ws://localhost:7043/opened");
-			sock.onclose = function() { alert('Go Package Store server disconnected.'); };
+			var sock = new WebSocket("ws://`+*httpFlag+`/opened");
+			sock.onopen = function () {
+				sock.onclose = function() { alert('Go Package Store server disconnected.'); };
+			};
 		</script>
 		<div class="content">`)
 }
@@ -302,7 +306,7 @@ func main() {
 	//goon.DumpExpr(os.Getwd())
 	//goon.DumpExpr(os.Getenv("PATH"), os.Getenv("GOPATH"))
 
-	http.HandleFunc("/index", mainHandler)
+	http.HandleFunc("/index.html", mainHandler)
 	http.HandleFunc("/-/update", updateHandler)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.Handle("/assets/", http.FileServer(http.Dir(".")))
@@ -310,9 +314,11 @@ func main() {
 	go updateWorker()
 
 	// Open a browser tab and navigate to the main page.
-	u4.Open("http://localhost:7043/index")
+	u4.Open("http://" + *httpFlag + "/index.html")
 
-	err = http.ListenAndServe("localhost:7043", nil)
+	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/index.html.")
+
+	err = http.ListenAndServe(*httpFlag, nil)
 	if err != nil {
 		panic(err)
 	}
