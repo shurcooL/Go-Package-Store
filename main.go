@@ -24,8 +24,6 @@ import (
 	"github.com/shurcooL/gostatus/status"
 )
 
-var httpFlag = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
-
 func CommonHat(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -70,8 +68,8 @@ func WriteRepoHtml(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 	}
 }
 
-// A cached list of Go packages, excluding ones in GOROOT.
-var goPackages exp14.GoPackageList = &exp14.GoPackages{SkipGoroot: true}
+// A cached list of Go packages to work with.
+var goPackages exp14.GoPackageList
 
 type updateRequest struct {
 	importPathPattern string
@@ -274,14 +272,40 @@ func loadTemplates() error {
 	return err
 }
 
-var godepsFlag = flag.String("godeps", "", "Path to Godeps file to use as a source of \"current\" local revisions.")
+var httpFlag = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
+var stdinFlag = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
+var godepsFlag = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps file.")
+
+func usage() {
+	fmt.Fprint(os.Stderr, "Usage: Go-Package-Store [flags]\n")
+	fmt.Fprint(os.Stderr, "       [newline separated packages] | Go-Package-Store --stdin [flags]\n")
+	flag.PrintDefaults()
+	fmt.Fprint(os.Stderr, `
+Examples:
+  # Check for updates for all Go packages in GOPATH.
+  Go-Package-Store
+
+  # Show updates for all dependencies (recursive) of package in cur working dir.
+  go list -f '{{join .Deps "\n"}}' . | Go-Package-Store
+`)
+	os.Exit(2)
+}
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
+	flag.Usage = usage
 	flag.Parse()
-	if *godepsFlag != "" {
-		fmt.Println("Using Godeps file:", *godepsFlag)
+
+	switch {
+	default:
+		fmt.Println("Using all Go packages in GOPATH.")
+		goPackages = &exp14.GoPackages{SkipGoroot: true} // All Go packages in GOPATH (not including GOROOT).
+	case *stdinFlag:
+		fmt.Println("Reading the list of newline separated Go packages from stdin.")
+		goPackages = &exp14.GoPackagesFromReader{Reader: os.Stdin}
+	case *godepsFlag != "":
+		fmt.Println("Reading the list of Go packages from Godeps file:", *godepsFlag)
 		goPackages = NewGoPackagesFromGodeps(*godepsFlag)
 	}
 
