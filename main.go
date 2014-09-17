@@ -47,6 +47,7 @@ func CommonHat(w http.ResponseWriter) {
 		<div class="content">`)
 }
 func CommonTail(w io.Writer) {
+	// TODO: Make installed_updates available before all packages finish loading, so that it works when you update a package early.
 	io.WriteString(w, `<div id="installed_updates" style="display: none;"><h3 style="text-align: center;">Installed Updates</h3></div>`)
 	io.WriteString(w, "</div></body></html>")
 }

@@ -8,7 +8,7 @@
 			{{else}}
 				{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}
 			{{end}}
-		</span></span>
+		</span>
 	{{else}}
 		<span title="{{.Repo.ImportPaths}}">
 			{{if .HomePage}}
@@ -16,7 +16,8 @@
 			{{else}}
 				{{.Repo.ImportPathPattern}}
 			{{end}}
-			<span class="smaller">({{len .Repo.GoPackages}} packages)</span></span>
+			<span class="smaller">({{len .Repo.GoPackages}} packages)</span>
+		</span>
 	{{end}}
 
 		<div style="float: right;">
@@ -35,9 +36,6 @@
 				<ul class="changes-list">
 					{{range .Changes}}<li>{{.Message}}</li>
 					{{end}}
-
-					{{/*{{range $i, $_ := .Cc.Commits}}<li>{{(index $.Cc.Commits (revIndex $i (len $.Cc.Commits))).Message}}</li>
-					{{end}}*/}}
 				</ul>
 			{{else}}
 				<div class="changes-list">
