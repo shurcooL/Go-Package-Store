@@ -90,3 +90,8 @@ type FixedLocalRevVcs struct {
 func (this *FixedLocalRevVcs) GetLocalRev() string {
 	return this.LocalRev
 }
+
+func (this *FixedLocalRevVcs) IsContained(rev string) bool {
+	// HACK? This is needed so that it consideres all different remote versions as updates (instead of needing to push).
+	return false
+}
