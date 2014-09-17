@@ -39,7 +39,7 @@
 				</ul>
 			{{else}}
 				<div class="changes-list">
-					unknown changes
+					unknown changes from {{(index .Repo.GoPackages 0).Dir.Repo.VcsLocal.LocalRev}} to {{(index .Repo.GoPackages 0).Dir.Repo.VcsRemote.RemoteRev}}
 				</div>
 			{{end}}
 		</div>
