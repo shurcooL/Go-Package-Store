@@ -287,7 +287,7 @@ Examples:
   Go-Package-Store
 
   # Show updates for all dependencies (recursive) of package in cur working dir.
-  go list -f '{{join .Deps "\n"}}' . | Go-Package-Store
+  go list -f '{{join .Deps "\n"}}' . | Go-Package-Store --stdin
 `)
 	os.Exit(2)
 }
