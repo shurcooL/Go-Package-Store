@@ -30,7 +30,7 @@ update_go_package = function(go_package_id) {
 		installed_updates.style.display = "";
 		installed_updates.parentNode.insertBefore(go_package, installed_updates.nextSibling); // Insert after.
 	};
-	request.open('POST', 'http://localhost:7043/-/update', true);
+	request.open('POST', '/-/update', true);
 	request.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
 	request.send("import_path_pattern=" + go_package_id);
 }
