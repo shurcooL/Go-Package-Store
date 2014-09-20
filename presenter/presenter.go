@@ -69,8 +69,7 @@ func init() {
 	addProvider(func(repo *gist7480523.GoPackageRepo) Presenter {
 		goPackage := repo.GoPackages()[0]
 		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "code.google.com/") {
-			// TODO: Add presenter support for code.google.com?
-			return nil
+			return newCodeGooglePresenter(repo)
 		}
 		return nil
 	})
