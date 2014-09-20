@@ -27,7 +27,7 @@ func (this codeGooglePresenter) Repo() *gist7480523.GoPackageRepo {
 	return this.repo
 }
 func (this codeGooglePresenter) HomePage() *template.URL {
-	url := template.URL("https://" + repo.RepoImportPath())
+	url := template.URL("https://" + this.repo.RepoImportPath())
 	return &url
 }
 func (_ codeGooglePresenter) Image() template.URL {
