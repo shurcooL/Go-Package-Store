@@ -19,6 +19,7 @@ type Presenter interface {
 // Change represents a single commit message.
 type Change interface {
 	Message() string
+	Url() template.URL
 }
 
 type presenterProvider func(repo *gist7480523.GoPackageRepo) Presenter
@@ -68,7 +69,7 @@ func init() {
 	// code.google.com.
 	addProvider(func(repo *gist7480523.GoPackageRepo) Presenter {
 		goPackage := repo.GoPackages()[0]
-		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "code.google.com/") {
+		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "code.google.com/p/") {
 			return newCodeGooglePresenter(repo)
 		}
 		return nil

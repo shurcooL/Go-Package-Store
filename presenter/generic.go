@@ -22,9 +22,16 @@ func (_ genericPresenter) Image() template.URL {
 }
 func (_ genericPresenter) Changes() <-chan Change { return nil }
 
-// changeMessage is a simple implementation of Change.
-type changeMessage string
+// change is a simple implementation of Change.
+type change struct {
+	message string
+	url     template.URL
+}
 
-func (cm changeMessage) Message() string {
-	return string(cm)
+func (c change) Message() string {
+	return c.message
+}
+
+func (c change) Url() template.URL {
+	return c.url
 }

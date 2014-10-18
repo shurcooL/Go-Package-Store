@@ -28,7 +28,7 @@ h2 {
 	text-decoration: none;
 }
 span.smaller {
-	font-size: 12px;
+	font-size: 11px;
 	color: gray;
 }
 
@@ -50,4 +50,15 @@ div.list-entry-body {
 	margin-top: 0px;
 	margin-bottom: 0px;
 	padding-left: 64px;
+}
+
+.highlight-on-hover a {
+	color: gray;
+}
+.highlight-on-hover {
+	float: right;
+	opacity: 0.25;
+}
+li:hover .highlight-on-hover {
+	opacity: 1.0;
 }

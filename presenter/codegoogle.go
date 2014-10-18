@@ -46,10 +46,13 @@ func (this codeGooglePresenter) Changes() <-chan Change {
 				foundLocalRev = true
 				break
 			}
-			out <- changeMessage(firstParagraph(commit.Message))
+			out <- change{
+				message: firstParagraph(commit.Message),
+				url:     codeGoogleCommitUrl(this.repo, commit.ID),
+			}
 		}
 		if !foundLocalRev {
-			out <- changeMessage("... (there may be more changes, not shown)")
+			out <- change{message: "... (there may be more changes, not shown)"}
 		}
 		close(out)
 	}()
@@ -62,6 +65,23 @@ func firstParagraph(s string) string {
 		return s[:index]
 	}
 	return s
+}
+
+func codeGoogleCommitUrl(repo *gist7480523.GoPackageRepo, commitId vcs.CommitID) template.URL {
+	repoNameElements := strings.Split(strings.TrimPrefix(repo.RepoImportPath(), "code.google.com/p/"), ".")
+	values := url.Values{
+		"r": {string(commitId)},
+	}
+	if len(repoNameElements) >= 2 {
+		values["repo"] = []string{repoNameElements[1]}
+	}
+	url := url.URL{
+		Scheme:   "https",
+		Host:     "code.google.com",
+		Path:     "/p/" + repoNameElements[0] + "/source/detail",
+		RawQuery: values.Encode(),
+	}
+	return template.URL(url.String())
 }
 
 // ---

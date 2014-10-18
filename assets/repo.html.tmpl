@@ -34,7 +34,7 @@
 		<div>
 			{{if .Changes}}
 				<ul class="changes-list">
-					{{range .Changes}}<li>{{.Message}}</li>
+					{{range .Changes}}<li>{{.Message}}<span class="highlight-on-hover smaller"> <a href="{{.Url}}" target="_blank">Commit</a></span></li>
 					{{end}}
 				</ul>
 			{{else}}
