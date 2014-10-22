@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/shurcooL/go-goon"
 	"github.com/shurcooL/go/gists/gist7480523"
 	"github.com/sourcegraph/go-vcs/vcs"
 	"github.com/sourcegraph/vcsstore/vcsclient"
@@ -109,40 +108,24 @@ func newCodeGoogleComparison(repo *gist7480523.GoPackageRepo) (c codeGoogleCompa
 		return
 	}
 
-	var debug = false
 	commitId, err := r.ResolveRevision(repo.GoPackages()[0].Dir.Repo.VcsRemote.RemoteRev)
 	if err != nil {
 		err1 := r.(vcsclient.RepositoryCloneUpdater).CloneOrUpdate(vcs.RemoteOpts{})
-		fmt.Println("newCodeGoogleComparison: CloneOrUpdate:", err1)
 		if err1 != nil {
 			c.err = MultiError{err, err1}
 			return
 		}
-		fmt.Println("newCodeGoogleComparison: DID NOT work on first try!!!")
-		goon.DumpExpr(repo.GoPackages()[0].Dir.Repo.VcsRemote.RemoteRev)
-		goon.DumpExpr(commitId)
-		goon.DumpExpr(err.Error())
-		goon.DumpExpr(err)
-		debug = true
 		commitId, err1 = r.ResolveRevision(repo.GoPackages()[0].Dir.Repo.VcsRemote.RemoteRev)
 		if err1 != nil {
 			c.err = MultiError{err, err1}
 			return
 		}
-		fmt.Println("newCodeGoogleComparison: did work on second try!!!!!!!!")
-		goon.DumpExpr(repo.GoPackages()[0].Dir.Repo.VcsRemote.RemoteRev)
-		goon.DumpExpr(commitId)
-	} else {
-		fmt.Println("newCodeGoogleComparison: worked on first try")
 	}
 
 	c.commits, _, c.err = r.Commits(vcs.CommitsOptions{
 		Head: commitId,
 		N:    20, // Cap for now. TODO: Support arbtirary second revision to go until.
 	})
-	if debug {
-		goon.DumpExpr(c)
-	}
 	return
 }
 
