@@ -88,7 +88,12 @@ func codeGoogleCommitUrl(repo *gist7480523.GoPackageRepo, commitId vcs.CommitID)
 
 // ---
 
-var sg = vcsclient.New(&url.URL{Scheme: "http", Host: "vcsstore.sourcegraph.com"}, nil)
+var sg *vcsclient.Client
+
+func init() {
+	sg = vcsclient.New(&url.URL{Scheme: "http", Host: "vcsstore.sourcegraph.com"}, nil)
+	sg.UserAgent = "Go-Package-Store " + sg.UserAgent
+}
 
 type codeGoogleComparison struct {
 	commits []*vcs.Commit
