@@ -35,7 +35,7 @@ func CommonHat(w http.ResponseWriter) {
 		<script src="assets/script.js" type="text/javascript"></script>
 	</head>
 	<body>
-		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%); border-bottom: 1px solid hsl(209, 51%, 88%);">
+		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%);">
 			<span style="background-color: hsl(209, 51%, 88%); padding: 15px; display: inline-block;">Updates</span>
 		</div>
 		<script type="text/javascript">
