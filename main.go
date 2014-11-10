@@ -14,7 +14,6 @@ import (
 	"runtime"
 	"strings"
 
-	"code.google.com/p/go.net/websocket"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/go/exp/14"
 	"github.com/shurcooL/go/gists/gist7480523"
@@ -22,6 +21,7 @@ import (
 	"github.com/shurcooL/go/gists/gist7802150"
 	"github.com/shurcooL/go/u/u4"
 	"github.com/shurcooL/gostatus/status"
+	"golang.org/x/net/websocket"
 )
 
 func CommonHat(w http.ResponseWriter) {
