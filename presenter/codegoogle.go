@@ -91,7 +91,7 @@ func codeGoogleCommitUrl(repo *gist7480523.GoPackageRepo, commitId vcs.CommitID)
 var sg *vcsclient.Client
 
 func init() {
-	sg = vcsclient.New(&url.URL{Scheme: "http", Host: "vcsstore.sourcegraph.com"}, nil)
+	sg = vcsclient.New(&url.URL{Scheme: "http", Host: "gotools.org:26203"}, nil)
 	sg.UserAgent = "Go-Package-Store " + sg.UserAgent
 }
 
