@@ -333,7 +333,7 @@ func main() {
 
 	http.HandleFunc("/index.html", mainHandler)
 	http.HandleFunc("/-/update", updateHandler)
-	http.Handle("/favicon.ico", http.NotFoundHandler())
+	http.Handle("/favicon.ico/", http.NotFoundHandler())
 	http.Handle("/assets/", http.FileServer(http.Dir(".")))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
 	go updateWorker()
