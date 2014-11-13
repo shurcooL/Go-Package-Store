@@ -50,7 +50,7 @@ func (this codeGooglePresenter) Changes() <-chan Change {
 			}
 			out <- change{
 				message: firstParagraph(commit.Message),
-				url:     codeGoogleCommitUrl(this.repo, commit.ID),
+				url:     codeGoogleCommitUrl(this.comparison, commit.ID),
 			}
 		}
 		if !foundLocalRev {
@@ -69,8 +69,9 @@ func firstParagraph(s string) string {
 	return s
 }
 
-func codeGoogleCommitUrl(repo *gist7480523.GoPackageRepo, commitId vcs.CommitID) template.URL {
-	repoNameElements := strings.Split(strings.TrimPrefix(repo.RepoImportPath(), "code.google.com/p/"), ".")
+func codeGoogleCommitUrl(c codeGoogleComparison, commitId vcs.CommitID) template.URL {
+	repoName := strings.TrimPrefix(c.cloneUrl.Path, "/p/")
+	repoNameElements := strings.Split(repoName, ".")
 	values := url.Values{
 		"r": {string(commitId)},
 	}
@@ -96,18 +97,20 @@ func init() {
 }
 
 type codeGoogleComparison struct {
-	commits []*vcs.Commit
-	err     error
+	cloneUrl *url.URL
+	commits  []*vcs.Commit
+	err      error
 }
 
 func newCodeGoogleComparison(repo *gist7480523.GoPackageRepo) (c codeGoogleComparison) {
-	cloneUrl, err := url.Parse("https://" + repo.RepoImportPath())
+	var err error
+	c.cloneUrl, err = url.Parse(repo.GoPackages()[0].Dir.Repo.VcsLocal.Remote)
 	if err != nil {
 		c.err = err
 		return
 	}
 
-	r, err := sg.Repository("hg", cloneUrl) // code.google.com/p/... repos are known to use Mercurial.
+	r, err := sg.Repository(repo.GoPackages()[0].Dir.Repo.Vcs.Type().VcsType(), c.cloneUrl)
 	if err != nil {
 		c.err = err
 		return
