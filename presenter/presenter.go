@@ -22,6 +22,7 @@ type Change interface {
 	Url() template.URL
 }
 
+// TODO: Change signature to return (Presenter, error). Some Presenters may or may not match, so we can fall back to another.
 type presenterProvider func(repo *gist7480523.GoPackageRepo) Presenter
 
 var presenterProviders []presenterProvider
@@ -51,6 +52,14 @@ func init() {
 		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
 			importPathElements := strings.Split(goPackage.Bpkg.ImportPath, "/")
 			return newGitHubPresenter(repo, importPathElements[1], importPathElements[2])
+		// azul3d.org package (an instance of semver-based domain, see https://godoc.org/azul3d.org/semver.v1).
+		// Once there are other semver based Go packages, consider adding more generalized support.
+		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "azul3d.org/"):
+			gitHubOwner, gitHubRepo, err := azul3dOrgImportPathToGitHub(goPackage.Bpkg.ImportPath)
+			if err != nil {
+				return nil
+			}
+			return newGitHubPresenter(repo, gitHubOwner, gitHubRepo)
 		// gopkg.in package.
 		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "gopkg.in/"):
 			gitHubOwner, gitHubRepo, err := gopkgInImportPathToGitHub(goPackage.Bpkg.ImportPath)
