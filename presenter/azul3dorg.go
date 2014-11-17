@@ -8,7 +8,7 @@ import (
 	"azul3d.org/semver.v1"
 )
 
-var azul3dMatcher = semver.GitHub("azul3d")
+var azul3dOrgMatcher = semver.GitHub("azul3d")
 
 func azul3dOrgImportPathToGitHub(azul3dOrgImportPath string) (gitHubOwner, gitHubRepo string, err error) {
 	u, err := url.Parse("https://" + azul3dOrgImportPath)
@@ -16,7 +16,7 @@ func azul3dOrgImportPathToGitHub(azul3dOrgImportPath string) (gitHubOwner, gitHu
 		return "", "", err
 	}
 
-	repo, err := azul3dMatcher.Match(u)
+	repo, err := azul3dOrgMatcher.Match(u)
 	if err != nil {
 		return "", "", err
 	}
@@ -24,7 +24,7 @@ func azul3dOrgImportPathToGitHub(azul3dOrgImportPath string) (gitHubOwner, gitHu
 
 	pathElements := strings.Split(repo.URL.Path, "/")
 	if len(pathElements) < 2 {
-		return "", "", errors.New("len(pathElements) < 2")
+		return "", "", errors.New("azul3dOrgImportPathToGitHub: len(pathElements) < 2")
 	}
 	gitHubOwner, gitHubRepo = pathElements[0], pathElements[1]
 
