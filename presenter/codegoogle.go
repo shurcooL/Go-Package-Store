@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/shurcooL/go/gists/gist7480523"
-	"github.com/sourcegraph/go-vcs/vcs"
-	"github.com/sourcegraph/vcsstore/vcsclient"
+	"sourcegraph.com/sourcegraph/go-vcs/vcs"
+	"sourcegraph.com/sourcegraph/vcsstore/vcsclient"
 )
 
 type codeGooglePresenter struct {
