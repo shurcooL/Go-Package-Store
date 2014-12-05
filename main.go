@@ -130,7 +130,7 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 
 // getRootPath returns the root path of the given goPackage.
 func getRootPath(goPackage *gist7480523.GoPackage) (rootPath string) {
-	if goPackage.Standard {
+	if goPackage.Bpkg.Goroot {
 		return ""
 	}
 
