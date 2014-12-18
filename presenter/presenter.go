@@ -71,6 +71,10 @@ func init() {
 		case strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://github.com/"):
 			importPathElements := strings.Split(strings.TrimSuffix(goPackage.Dir.Repo.VcsLocal.Remote[len("https://"):], ".git"), "/")
 			return newGitHubPresenter(repo, importPathElements[1], importPathElements[2])
+		// Go repo remote has a GitHub mirror repo.
+		case strings.HasPrefix(goPackage.Dir.Repo.VcsLocal.Remote, "https://go.googlesource.com/"):
+			repoName := goPackage.Dir.Repo.VcsLocal.Remote[len("https://go.googlesource.com/"):]
+			return newGitHubPresenter(repo, "golang", repoName)
 		}
 		return nil
 	})
@@ -78,8 +82,7 @@ func init() {
 	// code.google.com.
 	addProvider(func(repo *gist7480523.GoPackageRepo) Presenter {
 		goPackage := repo.GoPackages()[0]
-		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "code.google.com/p/") ||
-			strings.HasPrefix(goPackage.Bpkg.ImportPath, "golang.org/x/") {
+		if strings.HasPrefix(goPackage.Bpkg.ImportPath, "code.google.com/p/") {
 			return newCodeGooglePresenter(repo)
 		}
 		return nil
