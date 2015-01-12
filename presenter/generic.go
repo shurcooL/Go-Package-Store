@@ -24,8 +24,9 @@ func (_ genericPresenter) Changes() <-chan Change { return nil }
 
 // change is a simple implementation of Change.
 type change struct {
-	message string
-	url     template.URL
+	message  string
+	url      template.URL
+	comments Comments
 }
 
 func (c change) Message() string {
@@ -34,4 +35,8 @@ func (c change) Message() string {
 
 func (c change) Url() template.URL {
 	return c.url
+}
+
+func (c change) Comments() Comments {
+	return c.comments
 }

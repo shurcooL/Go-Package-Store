@@ -20,6 +20,12 @@ type Presenter interface {
 type Change interface {
 	Message() string
 	Url() template.URL
+	Comments() Comments
+}
+
+type Comments struct {
+	Count int
+	Url   template.URL
 }
 
 // TODO: Change signature to return (Presenter, error). Some Presenters may or may not match, so we can fall back to another.

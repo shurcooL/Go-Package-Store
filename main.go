@@ -33,6 +33,7 @@ func CommonHat(w http.ResponseWriter) {
 		<title>Go Package Store</title>
 		<link href="assets/style.css" rel="stylesheet" type="text/css" />
 		<script src="assets/script.js" type="text/javascript"></script>
+		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">
 	</head>
 	<body>
 		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%);">

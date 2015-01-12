@@ -9,11 +9,11 @@ div.content {
 	margin-top: 20px;
 	margin-bottom: 80px;
 }
-a {
+a, a span {
 	color: #4183c4;
 	text-decoration: none;
 }
-a:hover {
+a:hover, a span:hover {
 	text-decoration: underline;
 }
 h2 {
