@@ -17,10 +17,10 @@ type Presenter interface {
 }
 
 // Change represents a single commit message.
-type Change interface {
-	Message() string
-	Url() template.URL
-	Comments() Comments
+type Change struct {
+	Message  string
+	Url      template.URL
+	Comments Comments
 }
 
 type Comments struct {

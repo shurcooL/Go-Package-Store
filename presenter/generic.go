@@ -21,22 +21,3 @@ func (_ genericPresenter) Image() template.URL {
 	return "https://github.com/images/gravatars/gravatar-user-420.png"
 }
 func (_ genericPresenter) Changes() <-chan Change { return nil }
-
-// change is a simple implementation of Change.
-type change struct {
-	message  string
-	url      template.URL
-	comments Comments
-}
-
-func (c change) Message() string {
-	return c.message
-}
-
-func (c change) Url() template.URL {
-	return c.url
-}
-
-func (c change) Comments() Comments {
-	return c.comments
-}

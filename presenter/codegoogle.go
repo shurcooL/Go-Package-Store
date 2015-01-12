@@ -48,13 +48,13 @@ func (this codeGooglePresenter) Changes() <-chan Change {
 				foundLocalRev = true
 				break
 			}
-			out <- change{
-				message: firstParagraph(commit.Message),
-				url:     codeGoogleCommitUrl(this.comparison, commit.ID),
+			out <- Change{
+				Message: firstParagraph(commit.Message),
+				Url:     codeGoogleCommitUrl(this.comparison, commit.ID),
 			}
 		}
 		if !foundLocalRev {
-			out <- change{message: "... (there may be more changes, not shown)"}
+			out <- Change{Message: "... (there may be more changes, not shown)"}
 		}
 		close(out)
 	}()
