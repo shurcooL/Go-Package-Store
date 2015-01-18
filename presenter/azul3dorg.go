@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"azul3d.org/semver.v1"
+	"azul3d.org/semver.v2"
 )
 
 var azul3dOrgMatcher = semver.GitHub("azul3d")
