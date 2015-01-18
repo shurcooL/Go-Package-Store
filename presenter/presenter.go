@@ -52,7 +52,7 @@ func init() {
 		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
 			importPathElements := strings.Split(goPackage.Bpkg.ImportPath, "/")
 			return newGitHubPresenter(repo, importPathElements[1], importPathElements[2])
-		// azul3d.org package (an instance of semver-based domain, see https://godoc.org/azul3d.org/semver.v1).
+		// azul3d.org package (an instance of semver-based domain, see https://azul3d.org/semver).
 		// Once there are other semver based Go packages, consider adding more generalized support.
 		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "azul3d.org/"):
 			gitHubOwner, gitHubRepo, err := azul3dOrgImportPathToGitHub(goPackage.Bpkg.ImportPath)
