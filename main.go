@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -338,13 +339,19 @@ func main() {
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
 	go updateWorker()
 
+	// Start listening first.
+	listener, err := net.Listen("tcp", *httpFlag)
+	if err != nil {
+		log.Fatalf("failed to listen on %q: %v\n", *httpFlag, err)
+	}
+
 	// Open a browser tab and navigate to the main page.
-	u4.Open("http://" + *httpFlag + "/index.html")
+	go u4.Open("http://" + *httpFlag + "/index.html")
 
 	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/index.html.")
 
-	err = http.ListenAndServe(*httpFlag, nil)
+	err = http.Serve(listener, nil)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }
