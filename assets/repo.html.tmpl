@@ -34,7 +34,7 @@
 		<div>
 			{{if .Changes}}
 				<ul class="changes-list">
-					{{range .Changes}}<li>{{.Message}}<span class="highlight-on-hover smaller"> <a href="{{.Url}}" target="_blank">Commit</a></span></li>
+					{{range .Changes}}<li>{{.Message}}<span class="highlight-on-hover smaller">{{template "comments" .Comments}} <a href="{{.Url}}" target="_blank">Commit</a></span></li>
 					{{end}}
 				</ul>
 			{{else}}
@@ -46,3 +46,9 @@
 		<div style="clear: both;"></div>
 	</div>
 </div>
+
+{{define "comments"}}
+	{{if .Count}}
+		<a href="{{.Url}}" target="_blank"><span class="octicon octicon-comment smaller">{{.Count}}</span></a>
+	{{end}}
+{{end}}

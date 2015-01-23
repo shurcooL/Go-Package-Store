@@ -57,10 +57,15 @@ func (this gitHubPresenter) Changes() <-chan Change {
 	out := make(chan Change)
 	go func() {
 		for index := range this.comparison.cc.Commits {
-			out <- change{
-				message: firstParagraph(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].Commit.Message),
-				url:     template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL),
+			change := Change{
+				Message: firstParagraph(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].Commit.Message),
+				Url:     template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL),
 			}
+			if commentCount := this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].Commit.CommentCount; commentCount != nil && *commentCount > 0 {
+				change.Comments.Count = *commentCount
+				change.Comments.Url = template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL + "#comments")
+			}
+			out <- change
 		}
 		close(out)
 	}()
