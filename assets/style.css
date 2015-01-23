@@ -4,6 +4,11 @@ body {
 	line-height: 1.428571429;
 	margin: 0px;
 }
+div.center-max-width {
+	max-width: 900px;
+	margin-left: auto;
+	margin-right: auto;
+}
 div.content {
 	margin: 12px;
 	margin-top: 20px;

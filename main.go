@@ -46,12 +46,12 @@ func CommonHat(w http.ResponseWriter) {
 				sock.onclose = function() { alert('Go Package Store server disconnected.'); };
 			};
 		</script>
-		<div class="content">`)
+		<div class="center-max-width"><div class="content">`)
 }
 func CommonTail(w io.Writer) {
 	// TODO: Make installed_updates available before all packages finish loading, so that it works when you update a package early.
 	io.WriteString(w, `<div id="installed_updates" style="display: none;"><h3 style="text-align: center;">Installed Updates</h3></div>`)
-	io.WriteString(w, "</div></body></html>")
+	io.WriteString(w, "</div></div></body></html>")
 }
 
 // ---
