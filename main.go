@@ -301,7 +301,6 @@ Examples:
   # Show updates for all dependencies (recursive) of package in cur working dir.
   go list -f '{{join .Deps "\n"}}' . | Go-Package-Store --stdin
 `)
-	os.Exit(2)
 }
 
 func main() {
