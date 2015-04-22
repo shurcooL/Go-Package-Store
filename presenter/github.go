@@ -72,6 +72,14 @@ func (this gitHubPresenter) Changes() <-chan Change {
 	return out
 }
 
+// firstParagraph returns the first paragraph of a string.
+func firstParagraph(s string) string {
+	if index := strings.Index(s, "\n\n"); index != -1 {
+		return s[:index]
+	}
+	return s
+}
+
 // ---
 
 var gh = github.NewClient(nil)
