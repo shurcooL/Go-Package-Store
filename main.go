@@ -34,7 +34,9 @@ func CommonHat(w http.ResponseWriter) {
 		<title>Go Package Store</title>
 		<link href="assets/style.css" rel="stylesheet" type="text/css" />
 		<script src="assets/script.js" type="text/javascript"></script>
-		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">
+		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">`)
+	if production {
+		io.WriteString(w, `
 		<script>
 		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -44,7 +46,9 @@ func CommonHat(w http.ResponseWriter) {
 		  ga('create', 'UA-56541369-2', 'auto');
 		  ga('send', 'pageview');
 
-		</script>
+		</script>`)
+	}
+	io.WriteString(w, `
 	</head>
 	<body>
 		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%);">
@@ -255,6 +259,23 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		flusher.Flush()
 
 		//fmt.Printf("Part 2b: %v ms.\n", time.Since(started2).Seconds()*1000)
+
+		/*log.Println("WriteRepoHtml")
+		goon.DumpExpr(repoPresenter.Repo().ImportPathPattern())
+		goon.DumpExpr(repoPresenter.Repo().ImportPaths())
+		goon.DumpExpr(len(repoPresenter.Repo().GoPackages()))
+		goon.DumpExpr(repoPresenter.Repo().GoPackages()[0].Bpkg.ImportPath)
+		goon.DumpExpr(repoPresenter.Repo().GoPackages()[0].Dir.Repo.VcsLocal.LocalRev)
+		goon.DumpExpr(repoPresenter.Repo().GoPackages()[0].Dir.Repo.VcsRemote.RemoteRev)
+		goon.DumpExpr(repoPresenter.HomePage())
+		goon.DumpExpr(repoPresenter.Image())
+		var changes []presenter.Change
+		if changesChan := repoPresenter.Changes(); changesChan != nil {
+			for c := range changesChan {
+				changes = append(changes, c)
+			}
+		}
+		goon.DumpExpr(changes)*/
 	}
 
 	if updatesAvailable == 0 {
@@ -356,7 +377,9 @@ func main() {
 	}
 
 	// Open a browser tab and navigate to the main page.
-	go u4.Open("http://" + *httpFlag + "/index.html")
+	if production {
+		go u4.Open("http://" + *httpFlag + "/index.html")
+	}
 
 	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/index.html.")
 

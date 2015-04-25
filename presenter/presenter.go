@@ -23,6 +23,7 @@ type Change struct {
 	Comments Comments
 }
 
+// Comments represents change discussion.
 type Comments struct {
 	Count int
 	Url   template.URL
