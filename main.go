@@ -21,6 +21,7 @@ import (
 	"github.com/shurcooL/go/gists/gist7651991"
 	"github.com/shurcooL/go/gists/gist7802150"
 	"github.com/shurcooL/go/u/u4"
+	"github.com/shurcooL/go/vfs/httpfs/html/vfstemplate"
 	"github.com/shurcooL/gostatus/status"
 	"golang.org/x/net/websocket"
 )
@@ -299,10 +300,10 @@ func openedHandler(ws *websocket.Conn) {
 var t *template.Template
 
 func loadTemplates() error {
-	const filename = "./assets/repo.html.tmpl"
+	const filename = "/repo.html.tmpl"
 
 	var err error
-	t, err = template.ParseFiles(filename)
+	t, err = vfstemplate.ParseFiles(assets, nil, filename)
 	return err
 }
 
@@ -342,19 +343,6 @@ func main() {
 		goPackages = NewGoPackagesFromGodeps(*godepsFlag)
 	}
 
-	// Set the working directory to the root of the package, so that its assets folder can be used.
-	{
-		goPackageStore := gist7480523.GoPackageFromImportPath("github.com/shurcooL/Go-Package-Store")
-		if goPackageStore == nil {
-			log.Fatalln("Unable to find github.com/shurcooL/Go-Package-Store package in your GOPATH, it's needed to load assets.")
-		}
-
-		err := os.Chdir(goPackageStore.Bpkg.Dir)
-		if err != nil {
-			log.Panicln("os.Chdir:", err)
-		}
-	}
-
 	err := loadTemplates()
 	if err != nil {
 		log.Fatalln("loadTemplates:", err)
@@ -366,7 +354,7 @@ func main() {
 	http.HandleFunc("/index.html", mainHandler)
 	http.HandleFunc("/-/update", updateHandler)
 	http.Handle("/favicon.ico/", http.NotFoundHandler())
-	http.Handle("/assets/", http.FileServer(http.Dir(".")))
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(assets)))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
 	go updateWorker()
 
