@@ -11,9 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"runtime"
-	"strings"
 
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/go/exp/14"
@@ -100,27 +98,26 @@ var updateRequestChan = make(chan updateRequest)
 // to avoid race conditions or other problems, since `go get -u` does not seem to protect against that.
 func updateWorker() {
 	for updateRequest := range updateRequestChan {
-		cmd := exec.Command("go", "get", "-u", "-d", updateRequest.importPathPattern)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		fmt.Print(strings.Join(cmd.Args, " "))
-
-		err := cmd.Run()
-
-		// Invalidate cache of the package's local revision, since it's expected to change after `go get -u`.
+		var updateErr = fmt.Errorf("import path pattern %q not found in GOPATH", updateRequest.importPathPattern)
 		gist7802150.MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.List() {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
 				if gist7480523.GetRepoImportPathPattern(rootPath, goPackage.Bpkg.SrcRoot) == updateRequest.importPathPattern {
-					//fmt.Println("ExternallyUpdated", updateRequest.importPathPattern)
+
+					vcs := goPackage.Dir.Repo.RepoRoot.VCS
+					fmt.Printf("cd %s\n", rootPath)
+					fmt.Printf("%s %s", vcs.Cmd, vcs.DownloadCmd)
+					updateErr = vcs.Download(rootPath)
+
+					// Invalidate cache of the package's local revision, since it's expected to change after updating.
 					gist7802150.ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(gist7802150.DepNode2ManualI))
+
 					break
 				}
 			}
 		}
 
-		updateRequest.resultChan <- err
+		updateRequest.resultChan <- updateErr
 
 		fmt.Println("\nDone.")
 	}
