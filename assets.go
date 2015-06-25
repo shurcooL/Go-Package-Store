@@ -2,8 +2,14 @@
 
 package main
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/shurcooL/go/vfs/httpfs/union"
+)
 
 const production = false
 
-var assets = http.Dir("./assets/")
+var assets = union.New(map[string]http.FileSystem{
+	"/assets": http.Dir("assets"),
+})

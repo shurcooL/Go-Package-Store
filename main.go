@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/go/exp/14"
@@ -31,8 +32,8 @@ func CommonHat(w http.ResponseWriter) {
 	io.WriteString(w, `<html>
 	<head>
 		<title>Go Package Store</title>
-		<link href="assets/style.css" rel="stylesheet" type="text/css" />
-		<script src="assets/script.js" type="text/javascript"></script>
+		<link href="/assets/style.css" rel="stylesheet" type="text/css" />
+		<script src="/assets/script.js" type="text/javascript"></script>
 		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">`)
 	if production {
 		io.WriteString(w, `
@@ -98,6 +99,14 @@ var updateRequestChan = make(chan updateRequest)
 // to avoid race conditions or other problems, since `go get -u` does not seem to protect against that.
 func updateWorker() {
 	for updateRequest := range updateRequestChan {
+		if !production {
+			fmt.Println("got req:", updateRequest.importPathPattern)
+			time.Sleep(time.Second)
+			fmt.Println("Done.")
+			updateRequest.resultChan <- nil
+			continue
+		}
+
 		var updateErr = fmt.Errorf("import path pattern %q not found in GOPATH", updateRequest.importPathPattern)
 		gist7802150.MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.List() {
@@ -297,7 +306,7 @@ func openedHandler(ws *websocket.Conn) {
 var t *template.Template
 
 func loadTemplates() error {
-	const filename = "/repo.html.tmpl"
+	const filename = "/assets/repo.html.tmpl"
 
 	var err error
 	t, err = vfstemplate.ParseFiles(assets, nil, filename)
@@ -351,7 +360,7 @@ func main() {
 	http.HandleFunc("/index.html", mainHandler)
 	http.HandleFunc("/-/update", updateHandler)
 	http.Handle("/favicon.ico/", http.NotFoundHandler())
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(assets)))
+	http.Handle("/assets/", http.FileServer(assets))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
 	go updateWorker()
 
