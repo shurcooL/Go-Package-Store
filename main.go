@@ -53,13 +53,17 @@ func CommonHat(w http.ResponseWriter) {
 	<body>
 		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%);">
 			<span style="background-color: hsl(209, 51%, 88%); padding: 15px; display: inline-block;">Updates</span>
-		</div>
+		</div>`)
+	if production {
+		io.WriteString(w, `
 		<script type="text/javascript">
 			var sock = new WebSocket("ws://`+*httpFlag+`/opened");
 			sock.onopen = function () {
 				sock.onclose = function() { alert('Go Package Store server disconnected.'); };
 			};
-		</script>
+		</script>`)
+	}
+	io.WriteString(w, `
 		<div class="center-max-width"><div class="content">`)
 }
 func CommonTail(w io.Writer) {
@@ -354,12 +358,9 @@ func main() {
 		log.Fatalln("loadTemplates:", err)
 	}
 
-	//goon.DumpExpr(os.Getwd())
-	//goon.DumpExpr(os.Getenv("PATH"), os.Getenv("GOPATH"))
-
 	http.HandleFunc("/index.html", mainHandler)
 	http.HandleFunc("/-/update", updateHandler)
-	http.Handle("/favicon.ico/", http.NotFoundHandler())
+	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.Handle("/assets/", http.FileServer(assets))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
 	go updateWorker()
