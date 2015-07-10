@@ -19,6 +19,7 @@ import (
 	"github.com/shurcooL/go/gists/gist7480523"
 	"github.com/shurcooL/go/gists/gist7651991"
 	"github.com/shurcooL/go/gists/gist7802150"
+	"github.com/shurcooL/go/gzip_file_server"
 	"github.com/shurcooL/go/u/u4"
 	"github.com/shurcooL/go/vfs/httpfs/html/vfstemplate"
 	"github.com/shurcooL/gostatus/status"
@@ -361,7 +362,7 @@ func main() {
 	http.HandleFunc("/index.html", mainHandler)
 	http.HandleFunc("/-/update", updateHandler)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
-	http.Handle("/assets/", http.FileServer(assets))
+	http.Handle("/assets/", gzip_file_server.New(assets))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
 	go updateWorker()
 
