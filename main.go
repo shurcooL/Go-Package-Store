@@ -34,7 +34,7 @@ func CommonHat(w http.ResponseWriter) {
 	<head>
 		<title>Go Package Store</title>
 		<link href="/assets/style.css" rel="stylesheet" type="text/css" />
-		<script src="/assets/script.js" type="text/javascript"></script>
+		<script src="/assets/script/script.js" type="text/javascript"></script>
 		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">`)
 	if production {
 		io.WriteString(w, `
