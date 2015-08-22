@@ -1,7 +1,7 @@
 Go Package Store [![Build Status](https://travis-ci.org/shurcooL/Go-Package-Store.svg?branch=master)](https://travis-ci.org/shurcooL/Go-Package-Store)
 ================
 
-An app that displays updates for the Go packages in your GOPATH.
+Go Package Store displays updates for the Go packages in your GOPATH.
 
 Installation
 ------------
