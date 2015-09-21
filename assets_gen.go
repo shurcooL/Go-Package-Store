@@ -9,12 +9,9 @@ import (
 )
 
 func main() {
-	config := vfsgen.Config{
-		Input: assets,
-		Tags:  "!dev",
-	}
-
-	err := vfsgen.Generate(config)
+	err := vfsgen.Generate(assets, vfsgen.Options{
+		BuildTags: "!dev",
+	})
 	if err != nil {
 		log.Fatalln(err)
 	}
