@@ -84,19 +84,29 @@ func (this *GoPackagesFromGodeps) List() []*gist7480523.GoPackage {
 	return this.Entries
 }
 
-// ---
-
+// FixedLocalRevVcs represents a virtual VCS with the specified LocalRev,
+// clean working directory, default branch checked out.
 type FixedLocalRevVcs struct {
 	vcs.Vcs
 
 	LocalRev string
 }
 
-func (this *FixedLocalRevVcs) GetLocalRev() string {
-	return this.LocalRev
+func (f *FixedLocalRevVcs) GetLocalRev() string {
+	return f.LocalRev
 }
 
-func (this *FixedLocalRevVcs) IsContained(rev string) bool {
-	// HACK? This is needed so that it consideres all different remote versions as updates (instead of needing to push).
+func (f *FixedLocalRevVcs) IsContained(rev string) bool {
+	// This is needed so that it consideres all different remote versions as updates (instead of needing to push).
 	return false
+}
+
+func (f *FixedLocalRevVcs) GetStatus() string {
+	// Clean working directory.
+	return ""
+}
+
+func (f *FixedLocalRevVcs) GetLocalBranch() string {
+	// Default branch checked out.
+	return f.Vcs.GetDefaultBranch()
 }
