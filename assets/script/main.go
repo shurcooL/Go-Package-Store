@@ -10,7 +10,7 @@ import (
 	"honnef.co/go/js/xhr"
 )
 
-var document = dom.GetWindow().Document()
+var document = dom.GetWindow().Document().(dom.HTMLDocument)
 
 // UpdateGoPackage updates Go packages specified by importPathPattern.
 func UpdateGoPackage(importPathPattern string) {

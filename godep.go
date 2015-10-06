@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/shurcooL/go/exp/14"
 	"github.com/shurcooL/go/gists/gist7480523"
 	"github.com/shurcooL/go/gists/gist7802150"
 	"github.com/shurcooL/go/vcs"
@@ -45,7 +46,7 @@ type GoPackagesFromGodeps struct {
 	gist7802150.DepNode2
 }
 
-func NewGoPackagesFromGodeps(path string) *GoPackagesFromGodeps {
+func NewGoPackagesFromGodeps(path string) exp14.GoPackageList {
 	return &GoPackagesFromGodeps{path: path}
 }
 
@@ -60,18 +61,22 @@ func (this *GoPackagesFromGodeps) Update() {
 
 	this.Entries = nil
 	for _, dependency := range g.Deps {
-		if goPackage := gist7480523.GoPackageFromImportPath(dependency.ImportPath); goPackage != nil {
-			// TODO: Can try to optimize by not blocking on UpdateVcs() here...
-			gist7802150.MakeUpdatedLock.Unlock() // HACK: Needed because UpdateVcs() calls MakeUpdated().
-			goPackage.UpdateVcs()
-			gist7802150.MakeUpdatedLock.Lock() // HACK
-			if goPackage.Dir.Repo == nil {
-				continue
-			}
-			goPackage.Dir.Repo.Vcs = &FixedLocalRevVcs{LocalRev: dependency.Rev, Vcs: goPackage.Dir.Repo.Vcs}
-
-			this.Entries = append(this.Entries, goPackage)
+		goPackage := gist7480523.GoPackageFromImportPath(dependency.ImportPath)
+		if goPackage == nil {
+			log.Printf("warning: Godeps dependency %q not found in your GOPATH, skipping\n", dependency.ImportPath)
+			continue
 		}
+
+		// TODO: Can try to optimize by not blocking on UpdateVcs() here...
+		gist7802150.MakeUpdatedLock.Unlock() // HACK: Needed because UpdateVcs() calls MakeUpdated().
+		goPackage.UpdateVcs()
+		gist7802150.MakeUpdatedLock.Lock() // HACK
+		if goPackage.Dir.Repo == nil {
+			continue
+		}
+		goPackage.Dir.Repo.Vcs = &FixedLocalRevVcs{LocalRev: dependency.Rev, Vcs: goPackage.Dir.Repo.Vcs}
+
+		this.Entries = append(this.Entries, goPackage)
 	}
 }
 
