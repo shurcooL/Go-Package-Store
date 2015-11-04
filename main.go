@@ -21,8 +21,8 @@ import (
 	"github.com/shurcooL/go/gists/gist7802150"
 	"github.com/shurcooL/go/gzip_file_server"
 	"github.com/shurcooL/go/u/u4"
-	"github.com/shurcooL/go/vfs/httpfs/html/vfstemplate"
 	"github.com/shurcooL/gostatus/status"
+	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"golang.org/x/net/websocket"
 )
 
