@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/shurcooL/Go-Package-Store/presenter"
@@ -337,8 +336,6 @@ Examples:
 }
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	flag.Usage = usage
 	flag.Parse()
 
