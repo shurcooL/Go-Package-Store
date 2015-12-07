@@ -1,5 +1,4 @@
-Go Package Store [![Build Status](https://travis-ci.org/shurcooL/Go-Package-Store.svg?branch=master)](https://travis-ci.org/shurcooL/Go-Package-Store)
-================
+# Go-Package-Store [![Build Status](https://travis-ci.org/shurcooL/Go-Package-Store.svg?branch=master)](https://travis-ci.org/shurcooL/Go-Package-Store) [![GoDoc](https://godoc.org/github.com/shurcooL/Go-Package-Store?status.svg)](https://godoc.org/github.com/shurcooL/Go-Package-Store)
 
 Go Package Store displays updates for the Go packages in your GOPATH.
 
