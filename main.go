@@ -318,14 +318,15 @@ func loadTemplates() error {
 }
 
 var (
-	httpFlag   = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
-	stdinFlag  = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
-	godepsFlag = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps.json file.")
+	httpFlag     = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
+	stdinFlag    = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
+	godepsFlag   = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps.json file.")
+	govendorFlag = flag.String("govendor", "", "Read the list of Go packages from the specified vendor.json file.")
 )
 
 func usage() {
 	fmt.Fprint(os.Stderr, "Usage: Go-Package-Store [flags]\n")
-	fmt.Fprint(os.Stderr, "       [newline separated packages] | Go-Package-Store --stdin [flags]\n")
+	fmt.Fprint(os.Stderr, "       [newline separated packages] | Go-Package-Store -stdin [flags]\n")
 	flag.PrintDefaults()
 	fmt.Fprint(os.Stderr, `
 Examples:
@@ -333,7 +334,10 @@ Examples:
   Go-Package-Store
 
   # Show updates for all dependencies (recursive) of package in cur working dir.
-  go list -f '{{join .Deps "\n"}}' . | Go-Package-Store --stdin
+  go list -f '{{join .Deps "\n"}}' . | Go-Package-Store -stdin
+
+  # Show updates for all dependencies listed in vendor.json file.
+  Go-Package-Store -govendor /path/to/vendor.json
 `)
 }
 
@@ -351,6 +355,9 @@ func main() {
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		goPackages = newGoPackagesFromGodeps(*godepsFlag)
+	case *govendorFlag != "":
+		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)
+		goPackages = newGoPackagesFromGovendor(*govendorFlag)
 	}
 
 	err := loadTemplates()
