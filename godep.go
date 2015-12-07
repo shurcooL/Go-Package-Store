@@ -27,18 +27,28 @@ type Dependency struct {
 	Rev        string // VCS-specific commit ID.
 }
 
-func ReadGodeps(path string, g *Godeps) error {
+// readGodeps reads a Godeps.json file at path.
+func readGodeps(path string) (Godeps, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return err
+		return Godeps{}, err
 	}
 	defer f.Close()
-	return json.NewDecoder(f).Decode(g)
+
+	var g Godeps
+	err = json.NewDecoder(f).Decode(&g)
+	if err != nil {
+		return Godeps{}, err
+	}
+
+	return g, nil
 }
 
 // ---
 
-type GoPackagesFromGodeps struct {
+// goPackagesFromGodeps implements exp14.GoPackageList, but sources
+// the list of Go packages and their current revisions from the Godeps.json file at path.
+type goPackagesFromGodeps struct {
 	path string
 
 	Entries []*gist7480523.GoPackage
@@ -46,17 +56,16 @@ type GoPackagesFromGodeps struct {
 	gist7802150.DepNode2
 }
 
-func NewGoPackagesFromGodeps(path string) exp14.GoPackageList {
-	return &GoPackagesFromGodeps{path: path}
+func newGoPackagesFromGodeps(path string) exp14.GoPackageList {
+	return &goPackagesFromGodeps{path: path}
 }
 
-func (this *GoPackagesFromGodeps) Update() {
+func (this *goPackagesFromGodeps) Update() {
 	// TODO: Have a source?
 
-	g := Godeps{}
-	err := ReadGodeps(this.path, &g)
+	g, err := readGodeps(this.path)
 	if err != nil {
-		log.Fatalln("ReadGodeps:", err)
+		log.Fatalln("readGodeps:", err)
 	}
 
 	this.Entries = nil
@@ -74,39 +83,39 @@ func (this *GoPackagesFromGodeps) Update() {
 		if goPackage.Dir.Repo == nil {
 			continue
 		}
-		goPackage.Dir.Repo.Vcs = &FixedLocalRevVcs{LocalRev: dependency.Rev, Vcs: goPackage.Dir.Repo.Vcs}
+		goPackage.Dir.Repo.Vcs = &fixedLocalRevVcs{LocalRev: dependency.Rev, Vcs: goPackage.Dir.Repo.Vcs}
 
 		this.Entries = append(this.Entries, goPackage)
 	}
 }
 
-func (this *GoPackagesFromGodeps) List() []*gist7480523.GoPackage {
+func (this *goPackagesFromGodeps) List() []*gist7480523.GoPackage {
 	return this.Entries
 }
 
-// FixedLocalRevVcs represents a virtual VCS with the specified LocalRev,
+// fixedLocalRevVcs represents a virtual VCS with the specified LocalRev,
 // clean working directory, default branch checked out.
-type FixedLocalRevVcs struct {
+type fixedLocalRevVcs struct {
 	vcs.Vcs
 
 	LocalRev string
 }
 
-func (f *FixedLocalRevVcs) GetLocalRev() string {
+func (f *fixedLocalRevVcs) GetLocalRev() string {
 	return f.LocalRev
 }
 
-func (f *FixedLocalRevVcs) IsContained(rev string) bool {
+func (f *fixedLocalRevVcs) IsContained(rev string) bool {
 	// This is needed so that it consideres all different remote versions as updates (instead of needing to push).
 	return false
 }
 
-func (f *FixedLocalRevVcs) GetStatus() string {
+func (f *fixedLocalRevVcs) GetStatus() string {
 	// Clean working directory.
 	return ""
 }
 
-func (f *FixedLocalRevVcs) GetLocalBranch() string {
+func (f *fixedLocalRevVcs) GetLocalBranch() string {
 	// Default branch checked out.
 	return f.Vcs.GetDefaultBranch()
 }

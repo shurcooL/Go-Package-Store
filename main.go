@@ -317,9 +317,11 @@ func loadTemplates() error {
 	return err
 }
 
-var httpFlag = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
-var stdinFlag = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
-var godepsFlag = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps file.")
+var (
+	httpFlag   = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
+	stdinFlag  = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
+	godepsFlag = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps.json file.")
+)
 
 func usage() {
 	fmt.Fprint(os.Stderr, "Usage: Go-Package-Store [flags]\n")
@@ -347,8 +349,8 @@ func main() {
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		goPackages = &exp14.GoPackagesFromReader{Reader: os.Stdin}
 	case *godepsFlag != "":
-		fmt.Println("Reading the list of Go packages from Godeps file:", *godepsFlag)
-		goPackages = NewGoPackagesFromGodeps(*godepsFlag)
+		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
+		goPackages = newGoPackagesFromGodeps(*godepsFlag)
 	}
 
 	err := loadTemplates()
