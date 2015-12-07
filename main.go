@@ -82,15 +82,29 @@ func shouldPresentUpdate(goPackage *gist7480523.GoPackage) bool {
 
 // Writes a <div> presentation for an available update.
 func WriteRepoHtml(w http.ResponseWriter, repoPresenter presenter.Presenter) {
-	err := t.Execute(w, repoPresenter)
+	data := struct {
+		presenter.Presenter
+		UpdateSupported bool
+	}{
+		Presenter:       repoPresenter,
+		UpdateSupported: updateSupported,
+	}
+	err := t.Execute(w, data)
 	if err != nil {
 		log.Println("t.Execute:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-// A cached list of Go packages to work with.
-var goPackages exp14.GoPackageList
+var (
+	// goPackages is a cached list of Go packages to work with.
+	goPackages exp14.GoPackageList
+
+	// updateSupported value is set based on the source of Go packages. If false, it means
+	// we don't have support to update said Go packages. It's used to disable the frontend UI
+	// for updating packages.
+	updateSupported bool
+)
 
 type updateRequest struct {
 	importPathPattern string
@@ -349,15 +363,19 @@ func main() {
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
 		goPackages = &exp14.GoPackages{SkipGoroot: true} // All Go packages in GOPATH (not including GOROOT).
+		updateSupported = true
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		goPackages = &exp14.GoPackagesFromReader{Reader: os.Stdin}
+		updateSupported = true
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		goPackages = newGoPackagesFromGodeps(*godepsFlag)
+		updateSupported = false
 	case *govendorFlag != "":
 		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)
 		goPackages = newGoPackagesFromGovendor(*govendorFlag)
+		updateSupported = false
 	}
 
 	err := loadTemplates()
@@ -366,11 +384,13 @@ func main() {
 	}
 
 	http.HandleFunc("/index.html", mainHandler)
-	http.HandleFunc("/-/update", updateHandler)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.Handle("/assets/", gzip_file_server.New(assets))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
-	go updateWorker()
+	if updateSupported {
+		http.HandleFunc("/-/update", updateHandler)
+		go updateWorker()
+	}
 
 	// Start listening first.
 	listener, err := net.Listen("tcp", *httpFlag)
