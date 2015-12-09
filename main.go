@@ -152,21 +152,18 @@ func updateWorker() {
 
 // Handler for update requests.
 func updateHandler(w http.ResponseWriter, req *http.Request) {
-	if req.Method == "POST" {
-		if *godepsFlag != "" {
-			// TODO: Implement updating Godeps packages.
-			log.Fatalln("updating Godeps packages isn't supported yet")
-		}
-
-		updateRequest := updateRequest{
-			importPathPattern: req.PostFormValue("import_path_pattern"),
-			resultChan:        make(chan error),
-		}
-		updateRequestChan <- updateRequest
-
-		err := <-updateRequest.resultChan
-		_ = err // Don't do anything about the error for now.
+	if req.Method != "POST" {
+		return
 	}
+
+	updateRequest := updateRequest{
+		importPathPattern: req.PostFormValue("import_path_pattern"),
+		resultChan:        make(chan error),
+	}
+	updateRequestChan <- updateRequest
+
+	err := <-updateRequest.resultChan
+	_ = err // TODO: Maybe display error in frontend. For now, don't do anything.
 }
 
 // getRootPath returns the root path of the given goPackage.
