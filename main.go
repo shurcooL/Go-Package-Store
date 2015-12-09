@@ -11,9 +11,9 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/shurcooL/Go-Package-Store/presenter"
+	"github.com/shurcooL/Go-Package-Store/repo"
 	"github.com/shurcooL/go/exp/14"
 	"github.com/shurcooL/go/gists/gist7480523"
 	"github.com/shurcooL/go/gists/gist7651991"
@@ -82,14 +82,7 @@ func shouldPresentUpdate(goPackage *gist7480523.GoPackage) bool {
 
 // Writes a <div> presentation for an available update.
 func WriteRepoHtml(w http.ResponseWriter, repoPresenter presenter.Presenter) {
-	data := struct {
-		presenter.Presenter
-		UpdateSupported bool
-	}{
-		Presenter:       repoPresenter,
-		UpdateSupported: updateSupported,
-	}
-	err := t.Execute(w, data)
+	err := t.Execute(w, repoPresenter)
 	if err != nil {
 		log.Println("t.Execute:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -100,10 +93,11 @@ var (
 	// goPackages is a cached list of Go packages to work with.
 	goPackages exp14.GoPackageList
 
-	// updateSupported value is set based on the source of Go packages. If false, it means
-	// we don't have support to update said Go packages. It's used to disable the frontend UI
+	// updater is set based on the source of Go packages. If nil, it means
+	// we don't have support to update Go packages from the current source.
+	// It's used to update repos in the backend, and to disable the frontend UI
 	// for updating packages.
-	updateSupported bool
+	updater repo.Updater
 )
 
 type updateRequest struct {
@@ -117,15 +111,8 @@ var updateRequestChan = make(chan updateRequest)
 // to avoid race conditions or other problems, since `go get -u` does not seem to protect against that.
 func updateWorker() {
 	for updateRequest := range updateRequestChan {
-		if !production {
-			fmt.Println("got req:", updateRequest.importPathPattern)
-			time.Sleep(time.Second)
-			fmt.Println("Done.")
-			updateRequest.resultChan <- nil
-			continue
-		}
-
-		var updateErr = fmt.Errorf("import path pattern %q not found in GOPATH", updateRequest.importPathPattern)
+		// TODO: Re-enable.
+		/*var updateErr = fmt.Errorf("import path pattern %q not found in GOPATH", updateRequest.importPathPattern)
 		gist7802150.MakeUpdated(goPackages)
 		for _, goPackage := range goPackages.List() {
 			if rootPath := getRootPath(goPackage); rootPath != "" {
@@ -142,7 +129,9 @@ func updateWorker() {
 					break
 				}
 			}
-		}
+		}*/
+
+		updateErr := updater.Update(updateRequest.importPathPattern)
 
 		updateRequest.resultChan <- updateErr
 
@@ -321,10 +310,14 @@ func openedHandler(ws *websocket.Conn) {
 var t *template.Template
 
 func loadTemplates() error {
-	const filename = "/assets/repo.html.tmpl"
+	const tmplname = "repo.html.tmpl"
+	const filename = "/assets/" + tmplname
 
 	var err error
-	t, err = vfstemplate.ParseFiles(assets, nil, filename)
+	t = template.New(tmplname).Funcs(template.FuncMap{
+		"updateSupported": func() bool { return updater != nil },
+	})
+	t, err = vfstemplate.ParseFiles(assets, t, filename)
 	return err
 }
 
@@ -360,19 +353,19 @@ func main() {
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
 		goPackages = &exp14.GoPackages{SkipGoroot: true} // All Go packages in GOPATH (not including GOROOT).
-		updateSupported = true
+		updater = repo.GopathUpdater{}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		goPackages = &exp14.GoPackagesFromReader{Reader: os.Stdin}
-		updateSupported = true
+		updater = repo.GopathUpdater{}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		goPackages = newGoPackagesFromGodeps(*godepsFlag)
-		updateSupported = false
+		updater = nil
 	case *govendorFlag != "":
 		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)
 		goPackages = newGoPackagesFromGovendor(*govendorFlag)
-		updateSupported = false
+		updater = nil
 	}
 
 	err := loadTemplates()
@@ -384,7 +377,7 @@ func main() {
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.Handle("/assets/", gzip_file_server.New(assets))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
-	if updateSupported {
+	if updater != nil {
 		http.HandleFunc("/-/update", updateHandler)
 		go updateWorker()
 	}
@@ -395,9 +388,12 @@ func main() {
 		log.Fatalf("failed to listen on %q: %v\n", *httpFlag, err)
 	}
 
-	// Open a browser tab and navigate to the main page.
-	if production {
+	switch production {
+	case true:
+		// Open a browser tab and navigate to the main page.
 		go u4.Open("http://" + *httpFlag + "/index.html")
+	case false:
+		updater = repo.MockUpdater{}
 	}
 
 	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/index.html.")
