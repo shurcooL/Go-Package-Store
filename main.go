@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/shurcooL/Go-Package-Store/internal/util"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/Go-Package-Store/repo"
 	"github.com/shurcooL/go/exp/14"
@@ -111,30 +112,8 @@ var updateRequestChan = make(chan updateRequest)
 // to avoid race conditions or other problems, since `go get -u` does not seem to protect against that.
 func updateWorker() {
 	for updateRequest := range updateRequestChan {
-		// TODO: Re-enable.
-		/*var updateErr = fmt.Errorf("import path pattern %q not found in GOPATH", updateRequest.importPathPattern)
-		gist7802150.MakeUpdated(goPackages)
-		for _, goPackage := range goPackages.List() {
-			if rootPath := getRootPath(goPackage); rootPath != "" {
-				if gist7480523.GetRepoImportPathPattern(rootPath, goPackage.Bpkg.SrcRoot) == updateRequest.importPathPattern {
-
-					vcs := goPackage.Dir.Repo.RepoRoot.VCS
-					fmt.Printf("cd %s\n", rootPath)
-					fmt.Printf("%s %s", vcs.Cmd, vcs.DownloadCmd)
-					updateErr = vcs.Download(rootPath)
-
-					// Invalidate cache of the package's local revision, since it's expected to change after updating.
-					gist7802150.ExternallyUpdated(goPackage.Dir.Repo.VcsLocal.GetSources()[1].(gist7802150.DepNode2ManualI))
-
-					break
-				}
-			}
-		}*/
-
-		updateErr := updater.Update(updateRequest.importPathPattern)
-
-		updateRequest.resultChan <- updateErr
-
+		err := updater.Update(updateRequest.importPathPattern)
+		updateRequest.resultChan <- err
 		fmt.Println("\nDone.")
 	}
 }
@@ -153,20 +132,6 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 
 	err := <-updateRequest.resultChan
 	_ = err // TODO: Maybe display error in frontend. For now, don't do anything.
-}
-
-// getRootPath returns the root path of the given goPackage.
-func getRootPath(goPackage *gist7480523.GoPackage) (rootPath string) {
-	if goPackage.Bpkg.Goroot {
-		return ""
-	}
-
-	goPackage.UpdateVcs()
-	if goPackage.Dir.Repo == nil {
-		return ""
-	} else {
-		return goPackage.Dir.Repo.Vcs.RootPath()
-	}
 }
 
 // Main index page handler.
@@ -205,7 +170,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	//fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
 	if false {
 		for _, goPackage := range goPackages.List() {
-			if rootPath := getRootPath(goPackage); rootPath != "" {
+			if rootPath := util.GetRootPath(goPackage); rootPath != "" {
 				goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
 			}
 		}
@@ -219,7 +184,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		}()
 		reduceFunc := func(in interface{}) interface{} {
 			goPackage := in.(*gist7480523.GoPackage)
-			if rootPath := getRootPath(goPackage); rootPath != "" {
+			if rootPath := util.GetRootPath(goPackage); rootPath != "" {
 				return gist7480523.NewGoPackageRepo(rootPath, []*gist7480523.GoPackage{goPackage})
 			}
 			return nil
@@ -353,11 +318,11 @@ func main() {
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
 		goPackages = &exp14.GoPackages{SkipGoroot: true} // All Go packages in GOPATH (not including GOROOT).
-		updater = repo.GopathUpdater{}
+		updater = repo.GopathUpdater{GoPackages: goPackages}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		goPackages = &exp14.GoPackagesFromReader{Reader: os.Stdin}
-		updater = repo.GopathUpdater{}
+		updater = repo.GopathUpdater{GoPackages: goPackages}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		goPackages = newGoPackagesFromGodeps(*godepsFlag)
