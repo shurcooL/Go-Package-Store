@@ -21,12 +21,12 @@ func (u GopathUpdater) Update(importPathPattern string) error {
 	//       but poorly documented, has known flaws (it does not allow concurrent updates),
 	//       and very contributor-unfriendly (people don't like packages that have the word "gist" in
 	//       the import path, even if's not actually a gist; which is understandable, since it's basically
-	//       a package without a name that describes what it's for, something acceptable during rapid
-	//       prototyping, but not the finished product). Need to redesign it and replace with
+	//       a package without a name that describes what it's for - that's something acceptable during
+	//       rapid prototyping, but not for the finished product). Need to redesign it and replace with
 	//       something better.
 	//
 	//       First step might be to simply drop the caching behavior and hope the user doesn't try
-	//       to refresh their browser page very often.
+	//       to manually refresh their browser page very often.
 
 	var updateErr = fmt.Errorf("import path pattern %q not found in GOPATH", importPathPattern)
 	gist7802150.MakeUpdated(u.GoPackages)
