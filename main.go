@@ -11,10 +11,12 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/shurcooL/Go-Package-Store/internal/util"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/Go-Package-Store/repo"
+	"github.com/shurcooL/go-goon"
 	"github.com/shurcooL/go/exp/14"
 	"github.com/shurcooL/go/gists/gist7480523"
 	"github.com/shurcooL/go/gists/gist7651991"
@@ -58,6 +60,10 @@ func writeRepoHTML(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 var (
 	// goPackages is a cached list of Go packages to work with.
 	goPackages exp14.GoPackageList
+
+	goPackages2 <-chan importPathRevision
+
+	universe *goUniverse = newGoUniverse()
 
 	// updater is set based on the source of Go packages. If nil, it means
 	// we don't have support to update Go packages from the current source.
@@ -106,7 +112,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//started := time.Now()
+	started := time.Now()
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -117,13 +123,13 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	flusher := w.(http.Flusher)
 	flusher.Flush()
 
-	//fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
+	fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
 
+	// Calculate the list of all Go packages (grouped by rootPath).
 	var goPackagesInRepo = make(map[string][]*gist7480523.GoPackage) // Map key is rootPath.
-
 	gist7802150.MakeUpdated(goPackages)
-	//fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
-	if false {
+	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
+	if true {
 		for _, goPackage := range goPackages.List() {
 			if rootPath := util.GetRootPath(goPackage); rootPath != "" {
 				goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
@@ -151,10 +157,13 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	//goon.DumpExpr(len(goPackages.List()))
-	//goon.DumpExpr(len(goPackagesInRepo))
+	goon.DumpExpr(len(goPackages.List()))
+	goon.DumpExpr(len(goPackagesInRepo))
 
-	//fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
+	universe.Wait()
+	goon.DumpExpr(len(universe.repos))
+
+	fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
 
 	updatesAvailable := 0
 
@@ -180,7 +189,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	outChan := gist7651991.GoReduce(inChan, 8, reduceFunc)
 
 	for out := range outChan {
-		//started2 := time.Now()
+		started2 := time.Now()
 
 		repoPresenter := out.(presenter.Presenter)
 
@@ -189,7 +198,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 		flusher.Flush()
 
-		//fmt.Printf("Part 2b: %v ms.\n", time.Since(started2).Seconds()*1000)
+		fmt.Printf("Part 2b: %v ms.\n", time.Since(started2).Seconds()*1000)
 
 		/*log.Println("WriteRepoHtml")
 		goon.DumpExpr(repoPresenter.Repo().ImportPathPattern())
@@ -213,7 +222,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, `<script>document.getElementById("no_updates").style.display = "";</script>`)
 	}
 
-	//fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)
+	fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)
 }
 
 // WebSocket handler, to exit when client tab is closed.
@@ -278,6 +287,7 @@ func main() {
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		goPackages = newGoPackagesFromGodeps(*godepsFlag)
+		loadGoPackagesFromGodeps(*godepsFlag, universe)
 		updater = nil
 	case *govendorFlag != "":
 		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)

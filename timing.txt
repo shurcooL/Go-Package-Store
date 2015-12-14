@@ -1,0 +1,38 @@
+Original
+--------
+
+Part 1: 0.11489 ms.
+GoPackages.Update: 1885.002398 ms; 2816 packages.
+Part 1b: 1885.182307 ms.
+len(goPackages.List()) = (int)(2816)
+len(goPackagesInRepo) = (int)(389)
+Part 2: 22381.18948 ms.
+Part 2b: 340.52602400000006 ms.
+Part 2b: 345.21006900000003 ms.
+Part 2b: 344.98062 ms.
+Part 2b: 349.277832 ms.
+Part 2b: 345.650773 ms.
+Part 2b: 341.50297100000006 ms.
+Part 2b: 340.83791900000006 ms.
+Part 2b: 740.1892720000001 ms.
+Part 2b: 342.353043 ms.
+Part 2b: 337.91379000000006 ms.
+Part 2b: 23569.302411999997 ms.
+Part 2b: 791.1602980000001 ms.
+Part 2b: 344.50615300000004 ms.
+Part 2b: 345.26507100000003 ms.
+Part 2b: 340.26146800000004 ms.
+Part 2b: 346.347852 ms.
+Part 2b: 342.408813 ms.
+Part 2b: 343.66016600000006 ms.
+Part 2b: 344.14753600000006 ms.
+Part 2b: 339.109729 ms.
+Part 2b: 380.149187 ms.
+Part 2b: 353.95462100000003 ms.
+Part 2b: 345.881999 ms.
+Part 2b: 335.829488 ms.
+Part 2b: 0.44471 ms.
+Part 2b: 336.639762 ms.
+Part 2b: 343.31597800000003 ms.
+Part 2b: 333.971469 ms.
+Part 3: 575116.430321 ms.
