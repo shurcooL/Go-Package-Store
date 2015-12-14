@@ -72,6 +72,7 @@ func (this *goPackagesFromGodeps) Update() {
 	for _, dependency := range g.Deps {
 		goPackage := gist7480523.GoPackageFromImportPath(dependency.ImportPath)
 		if goPackage == nil {
+			// TODO: Improve this; don't use local GOPATH for remote vcs. Use vcs.NewRemote().
 			log.Printf("warning: Godeps dependency %q not found in your GOPATH, skipping\n", dependency.ImportPath)
 			continue
 		}

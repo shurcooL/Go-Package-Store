@@ -26,54 +26,19 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-func CommonHat(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-
-	io.WriteString(w, `<html>
-	<head>
-		<title>Go Package Store</title>
-		<link href="/assets/style.css" rel="stylesheet" type="text/css" />
-		<script src="/assets/script/script.js" type="text/javascript"></script>
-		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">`)
-	if production {
-		io.WriteString(w, `
-		<script>
-		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-		  })(window,document,'script','http://www.google-analytics.com/analytics.js','ga');
-
-		  ga('create', 'UA-56541369-2', 'auto');
-		  ga('send', 'pageview');
-
-		</script>`)
+func commonHead(w io.Writer) error {
+	data := struct {
+		Production bool
+		HTTPAddr   string
+	}{
+		Production: production,
+		HTTPAddr:   *httpFlag,
 	}
-	io.WriteString(w, `
-	</head>
-	<body>
-		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%);">
-			<span style="background-color: hsl(209, 51%, 88%); padding: 15px; display: inline-block;">Updates</span>
-		</div>`)
-	if production {
-		io.WriteString(w, `
-		<script type="text/javascript">
-			var sock = new WebSocket("ws://`+*httpFlag+`/opened");
-			sock.onopen = function () {
-				sock.onclose = function() { alert('Go Package Store server disconnected.'); };
-			};
-		</script>`)
-	}
-	io.WriteString(w, `
-		<div class="center-max-width"><div class="content">`)
+	return t.ExecuteTemplate(w, "head.html.tmpl", data)
 }
-func CommonTail(w io.Writer) {
-	// TODO: Make installed_updates available before all packages finish loading, so that it works when you update a package early.
-	io.WriteString(w, `<div id="installed_updates" style="display: none;"><h3 style="text-align: center;">Installed Updates</h3></div>`)
-	io.WriteString(w, "</div></div></body></html>")
+func commonTail(w io.Writer) error {
+	return t.ExecuteTemplate(w, "tail.html.tmpl", nil)
 }
-
-// ---
 
 // shouldPresentUpdate determines if the given goPackage should be presented as an available update.
 // It checks that the Go package is on default branch, does not have a dirty working tree, and does not have the remote revision.
@@ -81,11 +46,11 @@ func shouldPresentUpdate(goPackage *gist7480523.GoPackage) bool {
 	return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
 }
 
-// Writes a <div> presentation for an available update.
-func WriteRepoHtml(w http.ResponseWriter, repoPresenter presenter.Presenter) {
-	err := t.Execute(w, repoPresenter)
+// writeRepoHTML writes a <div> presentation for an available update.
+func writeRepoHTML(w http.ResponseWriter, repoPresenter presenter.Presenter) {
+	err := t.ExecuteTemplate(w, "repo.html.tmpl", repoPresenter)
 	if err != nil {
-		log.Println("t.Execute:", err)
+		log.Println("t.ExecuteTemplate:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -143,28 +108,18 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 	//started := time.Now()
 
-	CommonHat(w)
-	defer CommonTail(w)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	io.WriteString(w, `<div id="checking_updates"><h2 style="text-align: center;">Checking for updates...</h2></div>`)
-	io.WriteString(w, `<div id="no_updates" style="display: none;"><h2 style="text-align: center;">No Updates Available</h2></div>`)
-	defer io.WriteString(w, `<script>document.getElementById("checking_updates").style.display = "none";</script>`)
+	_ = commonHead(w)
+	defer func() { _ = commonTail(w) }()
 
 	flusher := w.(http.Flusher)
 	flusher.Flush()
 
-	notifier := w.(http.CloseNotifier)
-	go func() {
-		<-notifier.CloseNotify()
-
-		//fmt.Println("Exiting, since the HTTP request was cancelled/interrupted.")
-		//close(updateRequestChan)
-	}()
-
 	//fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
 
-	// rootPath -> []*gist7480523.GoPackage
-	var goPackagesInRepo = make(map[string][]*gist7480523.GoPackage)
+	var goPackagesInRepo = make(map[string][]*gist7480523.GoPackage) // Map key is rootPath.
 
 	gist7802150.MakeUpdated(goPackages)
 	//fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
@@ -230,7 +185,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		repoPresenter := out.(presenter.Presenter)
 
 		updatesAvailable++
-		WriteRepoHtml(w, repoPresenter)
+		writeRepoHTML(w, repoPresenter)
 
 		flusher.Flush()
 
@@ -275,14 +230,11 @@ func openedHandler(ws *websocket.Conn) {
 var t *template.Template
 
 func loadTemplates() error {
-	const tmplname = "repo.html.tmpl"
-	const filename = "/assets/" + tmplname
-
 	var err error
-	t = template.New(tmplname).Funcs(template.FuncMap{
+	t = template.New("").Funcs(template.FuncMap{
 		"updateSupported": func() bool { return updater != nil },
 	})
-	t, err = vfstemplate.ParseFiles(assets, t, filename)
+	t, err = vfstemplate.ParseGlob(assets, t, "/assets/*.tmpl")
 	return err
 }
 

@@ -23,56 +23,37 @@ func mockHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//started := time.Now()
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	CommonHat(w)
-	defer CommonTail(w)
-
-	io.WriteString(w, `<div id="checking_updates"><h2 style="text-align: center;">Checking for updates...</h2></div>`)
-	io.WriteString(w, `<div id="no_updates" style="display: none;"><h2 style="text-align: center;">No Updates Available</h2></div>`)
-	defer io.WriteString(w, `<script>document.getElementById("checking_updates").style.display = "none";</script>`)
+	_ = commonHead(w)
+	defer func() { _ = commonTail(w) }()
 
 	flusher := w.(http.Flusher)
 	flusher.Flush()
 
-	notifier := w.(http.CloseNotifier)
-	go func() {
-		<-notifier.CloseNotify()
-
-		//fmt.Println("Exiting, since the HTTP request was cancelled/interrupted.")
-		//close(updateRequestChan)
-	}()
-
-	//fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
-
-	//fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
-
 	updatesAvailable := 0
 
 	for _, repoPresenter := range repoPresenters {
-		//started2 := time.Now()
-
 		time.Sleep(time.Second)
 
 		updatesAvailable++
-		writeRepoHtml2(w, repoPresenter)
+		writeRepoHTML2(w, repoPresenter)
 
 		flusher.Flush()
-
-		//fmt.Printf("Part 2b: %v ms.\n", time.Since(started2).Seconds()*1000)
 	}
+
+	time.Sleep(time.Second)
 
 	if updatesAvailable == 0 {
 		io.WriteString(w, `<script>document.getElementById("no_updates").style.display = "";</script>`)
 	}
-
-	//fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)
 }
 
-func writeRepoHtml2(w http.ResponseWriter, repoPresenter interface{}) {
-	err := t.Execute(w, repoPresenter)
+func writeRepoHTML2(w http.ResponseWriter, repoPresenter interface{}) {
+	err := t.ExecuteTemplate(w, "repo.html.tmpl", repoPresenter)
 	if err != nil {
-		log.Println("t.Execute:", err)
+		log.Println("t.ExecuteTemplate:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -94,7 +75,7 @@ var repoPresenters = []map[string]interface{}{
 				},
 			},
 		},
-		"HomePage": (*template.URL)(newTemplateUrl("https://github.com/gopherjs/gopherjs")),
+		"HomePage": (*template.URL)(newTemplateURL("https://github.com/gopherjs/gopherjs")),
 		"Image":    (template.URL)("https://avatars.githubusercontent.com/u/6654647?v=3"),
 		"Changes": ([]presenter.Change)([]presenter.Change{
 			(presenter.Change)(presenter.Change{
@@ -109,8 +90,8 @@ var repoPresenters = []map[string]interface{}{
 				Message: (string)("small cleanup"),
 				Url:     (template.URL)("https://github.com/gopherjs/gopherjs/commit/77a838f965881a888416bae38f790f76bb1f64bd"),
 				Comments: (presenter.Comments)(presenter.Comments{
-					Count: (int)(0),
-					Url:   (template.URL)(""),
+					Count: (int)(1),
+					Url:   (template.URL)("https://www.example.com/"),
 				}),
 			}),
 			(presenter.Change)(presenter.Change{
@@ -140,7 +121,7 @@ var repoPresenters = []map[string]interface{}{
 				},
 			},
 		},
-		"HomePage": (*template.URL)(newTemplateUrl("http://golang.org/x/image/bmp")),
+		"HomePage": (*template.URL)(newTemplateURL("http://golang.org/x/image/bmp")),
 		"Image":    (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
 		"Changes": ([]presenter.Change)([]presenter.Change{
 			(presenter.Change)(presenter.Change{
@@ -170,7 +151,7 @@ var repoPresenters = []map[string]interface{}{
 				},
 			},
 		},
-		"HomePage": (*template.URL)(newTemplateUrl("https://github.com/influxdb/influxdb")),
+		"HomePage": (*template.URL)(newTemplateURL("https://github.com/influxdb/influxdb")),
 		"Image":    (template.URL)("https://avatars.githubusercontent.com/u/5713248?v=3"),
 		"Changes": ([]presenter.Change)([]presenter.Change{
 			(presenter.Change)(presenter.Change{
@@ -201,8 +182,8 @@ var repoPresenters = []map[string]interface{}{
 				Message: (string)("Add note about requiring distro details"),
 				Url:     (template.URL)("https://github.com/influxdb/influxdb/commit/901f91dc9559bebddf9b49607eac4ffd5caa4158"),
 				Comments: (presenter.Comments)(presenter.Comments{
-					Count: (int)(0),
-					Url:   (template.URL)(""),
+					Count: (int)(4),
+					Url:   (template.URL)("https://www.example.com/"),
 				}),
 			}),
 			(presenter.Change)(presenter.Change{
@@ -345,4 +326,4 @@ var repoPresenters = []map[string]interface{}{
 	},
 }
 
-func newTemplateUrl(v template.URL) *template.URL { return &v }
+func newTemplateURL(v template.URL) *template.URL { return &v }

@@ -53,6 +53,7 @@ func (this *goPackagesFromGovendor) Update() {
 	for _, dependency := range v.Package {
 		goPackage := gist7480523.GoPackageFromImportPath(dependency.Path)
 		if goPackage == nil {
+			// TODO: Improve this; don't use local GOPATH for remote vcs. Use vcs.NewRemote().
 			log.Printf("warning: Govendor dependency %q not found in your GOPATH, skipping\n", dependency.Path)
 			continue
 		}
