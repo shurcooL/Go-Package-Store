@@ -2,14 +2,13 @@ package presenter
 
 import (
 	"html/template"
-	"strings"
 
-	"github.com/shurcooL/go/gists/gist7480523"
+	"github.com/shurcooL/Go-Package-Store/pkg"
 )
 
 // Presenter is for displaying various info about a given Go package repo with an update available.
 type Presenter interface {
-	Repo() *gist7480523.GoPackageRepo
+	Repo() *pkg.Repo
 
 	HomePage() *template.URL // Home page url of the Go package, optional (nil means none available).
 	Image() template.URL     // Image representing the Go package, typically its owner.
@@ -19,42 +18,42 @@ type Presenter interface {
 // Change represents a single commit message.
 type Change struct {
 	Message  string
-	Url      template.URL
+	URL      template.URL
 	Comments Comments
 }
 
 // Comments represents change discussion.
 type Comments struct {
 	Count int
-	Url   template.URL
+	URL   template.URL
 }
 
 // TODO: Change signature to return (Presenter, error). Some Presenters may or may not match, so we can fall back to another.
-type presenterProvider func(repo *gist7480523.GoPackageRepo) Presenter
+/*type presenterProvider func(repo *gist7480523.GoPackageRepo) Presenter
 
 var presenterProviders []presenterProvider
 
 func addProvider(p presenterProvider) {
 	presenterProviders = append(presenterProviders, p)
-}
+}*/
 
 // New takes a repository containing 1 or more Go packages, and returns a Presenter
 // for it. It tries to find the best Presenter for the given repository, but falls back
 // to a generic presenter if there's nothing better.
-func New(repo *gist7480523.GoPackageRepo) Presenter {
+func New(repo *pkg.Repo) Presenter {
 	// TODO: Potentially check in parallel.
-	for _, provider := range presenterProviders {
+	/*for _, provider := range presenterProviders {
 		if presenter := provider(repo); presenter != nil {
 			return presenter
 		}
-	}
+	}*/
 
 	return genericPresenter{repo: repo}
 }
 
 func init() {
 	// GitHub.
-	addProvider(func(repo *gist7480523.GoPackageRepo) Presenter {
+	/*addProvider(func(repo *gist7480523.GoPackageRepo) Presenter {
 		switch goPackage := repo.GoPackages()[0]; {
 		case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
 			importPathElements := strings.Split(goPackage.Bpkg.ImportPath, "/")
@@ -84,5 +83,5 @@ func init() {
 			return newGitHubPresenter(repo, "golang", repoName)
 		}
 		return nil
-	})
+	})*/
 }

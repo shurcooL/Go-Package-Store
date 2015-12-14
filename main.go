@@ -13,17 +13,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/shurcooL/Go-Package-Store/internal/util"
+	"github.com/shurcooL/Go-Package-Store/pkg"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/Go-Package-Store/repo"
-	"github.com/shurcooL/go-goon"
 	"github.com/shurcooL/go/exp/14"
-	"github.com/shurcooL/go/gists/gist7480523"
 	"github.com/shurcooL/go/gists/gist7651991"
-	"github.com/shurcooL/go/gists/gist7802150"
 	"github.com/shurcooL/go/gzip_file_server"
 	"github.com/shurcooL/go/u/u4"
-	"github.com/shurcooL/gostatus/status"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"golang.org/x/net/websocket"
 )
@@ -44,8 +40,10 @@ func commonTail(w io.Writer) error {
 
 // shouldPresentUpdate determines if the given goPackage should be presented as an available update.
 // It checks that the Go package is on default branch, does not have a dirty working tree, and does not have the remote revision.
-func shouldPresentUpdate(goPackage *gist7480523.GoPackage) bool {
-	return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
+func shouldPresentUpdate(repo *pkg.Repo) bool {
+	// TODO.
+	//return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
+	return repo.Local.Revision != repo.Remote.Revision
 }
 
 // writeRepoHTML writes a <div> presentation for an available update.
@@ -126,7 +124,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
 
 	// Calculate the list of all Go packages (grouped by rootPath).
-	var goPackagesInRepo = make(map[string][]*gist7480523.GoPackage) // Map key is rootPath.
+	/*var goPackagesInRepo = make(map[string][]*gist7480523.GoPackage) // Map key is rootPath.
 	gist7802150.MakeUpdated(goPackages)
 	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
 	if true {
@@ -158,10 +156,10 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	goon.DumpExpr(len(goPackages.List()))
-	goon.DumpExpr(len(goPackagesInRepo))
+	goon.DumpExpr(len(goPackagesInRepo))*/
 
-	universe.Wait()
-	goon.DumpExpr(len(universe.repos))
+	//universe.Wait()
+	//goon.DumpExpr(len(universe.repos))
 
 	fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
 
@@ -169,21 +167,21 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 	inChan := make(chan interface{})
 	go func() { // This needs to happen in the background because sending input will be blocked on reading output.
-		for rootPath, goPackages := range goPackagesInRepo {
-			inChan <- gist7480523.NewGoPackageRepo(rootPath, goPackages)
+		for p := range universe.Out {
+			inChan <- p
 		}
 		close(inChan)
 	}()
 	reduceFunc := func(in interface{}) interface{} {
-		repo := in.(gist7480523.GoPackageRepo)
+		repo := in.(*pkg.Repo)
 
-		goPackage := repo.GoPackages()[0]
-		goPackage.UpdateVcsFields()
-
-		if !shouldPresentUpdate(goPackage) {
+		if !shouldPresentUpdate(repo) {
 			return nil
 		}
-		repoPresenter := presenter.New(&repo)
+
+		// This part might take a while.
+		repoPresenter := presenter.New(repo)
+
 		return repoPresenter
 	}
 	outChan := gist7651991.GoReduce(inChan, 8, reduceFunc)

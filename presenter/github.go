@@ -18,7 +18,7 @@ type gitHubPresenter struct {
 	comparison *githubComparison
 }
 
-func newGitHubPresenter(repo *gist7480523.GoPackageRepo, gitHubOwner, gitHubRepo string) Presenter {
+func newGitHubPresenter(repo *gist7480523.GoPackageRepo, gitHubOwner, gitHubRepo string) *gitHubPresenter {
 	goPackage := repo.GoPackages()[0]
 	comparison := newGithubComparison(gitHubOwner, gitHubRepo, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
 	gist7802150.MakeUpdated(comparison)
@@ -59,11 +59,11 @@ func (this gitHubPresenter) Changes() <-chan Change {
 		for index := range this.comparison.cc.Commits {
 			change := Change{
 				Message: firstParagraph(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].Commit.Message),
-				Url:     template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL),
+				URL:     template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL),
 			}
 			if commentCount := this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].Commit.CommentCount; commentCount != nil && *commentCount > 0 {
 				change.Comments.Count = *commentCount
-				change.Comments.Url = template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL + "#comments")
+				change.Comments.URL = template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL + "#comments")
 			}
 			out <- change
 		}
