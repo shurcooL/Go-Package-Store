@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"sync"
 	"time"
 
+	"github.com/bradfitz/iter"
 	"github.com/shurcooL/Go-Package-Store/pkg"
+	vcs2 "github.com/shurcooL/go/vcs"
 	"golang.org/x/tools/go/vcs"
 )
 
@@ -16,19 +19,18 @@ type importPathRevision struct {
 
 func newGoUniverse() *goUniverse {
 	u := &goUniverse{
-		In:  make(chan importPathRevision, 64),
-		Out: make(chan *pkg.Repo, 64),
-
+		In:     make(chan importPathRevision, 64),
 		phase2: make(chan *pkg.Repo, 64),
-		repos:  make(map[string]*pkg.Repo),
+		Out:    make(chan *pkg.Repo, 64),
+
+		repos: make(map[string]*pkg.Repo),
 	}
-	// TODO: Multiple workers?
-	{
+	for range iter.N(8) {
 		u.wg1.Add(1)
 		go u.worker()
 	}
 	go u.wait1()
-	{
+	for range iter.N(8) {
 		u.wg2.Add(1)
 		go u.phase2Worker()
 	}
@@ -44,12 +46,14 @@ type goUniverse struct {
 	phase2 chan *pkg.Repo
 	wg2    sync.WaitGroup
 
+	// Out is the output of processed repos (complete with local and remote revisions).
 	Out chan *pkg.Repo
 
 	reposMu sync.Mutex
 	repos   map[string]*pkg.Repo // Map key is repoRoot.
 }
 
+// Done should be called after In is completely populated.
 func (u *goUniverse) Done() {
 	close(u.In)
 }
@@ -75,24 +79,25 @@ func (u *goUniverse) worker() {
 		fmt.Println("total was:", total)
 	}()
 	for p := range u.In {
-		started2 := time.Now()
+		started := time.Now()
 		// Determine repo root.
 		// This is potentially somewhat slow.
 		rr, err := vcs.RepoRootForImportPath(p.importPath, false)
 		if err != nil {
 			panic(err) // TODO.
 		}
-		fmt.Printf("rr: %v ms.\n", time.Since(started2).Seconds()*1000)
-		total += time.Since(started2).Seconds() * 1000
+		fmt.Printf("rr: %v ms.\n", time.Since(started).Seconds()*1000)
+		total += time.Since(started).Seconds() * 1000
 
 		var repo *pkg.Repo
 		u.reposMu.Lock()
 		if _, ok := u.repos[rr.Root]; !ok {
 			repo = &pkg.Repo{
 				Root: rr.Root,
-				Local: &pkg.Local{
-					Revision: &p.revision,
+				Local: pkg.Local{
+					Revision: p.revision,
 				},
+				RR: rr,
 				// TODO: Maybe keep track of import paths inside, etc.
 			}
 			u.repos[rr.Root] = repo
@@ -112,12 +117,19 @@ func (u *goUniverse) worker() {
 func (u *goUniverse) phase2Worker() {
 	defer u.wg2.Done()
 	for p := range u.phase2 {
+		started := time.Now()
 		// Determine remote revision.
 		// This is slow because it requires a network operation.
-		// TODO.
-		revision := "TODO"
-		p.Remote = &pkg.Remote{
-			Revision: &revision,
+		var revision string
+		switch p.RR.VCS.Cmd {
+		case vcs2.Git.VcsType():
+			vcs := vcs2.NewRemote(vcs2.Git, template.URL(p.RR.Repo))
+			revision = vcs.GetRemoteRev()
+		}
+		fmt.Printf("vcs.GetRemoteRev: %v ms.\n", time.Since(started).Seconds()*1000)
+
+		p.Remote = pkg.Remote{
+			Revision: revision,
 		}
 
 		u.Out <- p

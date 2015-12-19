@@ -1,19 +1,25 @@
 package pkg
 
+import "golang.org/x/tools/go/vcs"
+
 type Repo struct {
 	// Root is the import path corresponding to the root of the repository.
 	Root string
 
-	Local  *Local
-	Remote *Remote
+	// TODO: Consider. Needed for RR.VCS for phase2.
+	//       If this is kept, then should remove Root above since it's in here too.
+	RR *vcs.RepoRoot
+
+	Local  Local
+	Remote Remote
 }
 
 type Local struct {
-	Revision *string
+	Revision string
 }
 
 type Remote struct {
-	Revision *string
+	Revision string
 	//IsContained bool // True if remote commit is contained in the default local branch.
 }
 

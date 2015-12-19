@@ -40,7 +40,9 @@
 				</ul>
 			{{else}}
 				<div class="changes-list">
-					unknown changes from {{.Repo.Local.Revision}} to {{.Repo.Remote.Revision}}
+					unknown changes
+					{{with .Repo.Local.Revision}}from {{.}}{{end}}
+					{{with .Repo.Remote.Revision}}to {{.}}{{end}}
 				</div>
 			{{end}}
 		</div>

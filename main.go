@@ -110,6 +110,8 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	fmt.Println("mainHandler:", req.Method, req.URL.Path)
+
 	started := time.Now()
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
@@ -285,7 +287,9 @@ func main() {
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		goPackages = newGoPackagesFromGodeps(*godepsFlag)
+		// TODO: This starts and potentially blocks on work. Consider.
 		loadGoPackagesFromGodeps(*godepsFlag, universe)
+		fmt.Println("loadGoPackagesFromGodeps done")
 		updater = nil
 	case *govendorFlag != "":
 		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)
