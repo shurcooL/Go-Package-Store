@@ -27,14 +27,14 @@ func newGoUniverse() *goUniverse {
 	}
 	for range iter.N(8) {
 		u.wg1.Add(1)
-		go u.worker()
+		go u.worker() // Phase 1 (i.e., In) to phase 2 worker.
 	}
-	go u.wait1()
+	go u.phase12Cleanup()
 	for range iter.N(8) {
 		u.wg2.Add(1)
-		go u.phase2Worker()
+		go u.phase2Worker() // Phase 2 to phase 3 (i.e., Out) worker.
 	}
-	go u.wait2()
+	go u.phase23Cleanup()
 	return u
 }
 
@@ -58,14 +58,14 @@ func (u *goUniverse) Done() {
 	close(u.In)
 }
 
-// wait waits for phase 2 to finish and closes Out channel.
-func (u *goUniverse) wait1() {
+// phase12Cleanup waits for phase 1->2 worker to finish and closes phase2 channel.
+func (u *goUniverse) phase12Cleanup() {
 	u.wg1.Wait()
 	close(u.phase2)
 }
 
-// wait waits for phase 2 to finish and closes Out channel.
-func (u *goUniverse) wait2() {
+// phase23Cleanup waits for phase 2->3 worker to finish and closes Out channel.
+func (u *goUniverse) phase23Cleanup() {
 	u.wg2.Wait()
 	close(u.Out)
 }
