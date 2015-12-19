@@ -6,7 +6,7 @@ type Repo struct {
 	// Root is the import path corresponding to the root of the repository.
 	Root string
 
-	// TODO: Consider. Needed for RR.VCS for phase2.
+	// TODO: Consider. Needed for RR.VCS for phase2. Also needed for RR.Repo (remote URL including scheme).
 	//       If this is kept, then should remove Root above since it's in here too.
 	RR *vcs.RepoRoot
 

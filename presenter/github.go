@@ -2,42 +2,48 @@ package presenter
 
 import (
 	"html/template"
+	"log"
 	"strings"
 
 	"github.com/google/go-github/github"
-	"github.com/shurcooL/go/exp/13"
-	"github.com/shurcooL/go/gists/gist7480523"
-	"github.com/shurcooL/go/gists/gist7802150"
+	"github.com/shurcooL/Go-Package-Store/pkg"
 )
 
 type gitHubPresenter struct {
-	repo        *gist7480523.GoPackageRepo
+	repo        *pkg.Repo
 	gitHubOwner string
 	gitHubRepo  string
-
-	comparison *githubComparison
+	cc          *github.CommitsComparison
 }
 
-func newGitHubPresenter(repo *gist7480523.GoPackageRepo, gitHubOwner, gitHubRepo string) *gitHubPresenter {
-	goPackage := repo.GoPackages()[0]
-	comparison := newGithubComparison(gitHubOwner, gitHubRepo, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
-	gist7802150.MakeUpdated(comparison)
+func newGitHubPresenter(repo *pkg.Repo, gitHubOwner, gitHubRepo string) *gitHubPresenter {
+	p := &gitHubPresenter{
+		repo:        repo,
+		gitHubOwner: gitHubOwner,
+		gitHubRepo:  gitHubRepo,
+	}
 
-	p := &gitHubPresenter{repo: repo, gitHubOwner: gitHubOwner, gitHubRepo: gitHubRepo, comparison: comparison}
+	// This might take a while.
+	if cc, _, err := gh.Repositories.CompareCommits(gitHubOwner, gitHubRepo, repo.Local.Revision, repo.Remote.Revision); err == nil {
+		p.cc = cc
+	} else {
+		log.Println("warning: gh.Repositories.CompareCommits:", err)
+	}
+
 	return p
 }
 
-func (this gitHubPresenter) Repo() *gist7480523.GoPackageRepo {
+func (this gitHubPresenter) Repo() *pkg.Repo {
 	return this.repo
 }
 
 func (this gitHubPresenter) HomePage() *template.URL {
-	switch goPackage := this.repo.GoPackages()[0]; {
-	case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
+	switch {
+	case strings.HasPrefix(this.repo.RepoImportPath(), "github.com/"):
 		url := template.URL("https://github.com/" + this.gitHubOwner + "/" + this.gitHubRepo)
 		return &url
 	default:
-		url := template.URL("http://" + goPackage.Bpkg.ImportPath)
+		url := template.URL("http://" + this.repo.RepoImportPath())
 		return &url
 	}
 }
@@ -51,19 +57,19 @@ func (this gitHubPresenter) Image() template.URL {
 }
 
 func (this gitHubPresenter) Changes() <-chan Change {
-	if this.comparison.err != nil {
+	if this.cc == nil {
 		return nil
 	}
 	out := make(chan Change)
 	go func() {
-		for index := range this.comparison.cc.Commits {
+		for index := range this.cc.Commits {
 			change := Change{
-				Message: firstParagraph(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].Commit.Message),
-				URL:     template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL),
+				Message: firstParagraph(*this.cc.Commits[len(this.cc.Commits)-1-index].Commit.Message),
+				URL:     template.URL(*this.cc.Commits[len(this.cc.Commits)-1-index].HTMLURL),
 			}
-			if commentCount := this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].Commit.CommentCount; commentCount != nil && *commentCount > 0 {
+			if commentCount := this.cc.Commits[len(this.cc.Commits)-1-index].Commit.CommentCount; commentCount != nil && *commentCount > 0 {
 				change.Comments.Count = *commentCount
-				change.Comments.URL = template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL + "#comments")
+				change.Comments.URL = template.URL(*this.cc.Commits[len(this.cc.Commits)-1-index].HTMLURL + "#comments")
 			}
 			out <- change
 		}
@@ -80,29 +86,5 @@ func firstParagraph(s string) string {
 	return s
 }
 
-// ---
-
+//var gh = github.NewClient(oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: ""})))
 var gh = github.NewClient(nil)
-
-func newGithubComparison(gitHubOwner, gitHubRepo string, local *exp13.VcsLocal, remote *exp13.VcsRemote) *githubComparison {
-	this := &githubComparison{gitHubOwner: gitHubOwner, gitHubRepo: gitHubRepo}
-	this.AddSources(local, remote)
-	return this
-}
-
-type githubComparison struct {
-	gitHubOwner string
-	gitHubRepo  string
-
-	cc  *github.CommitsComparison
-	err error
-
-	gist7802150.DepNode2
-}
-
-func (this *githubComparison) Update() {
-	localRev := this.GetSources()[0].(*exp13.VcsLocal).LocalRev
-	remoteRev := this.GetSources()[1].(*exp13.VcsRemote).RemoteRev
-
-	this.cc, _, this.err = gh.Repositories.CompareCommits(this.gitHubOwner, this.gitHubRepo, localRev, remoteRev)
-}
