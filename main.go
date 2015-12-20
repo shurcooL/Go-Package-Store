@@ -47,14 +47,15 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 		return false
 	}
 
+	if repo.Remote.IsContained {
+		return false
+	}
+
 	if repo.VCS != nil {
 		if repo.VCS.GetLocalBranch() != repo.VCS.GetDefaultBranch() {
 			return false
 		}
 		if repo.VCS.GetStatus() != "" {
-			return false
-		}
-		if repo.VCS.IsContained(repo.Remote.Revision) {
 			return false
 		}
 	}

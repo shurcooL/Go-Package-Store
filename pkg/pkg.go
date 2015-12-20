@@ -28,8 +28,8 @@ type Local struct {
 }
 
 type Remote struct {
-	Revision string
-	//IsContained bool // True if remote commit is contained in the default local branch.
+	Revision    string
+	IsContained bool // True if remote commit is contained in the default local branch.
 }
 
 // RepoImportPath returns what would be the import path of the root folder of the repository. It may or may not

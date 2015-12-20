@@ -201,6 +201,9 @@ func (u *goUniverse) phase2Worker() {
 
 			// TODO: Organize.
 			p.RemoteURL = localVCS.GetRemote()
+
+			// TODO: Organize.
+			p.Remote.IsContained = localVCS.IsContained(remoteRevision)
 		}
 
 		u.Out <- p
