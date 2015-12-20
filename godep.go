@@ -56,22 +56,6 @@ type goPackagesFromGodeps struct {
 	gist7802150.DepNode2
 }
 
-func loadGoPackagesFromGodeps(path string, universe *goUniverse) {
-	g, err := readGodeps(path)
-	if err != nil {
-		// TODO: Handle errors more gracefully.
-		log.Fatalln("readGodeps:", err)
-	}
-
-	for _, dependency := range g.Deps {
-		universe.In <- importPathRevision{
-			importPath: dependency.ImportPath,
-			revision:   dependency.Rev,
-		}
-	}
-	universe.Done()
-}
-
 func newGoPackagesFromGodeps(path string) exp14.GoPackageList {
 	return &goPackagesFromGodeps{path: path}
 }

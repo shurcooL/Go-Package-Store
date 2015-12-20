@@ -41,8 +41,24 @@ func commonTail(w io.Writer) error {
 // shouldPresentUpdate determines if the given goPackage should be presented as an available update.
 // It checks that the Go package is on default branch, does not have a dirty working tree, and does not have the remote revision.
 func shouldPresentUpdate(repo *pkg.Repo) bool {
-	// TODO.
 	//return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
+
+	if repo.RemoteURL == "" || repo.Local.Revision == "" || repo.Remote.Revision == "" {
+		return false
+	}
+
+	if repo.VCS != nil {
+		if repo.VCS.GetLocalBranch() != repo.VCS.GetDefaultBranch() {
+			return false
+		}
+		if repo.VCS.GetStatus() != "" {
+			return false
+		}
+		if repo.VCS.IsContained(repo.Remote.Revision) {
+			return false
+		}
+	}
+
 	return repo.Local.Revision != repo.Remote.Revision
 }
 
@@ -279,17 +295,51 @@ func main() {
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
 		goPackages = &exp14.GoPackages{SkipGoroot: true} // All Go packages in GOPATH (not including GOROOT).
-		updater = repo.GopathUpdater{GoPackages: goPackages}
+		//updater = repo.GopathUpdater{GoPackages: goPackages}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
-		goPackages = &exp14.GoPackagesFromReader{Reader: os.Stdin}
-		updater = repo.GopathUpdater{GoPackages: goPackages}
+		//goPackages = &exp14.GoPackagesFromReader{Reader: os.Stdin}
+		//updater = repo.GopathUpdater{GoPackages: goPackages}
+
+		reduceFunc := func(importPath string) interface{} {
+			return importPath
+		}
+
+		goPackages := gist7651991.GoReduceLinesFromReader(os.Stdin, 8, reduceFunc)
+
+		go func() {
+			for {
+				goPackage, ok := <-goPackages
+				if !ok {
+					break
+				}
+				universe.InImportPath <- importPath{
+					importPath: goPackage.(string),
+				}
+			}
+			universe.Done()
+		}()
+
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
-		goPackages = newGoPackagesFromGodeps(*godepsFlag)
-		// TODO: This starts and potentially blocks on work. Consider.
-		loadGoPackagesFromGodeps(*godepsFlag, universe)
-		fmt.Println("loadGoPackagesFromGodeps done")
+		//goPackages = newGoPackagesFromGodeps(*godepsFlag)
+
+		g, err := readGodeps(*godepsFlag)
+		if err != nil {
+			// TODO: Handle errors more gracefully.
+			log.Fatalln("readGodeps:", err)
+		}
+
+		go func() {
+			for _, dependency := range g.Deps {
+				universe.In <- importPathRevision{
+					importPath: dependency.ImportPath,
+					revision:   dependency.Rev,
+				}
+			}
+			universe.Done()
+			fmt.Println("loadGoPackagesFromGodeps done")
+		}()
 		updater = nil
 	case *govendorFlag != "":
 		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)

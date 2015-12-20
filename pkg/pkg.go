@@ -1,14 +1,23 @@
 package pkg
 
-import "golang.org/x/tools/go/vcs"
+import (
+	vcs2 "github.com/shurcooL/go/vcs"
+	"golang.org/x/tools/go/vcs"
+)
 
 type Repo struct {
 	// Root is the import path corresponding to the root of the repository.
 	Root string
 
-	// TODO: Consider. Needed for RR.VCS for phase2. Also needed for RR.Repo (remote URL including scheme).
+	// RemoteURL is the remote URL, including scheme.
+	RemoteURL string
+
+	// TODO: Consider. Needed for RR.VCS for phase2. And maybe will be needed for repo updater (RR.VCS).
 	//       If this is kept, then should remove Root above since it's in here too.
 	RR *vcs.RepoRoot
+
+	// TODO: Consider. Overlaps with RR.
+	VCS vcs2.Vcs
 
 	Local  Local
 	Remote Remote

@@ -75,12 +75,12 @@ func init() {
 			}
 			return newGitHubPresenter(repo, gitHubOwner, gitHubRepo)
 		// Underlying GitHub remote.
-		case strings.HasPrefix(repo.RR.Repo, "https://github.com/"):
-			importPathElements := strings.Split(strings.TrimSuffix(repo.RR.Repo[len("https://"):], ".git"), "/")
+		case strings.HasPrefix(repo.RemoteURL, "https://github.com/"):
+			importPathElements := strings.Split(strings.TrimSuffix(repo.RemoteURL[len("https://"):], ".git"), "/")
 			return newGitHubPresenter(repo, importPathElements[1], importPathElements[2])
 		// Go repo remote has a GitHub mirror repo.
-		case strings.HasPrefix(repo.RR.Repo, "https://go.googlesource.com/"):
-			repoName := repo.RR.Repo[len("https://go.googlesource.com/"):]
+		case strings.HasPrefix(repo.RemoteURL, "https://go.googlesource.com/"):
+			repoName := repo.RemoteURL[len("https://go.googlesource.com/"):]
 			return newGitHubPresenter(repo, "golang", repoName)
 		}
 		return nil
