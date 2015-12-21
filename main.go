@@ -16,7 +16,6 @@ import (
 	"github.com/shurcooL/Go-Package-Store/pkg"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/Go-Package-Store/repo"
-	"github.com/shurcooL/go/exp/14"
 	"github.com/shurcooL/go/gists/gist7651991"
 	"github.com/shurcooL/go/gzip_file_server"
 	"github.com/shurcooL/go/u/u4"
@@ -73,11 +72,6 @@ func writeRepoHTML(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 }
 
 var (
-	// goPackages is a cached list of Go packages to work with.
-	goPackages exp14.GoPackageList
-
-	goPackages2 <-chan importPathRevision
-
 	universe *goUniverse = newGoUniverse()
 
 	// updater is set based on the source of Go packages. If nil, it means
@@ -142,46 +136,6 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 	fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
 
-	// Calculate the list of all Go packages (grouped by rootPath).
-	/*var goPackagesInRepo = make(map[string][]*gist7480523.GoPackage) // Map key is rootPath.
-	gist7802150.MakeUpdated(goPackages)
-	fmt.Printf("Part 1b: %v ms.\n", time.Since(started).Seconds()*1000)
-	if true {
-		for _, goPackage := range goPackages.List() {
-			if rootPath := util.GetRootPath(goPackage); rootPath != "" {
-				goPackagesInRepo[rootPath] = append(goPackagesInRepo[rootPath], goPackage)
-			}
-		}
-	} else {
-		inChan := make(chan interface{})
-		go func() { // This needs to happen in the background because sending input will be blocked on reading output.
-			for _, goPackage := range goPackages.List() {
-				inChan <- goPackage
-			}
-			close(inChan)
-		}()
-		reduceFunc := func(in interface{}) interface{} {
-			goPackage := in.(*gist7480523.GoPackage)
-			if rootPath := util.GetRootPath(goPackage); rootPath != "" {
-				return gist7480523.NewGoPackageRepo(rootPath, []*gist7480523.GoPackage{goPackage})
-			}
-			return nil
-		}
-		outChan := gist7651991.GoReduce(inChan, 64, reduceFunc)
-		for out := range outChan {
-			repo := out.(gist7480523.GoPackageRepo)
-			goPackagesInRepo[repo.RootPath()] = append(goPackagesInRepo[repo.RootPath()], repo.GoPackages()[0])
-		}
-	}
-
-	goon.DumpExpr(len(goPackages.List()))
-	goon.DumpExpr(len(goPackagesInRepo))*/
-
-	//universe.Wait()
-	//goon.DumpExpr(len(universe.repos))
-
-	fmt.Printf("Part 2: %v ms.\n", time.Since(started).Seconds()*1000)
-
 	updatesAvailable := 0
 
 	inChan := make(chan interface{})
@@ -203,19 +157,15 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 		return repoPresenter
 	}
-	outChan := gist7651991.GoReduce(inChan, 8, reduceFunc)
-
-	for out := range outChan {
-		started2 := time.Now()
-
+	for out := range gist7651991.GoReduce(inChan, 8, reduceFunc) {
 		repoPresenter := out.(presenter.Presenter)
 
+		started := time.Now()
 		updatesAvailable++
 		writeRepoHTML(w, repoPresenter)
+		fmt.Printf("Part 2b: %v ms.\n", time.Since(started).Seconds()*1000)
 
 		flusher.Flush()
-
-		fmt.Printf("Part 2b: %v ms.\n", time.Since(started2).Seconds()*1000)
 
 		/*log.Println("WriteRepoHtml")
 		goon.DumpExpr(repoPresenter.Repo().ImportPathPattern())
@@ -295,19 +245,16 @@ func main() {
 	switch {
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
-		goPackages = &exp14.GoPackages{SkipGoroot: true} // All Go packages in GOPATH (not including GOROOT).
+		//goPackages = &exp14.GoPackages{SkipGoroot: true} // All Go packages in GOPATH (not including GOROOT).
 		//updater = repo.GopathUpdater{GoPackages: goPackages}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		//goPackages = &exp14.GoPackagesFromReader{Reader: os.Stdin}
 		//updater = repo.GopathUpdater{GoPackages: goPackages}
-
 		reduceFunc := func(importPath string) interface{} {
 			return importPath
 		}
-
 		goPackages := gist7651991.GoReduceLinesFromReader(os.Stdin, 8, reduceFunc)
-
 		go func() {
 			for {
 				goPackage, ok := <-goPackages
@@ -320,17 +267,13 @@ func main() {
 			}
 			universe.Done()
 		}()
-
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
-		//goPackages = newGoPackagesFromGodeps(*godepsFlag)
-
 		g, err := readGodeps(*godepsFlag)
 		if err != nil {
 			// TODO: Handle errors more gracefully.
 			log.Fatalln("readGodeps:", err)
 		}
-
 		go func() {
 			for _, dependency := range g.Deps {
 				universe.In <- importPathRevision{
@@ -344,7 +287,21 @@ func main() {
 		updater = nil
 	case *govendorFlag != "":
 		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)
-		goPackages = newGoPackagesFromGovendor(*govendorFlag)
+		v, err := readGovendor(*govendorFlag)
+		if err != nil {
+			// TODO: Handle errors more gracefully.
+			log.Fatalln("readGovendor:", err)
+		}
+		go func() {
+			for _, dependency := range v.Package {
+				universe.In <- importPathRevision{
+					importPath: dependency.Path,
+					revision:   dependency.Revision,
+				}
+			}
+			universe.Done()
+			fmt.Println("loadGoPackagesFromGovendor done")
+		}()
 		updater = nil
 	}
 

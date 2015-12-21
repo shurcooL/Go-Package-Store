@@ -183,10 +183,16 @@ func (u *goUniverse) phase2Worker() {
 		case p.VCS != nil:
 			remoteVCS = p.VCS
 			localVCS = p.VCS
-		case p.RR != nil && p.RR.VCS.Cmd == vcs2.Git.VcsType():
-			remoteVCS = vcs2.NewRemote(vcs2.Git, template.URL(p.RR.Repo))
+		case p.RR != nil:
+			switch p.RR.VCS.Cmd {
+			case vcs2.Git.VcsType():
+				remoteVCS = vcs2.NewRemote(vcs2.Git, template.URL(p.RR.Repo))
+			}
 		}
-		remoteRevision := remoteVCS.GetRemoteRev()
+		var remoteRevision string
+		if remoteVCS != nil {
+			remoteRevision = remoteVCS.GetRemoteRev()
+		}
 		//fmt.Printf("remoteVCS.GetRemoteRev: %v ms.\n", time.Since(started).Seconds()*1000)
 
 		p.Remote = pkg.Remote{
@@ -203,7 +209,9 @@ func (u *goUniverse) phase2Worker() {
 			p.RemoteURL = localVCS.GetRemote()
 
 			// TODO: Organize.
-			p.Remote.IsContained = localVCS.IsContained(remoteRevision)
+			if remoteVCS != nil {
+				p.Remote.IsContained = localVCS.IsContained(remoteRevision)
+			}
 		}
 
 		u.Out <- p
