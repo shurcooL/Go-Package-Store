@@ -7,14 +7,19 @@ import (
 
 type Repo struct {
 	// Root is the import path corresponding to the root of the repository.
+	// TODO: Consider. Overlaps with RR.
 	Root string
 
 	// RemoteURL is the remote URL, including scheme.
+	// TODO: Consider. Overlaps with RR.
 	RemoteURL string
 
-	// TODO: Consider. Needed for RR.VCS for phase2. And maybe will be needed for repo updater (RR.VCS).
+	// TODO: Consider. Needed for RR.VCS for phase2.
 	//       If this is kept, then should remove Root above since it's in here too.
-	RR *vcs.RepoRoot
+	//RR *vcs.RepoRoot
+
+	// TODO: Consider. Overlaps with RR.
+	Cmd *vcs.Cmd
 
 	// TODO: Consider. Overlaps with RR.
 	VCS vcs2.Vcs

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/shurcooL/Go-Package-Store/pkg"
+	"github.com/shurcooL/Go-Package-Store/pkgs"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/Go-Package-Store/repo"
 	"github.com/shurcooL/go/gists/gist7651991"
@@ -72,6 +73,8 @@ func writeRepoHTML(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 }
 
 var (
+	goPackageList *pkgs.GoPackageList
+
 	universe *goUniverse = newGoUniverse()
 
 	// updater is set based on the source of Go packages. If nil, it means
@@ -112,6 +115,7 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 
 	err := <-updateRequest.resultChan
 	_ = err // TODO: Maybe display error in frontend. For now, don't do anything.
+	fmt.Println("update worker:", err)
 }
 
 // Main index page handler.
@@ -155,6 +159,13 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		// This part might take a while.
 		repoPresenter := presenter.New(repo)
 
+		goPackageList.Lock()
+		goPackageList.List[repo.Root] = pkgs.RepoPresenter{
+			Repo:      repo,
+			Presenter: repoPresenter,
+		}
+		goPackageList.Unlock()
+
 		return repoPresenter
 	}
 	for out := range gist7651991.GoReduce(inChan, 8, reduceFunc) {
@@ -166,23 +177,6 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		fmt.Printf("Part 2b: %v ms.\n", time.Since(started).Seconds()*1000)
 
 		flusher.Flush()
-
-		/*log.Println("WriteRepoHtml")
-		goon.DumpExpr(repoPresenter.Repo().ImportPathPattern())
-		goon.DumpExpr(repoPresenter.Repo().ImportPaths())
-		goon.DumpExpr(len(repoPresenter.Repo().GoPackages()))
-		goon.DumpExpr(repoPresenter.Repo().GoPackages()[0].Bpkg.ImportPath)
-		goon.DumpExpr(repoPresenter.Repo().GoPackages()[0].Dir.Repo.VcsLocal.LocalRev)
-		goon.DumpExpr(repoPresenter.Repo().GoPackages()[0].Dir.Repo.VcsRemote.RemoteRev)
-		goon.DumpExpr(repoPresenter.HomePage())
-		goon.DumpExpr(repoPresenter.Image())
-		var changes []presenter.Change
-		if changesChan := repoPresenter.Changes(); changesChan != nil {
-			for c := range changesChan {
-				changes = append(changes, c)
-			}
-		}
-		goon.DumpExpr(changes)*/
 	}
 
 	if updatesAvailable == 0 {
@@ -267,6 +261,8 @@ func main() {
 			}
 			universe.Done()
 		}()
+		goPackageList = &pkgs.GoPackageList{List: make(map[string]pkgs.RepoPresenter)}
+		updater = repo.GopathUpdater{GoPackages: goPackageList}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)

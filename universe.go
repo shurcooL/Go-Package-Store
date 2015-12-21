@@ -106,10 +106,10 @@ func (u *goUniverse) worker() {
 			repo = &pkg.Repo{
 				Root:      rr.Root,
 				RemoteURL: rr.Repo,
+				Cmd:       rr.VCS,
 				Local: pkg.Local{
 					Revision: p.revision,
 				},
-				RR: rr,
 				// TODO: Maybe keep track of import paths inside, etc.
 			}
 			u.repos[rr.Root] = repo
@@ -141,12 +141,12 @@ func (u *goUniverse) workerB() {
 		if bpkg.Goroot {
 			continue
 		}
-		vcs := vcs2.New(bpkg.Dir)
-		if vcs == nil {
+		vcs2 := vcs2.New(bpkg.Dir)
+		if vcs2 == nil {
 			log.Println("not in VCS:", bpkg.Dir)
 			continue
 		}
-		repoRoot := vcs.RootPath()[len(bpkg.SrcRoot)+1:] // TODO: Consider sym links, etc.
+		repoRoot := vcs2.RootPath()[len(bpkg.SrcRoot)+1:] // TODO: Consider sym links, etc.
 		//fmt.Printf("build + vcs: %v ms.\n", time.Since(started).Seconds()*1000)
 
 		var repo *pkg.Repo
@@ -154,7 +154,8 @@ func (u *goUniverse) workerB() {
 		if _, ok := u.repos[repoRoot]; !ok {
 			repo = &pkg.Repo{
 				Root: repoRoot,
-				VCS:  vcs,
+				Cmd:  vcs.ByCmd(vcs2.Type().VcsType()),
+				VCS:  vcs2,
 				// TODO: Maybe keep track of import paths inside, etc.
 			}
 			u.repos[repoRoot] = repo
@@ -183,10 +184,10 @@ func (u *goUniverse) phase2Worker() {
 		case p.VCS != nil:
 			remoteVCS = p.VCS
 			localVCS = p.VCS
-		case p.RR != nil:
-			switch p.RR.VCS.Cmd {
+		case p.Cmd != nil: // TODO: Make this better.
+			switch p.Cmd.Cmd {
 			case vcs2.Git.VcsType():
-				remoteVCS = vcs2.NewRemote(vcs2.Git, template.URL(p.RR.Repo))
+				remoteVCS = vcs2.NewRemote(vcs2.Git, template.URL(p.RemoteURL))
 			}
 		}
 		var remoteRevision string
