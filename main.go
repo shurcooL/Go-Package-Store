@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"html/template"
@@ -14,10 +15,8 @@ import (
 	"time"
 
 	"github.com/shurcooL/Go-Package-Store/pkg"
-	"github.com/shurcooL/Go-Package-Store/pkgs"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/Go-Package-Store/repo"
-	"github.com/shurcooL/go/gists/gist7651991"
 	"github.com/shurcooL/go/gzip_file_server"
 	"github.com/shurcooL/go/u/u4"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
@@ -73,8 +72,6 @@ func writeRepoHTML(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 }
 
 var (
-	goPackageList *pkgs.GoPackageList
-
 	universe *goUniverse = newGoUniverse()
 
 	// updater is set based on the source of Go packages. If nil, it means
@@ -142,34 +139,8 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 	updatesAvailable := 0
 
-	inChan := make(chan interface{})
-	go func() { // This needs to happen in the background because sending input will be blocked on reading output.
-		for p := range universe.Out {
-			inChan <- p
-		}
-		close(inChan)
-	}()
-	reduceFunc := func(in interface{}) interface{} {
-		repo := in.(*pkg.Repo)
-
-		if !shouldPresentUpdate(repo) {
-			return nil
-		}
-
-		// This part might take a while.
-		repoPresenter := presenter.New(repo)
-
-		goPackageList.Lock()
-		goPackageList.List[repo.Root] = pkgs.RepoPresenter{
-			Repo:      repo,
-			Presenter: repoPresenter,
-		}
-		goPackageList.Unlock()
-
-		return repoPresenter
-	}
-	for out := range gist7651991.GoReduce(inChan, 8, reduceFunc) {
-		repoPresenter := out.(presenter.Presenter)
+	for out := range universe.Out() {
+		repoPresenter := out.Presenter
 
 		started := time.Now()
 		updatesAvailable++
@@ -243,26 +214,13 @@ func main() {
 		//updater = repo.GopathUpdater{GoPackages: goPackages}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
-		//goPackages = &exp14.GoPackagesFromReader{Reader: os.Stdin}
-		//updater = repo.GopathUpdater{GoPackages: goPackages}
-		reduceFunc := func(importPath string) interface{} {
-			return importPath
+		br := bufio.NewReader(os.Stdin)
+		for line, err := br.ReadString('\n'); err == nil; line, err = br.ReadString('\n') {
+			importPath := line[:len(line)-1] // Trim last newline.
+			universe.InImportPath <- importPath
 		}
-		goPackages := gist7651991.GoReduceLinesFromReader(os.Stdin, 8, reduceFunc)
-		go func() {
-			for {
-				goPackage, ok := <-goPackages
-				if !ok {
-					break
-				}
-				universe.InImportPath <- importPath{
-					importPath: goPackage.(string),
-				}
-			}
-			universe.Done()
-		}()
-		goPackageList = &pkgs.GoPackageList{List: make(map[string]pkgs.RepoPresenter)}
-		updater = repo.GopathUpdater{GoPackages: goPackageList}
+		universe.Done()
+		updater = repo.GopathUpdater{GoPackages: universe.GoPackageList}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)

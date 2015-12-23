@@ -9,7 +9,7 @@ import (
 
 type GoPackageList struct {
 	sync.Mutex
-	List map[string]RepoPresenter // Map key is repoRoot.
+	List map[string]*RepoPresenter // Map key is repoRoot.
 }
 
 type RepoPresenter struct {

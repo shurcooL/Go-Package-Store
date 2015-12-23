@@ -13,7 +13,9 @@ type gitHubPresenter struct {
 	repo        *pkg.Repo
 	gitHubOwner string
 	gitHubRepo  string
-	cc          *github.CommitsComparison
+
+	cc    *github.CommitsComparison
+	image template.URL
 }
 
 func newGitHubPresenter(repo *pkg.Repo, gitHubOwner, gitHubRepo string) *gitHubPresenter {
@@ -28,6 +30,13 @@ func newGitHubPresenter(repo *pkg.Repo, gitHubOwner, gitHubRepo string) *gitHubP
 		p.cc = cc
 	} else {
 		log.Println("warning: gh.Repositories.CompareCommits:", err)
+	}
+
+	// Use the repo owner avatar image.
+	if user, _, err := gh.Users.Get(gitHubOwner); err == nil && user.AvatarURL != nil {
+		p.image = template.URL(*user.AvatarURL)
+	} else {
+		p.image = "https://github.com/images/gravatars/gravatar-user-420.png"
 	}
 
 	return p
@@ -49,11 +58,7 @@ func (this gitHubPresenter) HomePage() *template.URL {
 }
 
 func (this gitHubPresenter) Image() template.URL {
-	// Use the repo owner avatar image.
-	if user, _, err := gh.Users.Get(this.gitHubOwner); err == nil && user.AvatarURL != nil {
-		return template.URL(*user.AvatarURL)
-	}
-	return "https://github.com/images/gravatars/gravatar-user-420.png"
+	return this.image
 }
 
 func (this gitHubPresenter) Changes() <-chan Change {
