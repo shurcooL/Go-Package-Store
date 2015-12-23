@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/bradfitz/iter"
 	"github.com/shurcooL/Go-Package-Store/pkg"
@@ -71,7 +72,7 @@ func NewGoWorkspace() *goWorkspace {
 	}
 	for range iter.N(8) {
 		u.wg1B.Add(1)
-		go u.worker() // Phase 1 (i.e., inImportPathRevision) to phase 2 worker.
+		go u.workerImportPathRevision() // Phase 1 (i.e., inImportPathRevision) to phase 2 worker.
 	}
 	go func() {
 		u.wg1A.Wait()
@@ -95,7 +96,6 @@ func NewGoWorkspace() *goWorkspace {
 	go func() {
 		u.wg3.Wait()
 		close(u.out)
-		fmt.Println("phase34Cleanup done.")
 	}()
 
 	go u.run()
@@ -173,6 +173,7 @@ Outer:
 	for req := range u.newObserver {
 		u.GoPackageList.Lock()
 		ch := make(chan *pkgs.RepoPresenter, len(u.GoPackageList.List))
+		// TODO: By now, all packages are known, so consider sorting them.
 		for _, repoPresenter := range u.GoPackageList.List {
 			ch <- repoPresenter
 		}
@@ -231,7 +232,7 @@ func (u *goWorkspace) workerImportPath() {
 }
 
 // worker for phase 1, sends unique repos to phase 2.
-func (u *goWorkspace) worker() {
+func (u *goWorkspace) workerImportPathRevision() {
 	defer u.wg1B.Done()
 	for p := range u.inImportPathRevision {
 		//started := time.Now()
@@ -324,8 +325,12 @@ func (u *goWorkspace) phase34Worker() {
 			continue
 		}
 
+		started := time.Now()
+
 		// This part might take a while.
 		repoPresenter := presenter.New(repo)
+
+		fmt.Printf("Part 2b: %v ms.\n", time.Since(started).Seconds()*1000)
 
 		u.out <- &pkgs.RepoPresenter{
 			Repo:      repo,

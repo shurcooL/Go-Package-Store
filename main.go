@@ -142,10 +142,8 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	for out := range universe.Out() {
 		repoPresenter := out.Presenter
 
-		started := time.Now()
 		updatesAvailable++
 		writeRepoHTML(w, repoPresenter)
-		fmt.Printf("Part 2b: %v ms.\n", time.Since(started).Seconds()*1000)
 
 		flusher.Flush()
 	}
@@ -214,12 +212,17 @@ func main() {
 		//updater = repo.GopathUpdater{GoPackages: goPackages}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
-		br := bufio.NewReader(os.Stdin)
-		for line, err := br.ReadString('\n'); err == nil; line, err = br.ReadString('\n') {
-			importPath := line[:len(line)-1] // Trim last newline.
-			universe.Add(importPath)
-		}
-		universe.Done()
+		go func() { // This needs to happen in the background because sending input will be blocked on processing.
+			br := bufio.NewReader(os.Stdin)
+			packages := 0
+			for line, err := br.ReadString('\n'); err == nil; line, err = br.ReadString('\n') {
+				importPath := line[:len(line)-1] // Trim last newline.
+				universe.Add(importPath)
+				packages++
+			}
+			universe.Done()
+			fmt.Printf("%v packages.\n", packages)
+		}()
 		updater = repo.GopathUpdater{GoPackages: universe.GoPackageList}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
@@ -228,7 +231,7 @@ func main() {
 			// TODO: Handle errors more gracefully.
 			log.Fatalln("readGodeps:", err)
 		}
-		go func() {
+		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range g.Deps {
 				universe.AddRevision(dependency.ImportPath, dependency.Rev)
 			}
@@ -243,7 +246,7 @@ func main() {
 			// TODO: Handle errors more gracefully.
 			log.Fatalln("readGovendor:", err)
 		}
-		go func() {
+		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range v.Package {
 				universe.AddRevision(dependency.Path, dependency.Revision)
 			}

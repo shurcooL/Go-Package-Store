@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/shurcooL/Go-Package-Store/pkgs"
-	"github.com/shurcooL/go-goon"
 )
 
 // GopathUpdater is an Updater that updates Go packages in local GOPATH workspaces.
@@ -16,7 +15,6 @@ type GopathUpdater struct {
 
 func (u GopathUpdater) Update(importPathPattern string) error {
 	repoRoot := importPathPattern[:len(importPathPattern)-4]
-	goon.DumpExpr(repoRoot)
 
 	u.GoPackages.Lock()
 	goPackage, ok := u.GoPackages.List[repoRoot]
@@ -35,11 +33,18 @@ func (u GopathUpdater) Update(importPathPattern string) error {
 	}
 
 	rootPath := goPackage.Repo.VCS.RootPath()
-	goon.DumpExpr(rootPath)
 
 	vcs := goPackage.Repo.Cmd
 	fmt.Printf("cd %s\n", rootPath)
 	fmt.Printf("%s %s", vcs.Cmd, vcs.DownloadCmd)
 	err := vcs.Download(rootPath)
+
+	if err == nil {
+		u.GoPackages.Lock()
+		// TODO: Consider marking the repo as "Updated" and display it that way, etc.
+		delete(u.GoPackages.List, repoRoot)
+		u.GoPackages.Unlock()
+	}
+
 	return err
 }
