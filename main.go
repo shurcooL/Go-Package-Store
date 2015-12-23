@@ -72,7 +72,7 @@ func writeRepoHTML(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 }
 
 var (
-	universe *goUniverse = newGoUniverse()
+	universe *goWorkspace = NewGoWorkspace()
 
 	// updater is set based on the source of Go packages. If nil, it means
 	// we don't have support to update Go packages from the current source.
@@ -217,7 +217,7 @@ func main() {
 		br := bufio.NewReader(os.Stdin)
 		for line, err := br.ReadString('\n'); err == nil; line, err = br.ReadString('\n') {
 			importPath := line[:len(line)-1] // Trim last newline.
-			universe.InImportPath <- importPath
+			universe.Add(importPath)
 		}
 		universe.Done()
 		updater = repo.GopathUpdater{GoPackages: universe.GoPackageList}
@@ -230,10 +230,7 @@ func main() {
 		}
 		go func() {
 			for _, dependency := range g.Deps {
-				universe.In <- importPathRevision{
-					importPath: dependency.ImportPath,
-					revision:   dependency.Rev,
-				}
+				universe.AddRevision(dependency.ImportPath, dependency.Rev)
 			}
 			universe.Done()
 			fmt.Println("loadGoPackagesFromGodeps done")
@@ -248,10 +245,7 @@ func main() {
 		}
 		go func() {
 			for _, dependency := range v.Package {
-				universe.In <- importPathRevision{
-					importPath: dependency.Path,
-					revision:   dependency.Revision,
-				}
+				universe.AddRevision(dependency.Path, dependency.Revision)
 			}
 			universe.Done()
 			fmt.Println("loadGoPackagesFromGovendor done")

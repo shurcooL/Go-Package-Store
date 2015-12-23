@@ -20,16 +20,16 @@ type importPathRevision struct {
 	revision   string
 }
 
-// TODO: Rename to goWorkspace or something. It's a local workspace environment, meaning each repo has local and remote components.
-type goUniverse struct {
+// goWorkspace is a workspace environment, meaning each repo has local and remote components.
+type goWorkspace struct {
 	reposMu sync.Mutex
 	repos   map[string]*pkg.Repo // Map key is repoRoot.
 
-	In   chan importPathRevision
-	wg1A sync.WaitGroup
-
-	InImportPath chan string
+	inImportPath chan string
 	wg1B         sync.WaitGroup
+
+	inImportPathRevision chan importPathRevision
+	wg1A                 sync.WaitGroup
 
 	phase2 chan *pkg.Repo
 	wg2    sync.WaitGroup
@@ -42,34 +42,36 @@ type goUniverse struct {
 	// out is the output of processed and presented repos (complete with repo.Presenter).
 	out chan *pkgs.RepoPresenter
 
-	registryReq    chan struct{}
-	registryResult chan chan *pkgs.RepoPresenter
-	listeners      map[chan *pkgs.RepoPresenter]struct{}
-	GoPackageList  *pkgs.GoPackageList
+	newObserver   chan observerRequest
+	observers     map[chan *pkgs.RepoPresenter]struct{}
+	GoPackageList *pkgs.GoPackageList
 }
 
-func newGoUniverse() *goUniverse {
-	u := &goUniverse{
-		repos:        make(map[string]*pkg.Repo),
-		In:           make(chan importPathRevision, 64),
-		InImportPath: make(chan string, 64),
-		phase2:       make(chan *pkg.Repo, 64),
-		phase3:       make(chan *pkg.Repo, 64),
-		out:          make(chan *pkgs.RepoPresenter, 64),
+type observerRequest struct {
+	Response chan chan *pkgs.RepoPresenter
+}
 
-		registryReq:    make(chan struct{}),
-		registryResult: make(chan chan *pkgs.RepoPresenter),
-		listeners:      make(map[chan *pkgs.RepoPresenter]struct{}),
-		GoPackageList:  &pkgs.GoPackageList{List: make(map[string]*pkgs.RepoPresenter)},
+func NewGoWorkspace() *goWorkspace {
+	u := &goWorkspace{
+		repos:                make(map[string]*pkg.Repo),
+		inImportPath:         make(chan string, 64),
+		inImportPathRevision: make(chan importPathRevision, 64),
+		phase2:               make(chan *pkg.Repo, 64),
+		phase3:               make(chan *pkg.Repo, 64),
+		out:                  make(chan *pkgs.RepoPresenter, 64),
+
+		newObserver:   make(chan observerRequest),
+		observers:     make(map[chan *pkgs.RepoPresenter]struct{}),
+		GoPackageList: &pkgs.GoPackageList{List: make(map[string]*pkgs.RepoPresenter)},
 	}
 
 	for range iter.N(8) {
 		u.wg1A.Add(1)
-		go u.worker() // Phase 1 (i.e., In) to phase 2 worker.
+		go u.workerImportPath() // Phase 1 (i.e., inImportPath) to phase 2 worker.
 	}
 	for range iter.N(8) {
 		u.wg1B.Add(1)
-		go u.workerB() // Phase 1 (i.e., InImportPath) to phase 2 worker.
+		go u.worker() // Phase 1 (i.e., inImportPathRevision) to phase 2 worker.
 	}
 	go func() {
 		u.wg1A.Wait()
@@ -101,18 +103,32 @@ func newGoUniverse() *goUniverse {
 	return u
 }
 
-// Done should be called after In and/or InImportPath are completely populated.
-func (u *goUniverse) Done() {
-	close(u.In)
-	close(u.InImportPath)
+// Add adds a package with specified import path for processing.
+func (u *goWorkspace) Add(importPath string) {
+	u.inImportPath <- importPath
 }
 
-func (u *goUniverse) Out() <-chan *pkgs.RepoPresenter {
-	u.registryReq <- struct{}{}
-	return <-u.registryResult
+// AddRevision adds a package with specified import path and revision for processing.
+func (u *goWorkspace) AddRevision(importPath string, revision string) {
+	u.inImportPathRevision <- importPathRevision{
+		importPath: importPath,
+		revision:   revision,
+	}
 }
 
-func (u *goUniverse) run() {
+// Done should be called after the workspace is finished being populated.
+func (u *goWorkspace) Done() {
+	close(u.inImportPath)
+	close(u.inImportPathRevision)
+}
+
+func (u *goWorkspace) Out() <-chan *pkgs.RepoPresenter {
+	response := make(chan chan *pkgs.RepoPresenter)
+	u.newObserver <- observerRequest{Response: response}
+	return <-response
+}
+
+func (u *goWorkspace) run() {
 Outer:
 	for {
 		select {
@@ -128,12 +144,12 @@ Outer:
 			u.GoPackageList.List[repoPresenter.Repo.Root] = repoPresenter
 			u.GoPackageList.Unlock()
 
-			// Send new repoPresenter to all existing listeners.
-			for ch := range u.listeners {
+			// Send new repoPresenter to all existing observers.
+			for ch := range u.observers {
 				ch <- repoPresenter
 			}
-		// New listener request.
-		case <-u.registryReq:
+		// New observer request.
+		case req := <-u.newObserver:
 			u.GoPackageList.Lock()
 			ch := make(chan *pkgs.RepoPresenter, len(u.GoPackageList.List))
 			for _, repoPresenter := range u.GoPackageList.List {
@@ -141,20 +157,20 @@ Outer:
 			}
 			u.GoPackageList.Unlock()
 
-			u.listeners[ch] = struct{}{}
+			u.observers[ch] = struct{}{}
 
-			u.registryResult <- ch
+			req.Response <- ch
 		}
 	}
 
-	// At this point, streaming has finished, so wrap up existing listeners.
-	for ch := range u.listeners {
+	// At this point, streaming has finished, so finish up existing observers.
+	for ch := range u.observers {
 		close(ch)
 	}
-	u.listeners = nil
+	u.observers = nil
 
-	// And respond to new listener requests directly.
-	for range u.registryReq {
+	// Respond to new observer requests directly.
+	for req := range u.newObserver {
 		u.GoPackageList.Lock()
 		ch := make(chan *pkgs.RepoPresenter, len(u.GoPackageList.List))
 		for _, repoPresenter := range u.GoPackageList.List {
@@ -164,52 +180,14 @@ Outer:
 
 		close(ch)
 
-		u.registryResult <- ch
+		req.Response <- ch
 	}
 }
 
 // worker for phase 1, sends unique repos to phase 2.
-func (u *goUniverse) worker() {
+func (u *goWorkspace) workerImportPath() {
 	defer u.wg1A.Done()
-	for p := range u.In {
-		//started := time.Now()
-		// Determine repo root.
-		// This is potentially somewhat slow.
-		rr, err := vcs.RepoRootForImportPath(p.importPath, false)
-		if err != nil {
-			panic(err) // TODO.
-		}
-		//fmt.Printf("rr: %v ms.\n", time.Since(started).Seconds()*1000)
-
-		var repo *pkg.Repo
-		u.reposMu.Lock()
-		if _, ok := u.repos[rr.Root]; !ok {
-			repo = &pkg.Repo{
-				Root:      rr.Root,
-				RemoteURL: rr.Repo,
-				Cmd:       rr.VCS,
-				Local: pkg.Local{
-					Revision: p.revision,
-				},
-				// TODO: Maybe keep track of import paths inside, etc.
-			}
-			u.repos[rr.Root] = repo
-		} else {
-			// TODO: Maybe keep track of import paths inside, etc.
-		}
-		u.reposMu.Unlock()
-
-		// If new repo, send off to phase 2 channel.
-		if repo != nil {
-			u.phase2 <- repo
-		}
-	}
-}
-
-// worker for phase 1, sends unique repos to phase 2.
-func (u *goUniverse) workerB() {
-	defer u.wg1B.Done()
-	for importPath := range u.InImportPath {
+	for importPath := range u.inImportPath {
 		//started := time.Now()
 		// Determine repo root and local revision.
 		// This is potentially somewhat slow.
@@ -252,8 +230,46 @@ func (u *goUniverse) workerB() {
 	}
 }
 
+// worker for phase 1, sends unique repos to phase 2.
+func (u *goWorkspace) worker() {
+	defer u.wg1B.Done()
+	for p := range u.inImportPathRevision {
+		//started := time.Now()
+		// Determine repo root.
+		// This is potentially somewhat slow.
+		rr, err := vcs.RepoRootForImportPath(p.importPath, false)
+		if err != nil {
+			panic(err) // TODO.
+		}
+		//fmt.Printf("rr: %v ms.\n", time.Since(started).Seconds()*1000)
+
+		var repo *pkg.Repo
+		u.reposMu.Lock()
+		if _, ok := u.repos[rr.Root]; !ok {
+			repo = &pkg.Repo{
+				Root:      rr.Root,
+				RemoteURL: rr.Repo,
+				Cmd:       rr.VCS,
+				Local: pkg.Local{
+					Revision: p.revision,
+				},
+				// TODO: Maybe keep track of import paths inside, etc.
+			}
+			u.repos[rr.Root] = repo
+		} else {
+			// TODO: Maybe keep track of import paths inside, etc.
+		}
+		u.reposMu.Unlock()
+
+		// If new repo, send off to phase 2 channel.
+		if repo != nil {
+			u.phase2 <- repo
+		}
+	}
+}
+
 // Phase 2 to 3 figures out repo remote revision (and local if needed).
-func (u *goUniverse) phase23Worker() {
+func (u *goWorkspace) phase23Worker() {
 	defer u.wg2.Done()
 	for p := range u.phase2 {
 		//started := time.Now()
@@ -301,7 +317,7 @@ func (u *goUniverse) phase23Worker() {
 }
 
 // Phase 3 to 4 worker figures out if a repo should be presented and gives it a presenter.
-func (u *goUniverse) phase34Worker() {
+func (u *goWorkspace) phase34Worker() {
 	defer u.wg3.Done()
 	for repo := range u.phase3 {
 		if !shouldPresentUpdate(repo) {
