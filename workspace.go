@@ -269,7 +269,8 @@ func (u *goWorkspace) workerImportPathRevision() {
 	}
 }
 
-// Phase 2 to 3 figures out repo remote revision (and local if needed).
+// Phase 2 to 3 figures out repo remote revision (and local if needed)
+// in order to figure out if a repo should be presented.
 func (u *goWorkspace) phase23Worker() {
 	defer u.wg2.Done()
 	for p := range u.phase2 {
@@ -308,23 +309,23 @@ func (u *goWorkspace) phase23Worker() {
 			p.RemoteURL = localVCS.GetRemote()
 
 			// TODO: Organize.
-			if remoteVCS != nil {
+			if remoteVCS != nil && remoteRevision != "" {
 				p.Remote.IsContained = localVCS.IsContained(remoteRevision)
 			}
+		}
+
+		if !shouldPresentUpdate(repo) {
+			continue
 		}
 
 		u.phase3 <- p
 	}
 }
 
-// Phase 3 to 4 worker figures out if a repo should be presented and gives it a presenter.
+// Phase 3 to 4 worker works with repos that should be displayed, creating a presenter each.
 func (u *goWorkspace) phase34Worker() {
 	defer u.wg3.Done()
 	for repo := range u.phase3 {
-		if !shouldPresentUpdate(repo) {
-			continue
-		}
-
 		started := time.Now()
 
 		// This part might take a while.

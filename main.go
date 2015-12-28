@@ -72,7 +72,7 @@ func writeRepoHTML(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 }
 
 var (
-	universe *goWorkspace = NewGoWorkspace()
+	workspace *goWorkspace = NewGoWorkspace()
 
 	// updater is set based on the source of Go packages. If nil, it means
 	// we don't have support to update Go packages from the current source.
@@ -139,7 +139,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 	updatesAvailable := 0
 
-	for out := range universe.Out() {
+	for out := range workspace.Out() {
 		repoPresenter := out.Presenter
 
 		updatesAvailable++
@@ -217,13 +217,13 @@ func main() {
 			packages := 0
 			for line, err := br.ReadString('\n'); err == nil; line, err = br.ReadString('\n') {
 				importPath := line[:len(line)-1] // Trim last newline.
-				universe.Add(importPath)
+				workspace.Add(importPath)
 				packages++
 			}
-			universe.Done()
+			workspace.Done()
 			fmt.Printf("%v packages.\n", packages)
 		}()
-		updater = repo.GopathUpdater{GoPackages: universe.GoPackageList}
+		updater = repo.GopathUpdater{GoPackages: workspace.GoPackageList}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)
@@ -233,9 +233,9 @@ func main() {
 		}
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range g.Deps {
-				universe.AddRevision(dependency.ImportPath, dependency.Rev)
+				workspace.AddRevision(dependency.ImportPath, dependency.Rev)
 			}
-			universe.Done()
+			workspace.Done()
 			fmt.Println("loadGoPackagesFromGodeps done")
 		}()
 		updater = nil
@@ -248,9 +248,9 @@ func main() {
 		}
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range v.Package {
-				universe.AddRevision(dependency.Path, dependency.Revision)
+				workspace.AddRevision(dependency.Path, dependency.Revision)
 			}
-			universe.Done()
+			workspace.Done()
 			fmt.Println("loadGoPackagesFromGovendor done")
 		}()
 		updater = nil
