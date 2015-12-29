@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"go/build"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -13,8 +12,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/shurcooL/Go-Package-Store/pkg"
@@ -24,7 +21,6 @@ import (
 	"github.com/shurcooL/go/u/u4"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"golang.org/x/net/websocket"
-	"golang.org/x/tools/go/vcs"
 )
 
 func commonHead(w io.Writer) error {
@@ -228,8 +224,6 @@ Examples:
 `)
 }
 
-var startedPhase1 time.Time
-
 func main() {
 	flag.Usage = usage
 	flag.Parse()
@@ -238,56 +232,20 @@ func main() {
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
 		/*go func() { // This needs to happen in the background because sending input will be blocked on processing.
-			startedPhase1 = time.Now()
-			packages := 0
 			buildutil.ForEachPackage(&build.Default, func(importPath string, err error) {
 				if err != nil {
 					log.Println(err)
 					return
 				}
 				pipeline.Add(importPath)
-				packages++
 			})
 			pipeline.Done()
-			fmt.Printf("%v packages.\n", packages)
 		}()*/
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
-			startedPhase1 = time.Now()
-			packages := 0
-			{
-				for _, workspace := range filepath.SplitList(build.Default.GOPATH) {
-					srcRoot := filepath.Join(workspace, "src")
-					if fi, err := os.Stat(srcRoot); err != nil || !fi.IsDir() {
-						continue
-					}
-					_ = filepath.Walk(srcRoot, func(path string, fi os.FileInfo, err error) error {
-						if err != nil {
-							log.Printf("can't stat file %s: %v\n", path, err)
-							return nil
-						}
-						if !fi.IsDir() {
-							return nil
-						}
-						if strings.HasPrefix(fi.Name(), ".") || strings.HasPrefix(fi.Name(), "_") || fi.Name() == "testdata" {
-							return filepath.SkipDir
-						}
-						//if fi.Name() == "vendor" { // THINK.
-						//	return filepath.SkipDir
-						//}
-						// Determine repo root. This is potentially somewhat slow.
-						vcsCmd, root, err := vcs.FromDir(path, srcRoot)
-						if err != nil {
-							// Directory not under VCS.
-							return nil
-						}
-						pipeline.AddRepository(Repo{Path: path, Root: root, VCS: vcsCmd})
-						packages++
-						return filepath.SkipDir // No need to descend inside repositories.
-					})
-				}
-			}
+			forEachRepository(func(r Repo) {
+				pipeline.AddRepository(r)
+			})
 			pipeline.Done()
-			fmt.Printf("%v packages.\n", packages)
 		}()
 		updater = repo.GopathUpdater{}
 	case *stdinFlag:

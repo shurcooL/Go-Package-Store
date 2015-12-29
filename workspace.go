@@ -75,12 +75,8 @@ func NewWorkspace() *workspace {
 			wg1.Wait()
 			wg2.Wait()
 			close(w.unique)
-			fmt.Println("time.Since(startedPhase1):", time.Since(startedPhase1))
-			fmt.Println("alreadyEnteredPkgs:", alreadyEnteredPkgs)
 		}()
 	}
-
-	//return w
 
 	{
 		var wg sync.WaitGroup
@@ -209,8 +205,6 @@ Outer:
 	}
 }
 
-var alreadyEnteredPkgs = 0
-
 // repositoriesWorker sends unique repositories to phase 2.
 func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -238,8 +232,6 @@ func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
 		// If new repo, send off to phase 2 channel.
 		if repo != nil {
 			w.unique <- repo
-		} else {
-			alreadyEnteredPkgs++
 		}
 	}
 }
@@ -289,8 +281,6 @@ func (w *workspace) importPathWorker(wg *sync.WaitGroup) {
 		// If new repo, send off to phase 2 channel.
 		if repo != nil {
 			w.unique <- repo
-		} else {
-			alreadyEnteredPkgs++
 		}
 	}
 }
