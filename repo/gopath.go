@@ -14,10 +14,10 @@ type GopathUpdater struct {
 }
 
 func (u GopathUpdater) Update(importPathPattern string) error {
-	repoRoot := importPathPattern[:len(importPathPattern)-4]
+	root := importPathPattern[:len(importPathPattern)-4]
 
 	u.GoPackages.Lock()
-	goPackage, ok := u.GoPackages.List[repoRoot]
+	goPackage, ok := u.GoPackages.List[root]
 	u.GoPackages.Unlock()
 
 	if !ok {
@@ -32,17 +32,22 @@ func (u GopathUpdater) Update(importPathPattern string) error {
 		return fmt.Errorf("import path pattern %q has goPackage.Repo.VCS == nil", importPathPattern)
 	}
 
-	rootPath := goPackage.Repo.VCS.RootPath()
-
 	vcs := goPackage.Repo.Cmd
-	fmt.Printf("cd %s\n", rootPath)
+	fmt.Printf("cd %s\n", goPackage.Repo.Path)
 	fmt.Printf("%s %s", vcs.Cmd, vcs.DownloadCmd)
-	err := vcs.Download(rootPath)
+	err := vcs.Download(goPackage.Repo.Path)
 
 	if err == nil {
+		// Delete repo from list.
 		u.GoPackages.Lock()
 		// TODO: Consider marking the repo as "Updated" and display it that way, etc.
-		delete(u.GoPackages.List, repoRoot)
+		for i := range u.GoPackages.OrderedList {
+			if u.GoPackages.OrderedList[i].Repo.Root == root {
+				u.GoPackages.OrderedList = append(u.GoPackages.OrderedList[:i], u.GoPackages.OrderedList[i+1:]...)
+				break
+			}
+		}
+		delete(u.GoPackages.List, root)
 		u.GoPackages.Unlock()
 	}
 

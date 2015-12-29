@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"go/build"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -12,6 +13,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/shurcooL/Go-Package-Store/pkg"
@@ -21,6 +24,7 @@ import (
 	"github.com/shurcooL/go/u/u4"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"golang.org/x/net/websocket"
+	"golang.org/x/tools/go/vcs"
 )
 
 func commonHead(w io.Writer) error {
@@ -46,15 +50,15 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 		return false
 	}
 
-	if repo.Remote.IsContained {
-		return false
-	}
-
 	if repo.VCS != nil {
-		if repo.VCS.GetLocalBranch() != repo.VCS.GetDefaultBranch() {
+		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision); err != nil || c {
 			return false
 		}
-		if repo.VCS.GetStatus() != "" {
+
+		if b, err := repo.VCS.Branch(repo.Path); err != nil || b != repo.VCS.DefaultBranch() {
+			return false
+		}
+		if s, err := repo.VCS.Status(repo.Path); err != nil || s != "" {
 			return false
 		}
 	}
@@ -72,7 +76,7 @@ func writeRepoHTML(w http.ResponseWriter, repoPresenter presenter.Presenter) {
 }
 
 var (
-	workspace *goWorkspace = NewGoWorkspace()
+	pipeline *workspace = NewWorkspace()
 
 	// updater is set based on the source of Go packages. If nil, it means
 	// we don't have support to update Go packages from the current source.
@@ -139,7 +143,7 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 	updatesAvailable := 0
 
-	for out := range workspace.Out() {
+	for out := range pipeline.Out() {
 		repoPresenter := out.Presenter
 
 		updatesAvailable++
@@ -201,6 +205,8 @@ Examples:
 `)
 }
 
+var startedPhase1 time.Time
+
 func main() {
 	flag.Usage = usage
 	flag.Parse()
@@ -208,8 +214,59 @@ func main() {
 	switch {
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
-		//goPackages = &exp14.GoPackages{SkipGoroot: true} // All Go packages in GOPATH (not including GOROOT).
-		//updater = repo.GopathUpdater{GoPackages: goPackages}
+		/*go func() { // This needs to happen in the background because sending input will be blocked on processing.
+			startedPhase1 = time.Now()
+			packages := 0
+			buildutil.ForEachPackage(&build.Default, func(importPath string, err error) {
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				pipeline.Add(importPath)
+				packages++
+			})
+			pipeline.Done()
+			fmt.Printf("%v packages.\n", packages)
+		}()*/
+		go func() { // This needs to happen in the background because sending input will be blocked on processing.
+			startedPhase1 = time.Now()
+			packages := 0
+			{
+				for _, workspace := range filepath.SplitList(build.Default.GOPATH) {
+					srcRoot := filepath.Join(workspace, "src")
+					if fi, err := os.Stat(srcRoot); err != nil || !fi.IsDir() {
+						continue
+					}
+					_ = filepath.Walk(srcRoot, func(path string, fi os.FileInfo, err error) error {
+						if err != nil {
+							log.Printf("can't stat file %s: %v\n", path, err)
+							return nil
+						}
+						if !fi.IsDir() {
+							return nil
+						}
+						if strings.HasPrefix(fi.Name(), ".") || strings.HasPrefix(fi.Name(), "_") || fi.Name() == "testdata" {
+							return filepath.SkipDir
+						}
+						//if fi.Name() == "vendor" { // THINK.
+						//	return filepath.SkipDir
+						//}
+						// Determine repo root. This is potentially somewhat slow.
+						vcsCmd, root, err := vcs.FromDir(path, srcRoot)
+						if err != nil {
+							// Directory not under VCS.
+							return nil
+						}
+						pipeline.AddRepo(Repo{Path: path, Root: root, VCS: vcsCmd})
+						packages++
+						return filepath.SkipDir // No need to descend inside repositories.
+					})
+				}
+			}
+			pipeline.Done()
+			fmt.Printf("%v packages.\n", packages)
+		}()
+		updater = repo.GopathUpdater{GoPackages: pipeline.GoPackageList}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
@@ -217,13 +274,13 @@ func main() {
 			packages := 0
 			for line, err := br.ReadString('\n'); err == nil; line, err = br.ReadString('\n') {
 				importPath := line[:len(line)-1] // Trim last newline.
-				workspace.Add(importPath)
+				pipeline.Add(importPath)
 				packages++
 			}
-			workspace.Done()
+			pipeline.Done()
 			fmt.Printf("%v packages.\n", packages)
 		}()
-		updater = repo.GopathUpdater{GoPackages: workspace.GoPackageList}
+		updater = repo.GopathUpdater{GoPackages: pipeline.GoPackageList}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)
@@ -233,9 +290,9 @@ func main() {
 		}
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range g.Deps {
-				workspace.AddRevision(dependency.ImportPath, dependency.Rev)
+				pipeline.AddRevision(dependency.ImportPath, dependency.Rev)
 			}
-			workspace.Done()
+			pipeline.Done()
 			fmt.Println("loadGoPackagesFromGodeps done")
 		}()
 		updater = nil
@@ -248,9 +305,9 @@ func main() {
 		}
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range v.Package {
-				workspace.AddRevision(dependency.Path, dependency.Revision)
+				pipeline.AddRevision(dependency.Path, dependency.Revision)
 			}
-			workspace.Done()
+			pipeline.Done()
 			fmt.Println("loadGoPackagesFromGovendor done")
 		}()
 		updater = nil
@@ -281,7 +338,7 @@ func main() {
 		// Open a browser tab and navigate to the main page.
 		go u4.Open("http://" + *httpFlag + "/index.html")
 	case false:
-		updater = repo.MockUpdater{}
+		updater = repo.MockUpdater{GoPackages: pipeline.GoPackageList}
 	}
 
 	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/index.html.")

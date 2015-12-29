@@ -8,8 +8,10 @@ import (
 )
 
 type GoPackageList struct {
+	// TODO: Merge the List and OrderedList into a single struct to better communicate that it's a single data structure.
 	sync.Mutex
-	List map[string]*RepoPresenter // Map key is repoRoot.
+	OrderedList []*RepoPresenter          // OrderedList has the same contents as List, but gives it a stable order.
+	List        map[string]*RepoPresenter // Map key is repoRoot.
 }
 
 type RepoPresenter struct {

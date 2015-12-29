@@ -1,40 +1,37 @@
 package pkg
 
 import (
-	vcs2 "github.com/shurcooL/go/vcs"
+	"github.com/shurcooL/vcsstate"
 	"golang.org/x/tools/go/vcs"
 )
 
 type Repo struct {
+	// Path is the local filesystem path to the repository.
+	Path string
+
 	// Root is the import path corresponding to the root of the repository.
-	// TODO: Consider. Overlaps with RR.
 	Root string
 
 	// RemoteURL is the remote URL, including scheme.
-	// TODO: Consider. Overlaps with RR.
+	// TODO: Consider moving/renaming to Remote.RepoURL.
 	RemoteURL string
 
-	// TODO: Consider. Needed for RR.VCS for phase2.
-	//       If this is kept, then should remove Root above since it's in here too.
-	//RR *vcs.RepoRoot
-
-	// TODO: Consider. Overlaps with RR.
+	// TODO: Consider.
 	Cmd *vcs.Cmd
 
-	// TODO: Consider. Overlaps with RR.
-	VCS vcs2.Vcs
+	// VCS allows getting the state of the VCS.
+	VCS vcsstate.VCS
 
-	Local  Local
-	Remote Remote
-}
+	// RemoteVCS allows getting the remote state of the VCS.
+	RemoteVCS vcsstate.RemoteVCS
 
-type Local struct {
-	Revision string
-}
-
-type Remote struct {
-	Revision    string
-	IsContained bool // True if remote commit is contained in the default local branch.
+	Local struct {
+		Revision string
+	}
+	Remote struct {
+		Revision string
+	}
+	LocalContainsRemoteRevision bool
 }
 
 // RepoImportPath returns what would be the import path of the root folder of the repository. It may or may not
