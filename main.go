@@ -280,7 +280,7 @@ func main() {
 							// Directory not under VCS.
 							return nil
 						}
-						pipeline.AddRepo(Repo{Path: path, Root: root, VCS: vcsCmd})
+						pipeline.AddRepository(Repo{Path: path, Root: root, VCS: vcsCmd})
 						packages++
 						return filepath.SkipDir // No need to descend inside repositories.
 					})

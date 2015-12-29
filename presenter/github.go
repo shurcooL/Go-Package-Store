@@ -42,39 +42,39 @@ func newGitHubPresenter(repo *pkg.Repo, gitHubOwner, gitHubRepo string) *gitHubP
 	return p
 }
 
-func (this gitHubPresenter) Repo() *pkg.Repo {
-	return this.repo
+func (p gitHubPresenter) Repo() *pkg.Repo {
+	return p.repo
 }
 
-func (this gitHubPresenter) HomePage() *template.URL {
+func (p gitHubPresenter) HomePage() *template.URL {
 	switch {
-	case strings.HasPrefix(this.repo.RepoImportPath(), "github.com/"):
-		url := template.URL("https://github.com/" + this.gitHubOwner + "/" + this.gitHubRepo)
+	case strings.HasPrefix(p.repo.RepoImportPath(), "github.com/"):
+		url := template.URL("https://github.com/" + p.gitHubOwner + "/" + p.gitHubRepo)
 		return &url
 	default:
-		url := template.URL("http://" + this.repo.RepoImportPath())
+		url := template.URL("http://" + p.repo.RepoImportPath())
 		return &url
 	}
 }
 
-func (this gitHubPresenter) Image() template.URL {
-	return this.image
+func (p gitHubPresenter) Image() template.URL {
+	return p.image
 }
 
-func (this gitHubPresenter) Changes() <-chan Change {
-	if this.cc == nil {
+func (p gitHubPresenter) Changes() <-chan Change {
+	if p.cc == nil {
 		return nil
 	}
 	out := make(chan Change)
 	go func() {
-		for index := range this.cc.Commits {
+		for index := range p.cc.Commits {
 			change := Change{
-				Message: firstParagraph(*this.cc.Commits[len(this.cc.Commits)-1-index].Commit.Message),
-				URL:     template.URL(*this.cc.Commits[len(this.cc.Commits)-1-index].HTMLURL),
+				Message: firstParagraph(*p.cc.Commits[len(p.cc.Commits)-1-index].Commit.Message),
+				URL:     template.URL(*p.cc.Commits[len(p.cc.Commits)-1-index].HTMLURL),
 			}
-			if commentCount := this.cc.Commits[len(this.cc.Commits)-1-index].Commit.CommentCount; commentCount != nil && *commentCount > 0 {
+			if commentCount := p.cc.Commits[len(p.cc.Commits)-1-index].Commit.CommentCount; commentCount != nil && *commentCount > 0 {
 				change.Comments.Count = *commentCount
-				change.Comments.URL = template.URL(*this.cc.Commits[len(this.cc.Commits)-1-index].HTMLURL + "#comments")
+				change.Comments.URL = template.URL(*p.cc.Commits[len(p.cc.Commits)-1-index].HTMLURL + "#comments")
 			}
 			out <- change
 		}
@@ -85,10 +85,11 @@ func (this gitHubPresenter) Changes() <-chan Change {
 
 // firstParagraph returns the first paragraph of a string.
 func firstParagraph(s string) string {
-	if index := strings.Index(s, "\n\n"); index != -1 {
-		return s[:index]
+	index := strings.Index(s, "\n\n")
+	if index == -1 {
+		return s
 	}
-	return s
+	return s[:index]
 }
 
 //var gh = github.NewClient(oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: ""})))
