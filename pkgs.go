@@ -1,4 +1,4 @@
-package pkgs
+package main
 
 import (
 	"sync"

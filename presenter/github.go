@@ -48,11 +48,11 @@ func (p gitHubPresenter) Repo() *pkg.Repo {
 
 func (p gitHubPresenter) HomePage() *template.URL {
 	switch {
-	case strings.HasPrefix(p.repo.RepoImportPath(), "github.com/"):
+	case strings.HasPrefix(p.repo.Root, "github.com/"):
 		url := template.URL("https://github.com/" + p.gitHubOwner + "/" + p.gitHubRepo)
 		return &url
 	default:
-		url := template.URL("http://" + p.repo.RepoImportPath())
+		url := template.URL("http://" + p.repo.Root)
 		return &url
 	}
 }

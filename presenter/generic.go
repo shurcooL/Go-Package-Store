@@ -15,7 +15,7 @@ func (g genericPresenter) Repo() *pkg.Repo {
 }
 
 func (g genericPresenter) HomePage() *template.URL {
-	url := template.URL("https://" + g.repo.RepoImportPath())
+	url := template.URL("https://" + g.repo.Root)
 	return &url
 }
 

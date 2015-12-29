@@ -56,20 +56,20 @@ func init() {
 	// GitHub.
 	addProvider(func(repo *pkg.Repo) Presenter {
 		switch {
-		case strings.HasPrefix(repo.RepoImportPath(), "github.com/"):
-			importPathElements := strings.Split(repo.RepoImportPath(), "/")
+		case strings.HasPrefix(repo.Root, "github.com/"):
+			importPathElements := strings.Split(repo.Root, "/")
 			return newGitHubPresenter(repo, importPathElements[1], importPathElements[2])
 		// azul3d.org package (an instance of semver-based domain, see https://azul3d.org/semver).
 		// Once there are other semver based Go packages, consider adding more generalized support.
-		case strings.HasPrefix(repo.RepoImportPath(), "azul3d.org/"):
-			gitHubOwner, gitHubRepo, err := azul3dOrgImportPathToGitHub(repo.RepoImportPath())
+		case strings.HasPrefix(repo.Root, "azul3d.org/"):
+			gitHubOwner, gitHubRepo, err := azul3dOrgImportPathToGitHub(repo.Root)
 			if err != nil {
 				return nil
 			}
 			return newGitHubPresenter(repo, gitHubOwner, gitHubRepo)
 		// gopkg.in package.
-		case strings.HasPrefix(repo.RepoImportPath(), "gopkg.in/"):
-			gitHubOwner, gitHubRepo, err := gopkgInImportPathToGitHub(repo.RepoImportPath())
+		case strings.HasPrefix(repo.Root, "gopkg.in/"):
+			gitHubOwner, gitHubRepo, err := gopkgInImportPathToGitHub(repo.Root)
 			if err != nil {
 				return nil
 			}

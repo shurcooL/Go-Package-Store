@@ -9,7 +9,6 @@ import (
 
 	"github.com/bradfitz/iter"
 	"github.com/shurcooL/Go-Package-Store/pkg"
-	"github.com/shurcooL/Go-Package-Store/pkgs"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/vcsstate"
 	"golang.org/x/tools/go/vcs"
@@ -25,18 +24,18 @@ type workspace struct {
 	// with just enough information to decide if an update should be displayed.
 	processedFiltered chan *pkg.Repo
 	// presented is the output of processed and presented repos (complete with repo.Presenter).
-	presented chan *pkgs.RepoPresenter
+	presented chan *RepoPresenter
 
 	reposMu sync.Mutex
 	repos   map[string]*pkg.Repo // Map key is the import path corresponding to the root of the repository.
 
 	newObserver   chan observerRequest
-	observers     map[chan *pkgs.RepoPresenter]struct{}
-	GoPackageList *pkgs.GoPackageList
+	observers     map[chan *RepoPresenter]struct{}
+	GoPackageList *GoPackageList
 }
 
 type observerRequest struct {
-	Response chan chan *pkgs.RepoPresenter
+	Response chan chan *RepoPresenter
 }
 
 func NewWorkspace() *workspace {
@@ -46,13 +45,13 @@ func NewWorkspace() *workspace {
 		importPathRevisions: make(chan importPathRevision, 64),
 		unique:              make(chan *pkg.Repo, 64),
 		processedFiltered:   make(chan *pkg.Repo, 64),
-		presented:           make(chan *pkgs.RepoPresenter, 64),
+		presented:           make(chan *RepoPresenter, 64),
 
 		repos: make(map[string]*pkg.Repo),
 
 		newObserver:   make(chan observerRequest),
-		observers:     make(map[chan *pkgs.RepoPresenter]struct{}),
-		GoPackageList: &pkgs.GoPackageList{List: make(map[string]*pkgs.RepoPresenter)},
+		observers:     make(map[chan *RepoPresenter]struct{}),
+		GoPackageList: &GoPackageList{List: make(map[string]*RepoPresenter)},
 	}
 
 	{
@@ -112,6 +111,12 @@ func NewWorkspace() *workspace {
 	return w
 }
 
+type Repo struct {
+	Path string
+	Root string
+	VCS  *vcs.Cmd
+}
+
 func (w *workspace) AddRepository(r Repo) {
 	w.repositories <- r
 }
@@ -141,8 +146,8 @@ func (w *workspace) Done() {
 	close(w.importPathRevisions)
 }
 
-func (w *workspace) Out() <-chan *pkgs.RepoPresenter {
-	response := make(chan chan *pkgs.RepoPresenter)
+func (w *workspace) Out() <-chan *RepoPresenter {
+	response := make(chan chan *RepoPresenter)
 	w.newObserver <- observerRequest{Response: response}
 	return <-response
 }
@@ -171,7 +176,7 @@ Outer:
 		// New observer request.
 		case req := <-w.newObserver:
 			w.GoPackageList.Lock()
-			ch := make(chan *pkgs.RepoPresenter, len(w.GoPackageList.OrderedList))
+			ch := make(chan *RepoPresenter, len(w.GoPackageList.OrderedList))
 			for _, repoPresenter := range w.GoPackageList.OrderedList {
 				ch <- repoPresenter
 			}
@@ -192,7 +197,7 @@ Outer:
 	// Respond to new observer requests directly.
 	for req := range w.newObserver {
 		w.GoPackageList.Lock()
-		ch := make(chan *pkgs.RepoPresenter, len(w.GoPackageList.OrderedList))
+		ch := make(chan *RepoPresenter, len(w.GoPackageList.OrderedList))
 		for _, repoPresenter := range w.GoPackageList.OrderedList {
 			ch <- repoPresenter
 		}
@@ -205,12 +210,6 @@ Outer:
 }
 
 var alreadyEnteredPkgs = 0
-
-type Repo struct {
-	Path string
-	Root string
-	VCS  *vcs.Cmd
-}
 
 // repositoriesWorker sends unique repositories to phase 2.
 func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
@@ -231,11 +230,8 @@ func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
 				Root: root,
 				Cmd:  vcsCmd,
 				VCS:  vcs,
-				// TODO: Maybe keep track of import paths inside, etc.
 			}
 			w.repos[root] = repo
-		} else {
-			// TODO: Maybe keep track of import paths inside, etc.
 		}
 		w.reposMu.Unlock()
 
@@ -396,7 +392,7 @@ func (w *workspace) presenterWorker(wg *sync.WaitGroup) {
 
 		fmt.Printf("Part 2b: %v ms.\n", time.Since(started).Seconds()*1000)
 
-		w.presented <- &pkgs.RepoPresenter{
+		w.presented <- &RepoPresenter{
 			Repo:      repo,
 			Presenter: repoPresenter,
 		}
