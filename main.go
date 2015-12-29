@@ -129,8 +129,7 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	importPathPattern := req.PostFormValue("import_path_pattern") // TODO: Maybe emit root directly from frontend?
-	root := importPathPattern[:len(importPathPattern)-4]
+	root := req.PostFormValue("repo_root")
 
 	updateRequest := updateRequest{
 		root:       root,
@@ -336,6 +335,9 @@ func main() {
 		}()
 		updater = nil
 	}
+	if !production {
+		updater = repo.MockUpdater{}
+	}
 
 	err := loadTemplates()
 	if err != nil {
@@ -357,12 +359,9 @@ func main() {
 		log.Fatalf("failed to listen on %q: %v\n", *httpFlag, err)
 	}
 
-	switch production {
-	case true:
+	if production {
 		// Open a browser tab and navigate to the main page.
 		go u4.Open("http://" + *httpFlag + "/index.html")
-	case false:
-		updater = repo.MockUpdater{}
 	}
 
 	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/index.html.")
