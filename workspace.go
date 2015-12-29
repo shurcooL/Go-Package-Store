@@ -33,7 +33,7 @@ type workspace struct {
 	out chan *pkgs.RepoPresenter
 
 	reposMu sync.Mutex
-	repos   map[string]*pkg.Repo // Map key is the import path corresponding to the root of the repository or Go package.
+	repos   map[string]*pkg.Repo // Map key is the import path corresponding to the root of the repository.
 
 	newObserver   chan observerRequest
 	observers     map[chan *pkgs.RepoPresenter]struct{}

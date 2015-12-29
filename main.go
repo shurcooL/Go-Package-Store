@@ -86,8 +86,8 @@ var (
 )
 
 type updateRequest struct {
-	importPathPattern string
-	resultChan        chan error
+	root       string
+	resultChan chan error
 }
 
 var updateRequestChan = make(chan updateRequest)
@@ -96,8 +96,29 @@ var updateRequestChan = make(chan updateRequest)
 // to avoid race conditions or other problems, since `go get -u` does not seem to protect against that.
 func updateWorker() {
 	for updateRequest := range updateRequestChan {
-		err := updater.Update(updateRequest.importPathPattern)
-		updateRequest.resultChan <- err
+		pipeline.GoPackageList.Lock()
+		repoPresenter, ok := pipeline.GoPackageList.List[updateRequest.root]
+		pipeline.GoPackageList.Unlock()
+		if !ok {
+			updateRequest.resultChan <- fmt.Errorf("root %q not found", updateRequest.root)
+			continue
+		}
+
+		updateResult := updater.Update(repoPresenter.Repo)
+		if updateResult == nil {
+			// Delete repo from list.
+			pipeline.GoPackageList.Lock()
+			// TODO: Consider marking the repo as "Updated" and display it that way, etc.
+			for i := range pipeline.GoPackageList.OrderedList {
+				if pipeline.GoPackageList.OrderedList[i].Repo.Root == updateRequest.root {
+					pipeline.GoPackageList.OrderedList = append(pipeline.GoPackageList.OrderedList[:i], pipeline.GoPackageList.OrderedList[i+1:]...)
+					break
+				}
+			}
+			delete(pipeline.GoPackageList.List, updateRequest.root)
+			pipeline.GoPackageList.Unlock()
+		}
+		updateRequest.resultChan <- updateResult
 		fmt.Println("\nDone.")
 	}
 }
@@ -108,9 +129,12 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	importPathPattern := req.PostFormValue("import_path_pattern") // TODO: Maybe emit root directly from frontend?
+	root := importPathPattern[:len(importPathPattern)-4]
+
 	updateRequest := updateRequest{
-		importPathPattern: req.PostFormValue("import_path_pattern"),
-		resultChan:        make(chan error),
+		root:       root,
+		resultChan: make(chan error),
 	}
 	updateRequestChan <- updateRequest
 
@@ -266,7 +290,7 @@ func main() {
 			pipeline.Done()
 			fmt.Printf("%v packages.\n", packages)
 		}()
-		updater = repo.GopathUpdater{GoPackages: pipeline.GoPackageList}
+		updater = repo.GopathUpdater{}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
@@ -280,7 +304,7 @@ func main() {
 			pipeline.Done()
 			fmt.Printf("%v packages.\n", packages)
 		}()
-		updater = repo.GopathUpdater{GoPackages: pipeline.GoPackageList}
+		updater = repo.GopathUpdater{}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)
@@ -338,7 +362,7 @@ func main() {
 		// Open a browser tab and navigate to the main page.
 		go u4.Open("http://" + *httpFlag + "/index.html")
 	case false:
-		updater = repo.MockUpdater{GoPackages: pipeline.GoPackageList}
+		updater = repo.MockUpdater{}
 	}
 
 	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/index.html.")
