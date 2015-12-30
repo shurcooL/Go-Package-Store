@@ -142,7 +142,7 @@ func (w *workspace) Done() {
 	close(w.importPathRevisions)
 }
 
-func (w *workspace) Out() <-chan *RepoPresenter {
+func (w *workspace) Presented() <-chan *RepoPresenter {
 	response := make(chan chan *RepoPresenter)
 	w.newObserver <- observerRequest{Response: response}
 	return <-response

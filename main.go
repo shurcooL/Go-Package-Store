@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/shurcooL/Go-Package-Store/pkg"
 	"github.com/shurcooL/Go-Package-Store/presenter"
@@ -122,6 +121,8 @@ func updateWorker() {
 // Handler for update requests.
 func updateHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
+		w.Header().Set("Allow", "POST")
+		http.Error(w, "Method should be POST.", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -135,19 +136,20 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 
 	err := <-updateRequest.resultChan
 	_ = err // TODO: Maybe display error in frontend. For now, don't do anything.
-	fmt.Println("update worker:", err)
 }
 
 // Main index page handler.
 func mainHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "GET" {
+		w.Header().Set("Allow", "GET")
+		http.Error(w, "Method should be GET.", http.StatusMethodNotAllowed)
+		return
+	}
+
 	if err := loadTemplates(); err != nil {
 		fmt.Fprintln(w, "loadTemplates:", err)
 		return
 	}
-
-	fmt.Println("mainHandler:", req.Method, req.URL.Path)
-
-	started := time.Now()
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -158,15 +160,11 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	flusher := w.(http.Flusher)
 	flusher.Flush()
 
-	fmt.Printf("Part 1: %v ms.\n", time.Since(started).Seconds()*1000)
-
 	updatesAvailable := 0
 
-	for out := range pipeline.Out() {
-		repoPresenter := out.Presenter
-
+	for presented := range pipeline.Presented() {
 		updatesAvailable++
-		writeRepoHTML(w, repoPresenter)
+		writeRepoHTML(w, presented.Presenter)
 
 		flusher.Flush()
 	}
@@ -174,8 +172,6 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	if updatesAvailable == 0 {
 		io.WriteString(w, `<script>document.getElementById("no_updates").style.display = "";</script>`)
 	}
-
-	fmt.Printf("Part 3: %v ms.\n", time.Since(started).Seconds()*1000)
 }
 
 // WebSocket handler, to exit when client tab is closed.
@@ -231,16 +227,6 @@ func main() {
 	switch {
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
-		/*go func() { // This needs to happen in the background because sending input will be blocked on processing.
-			buildutil.ForEachPackage(&build.Default, func(importPath string, err error) {
-				if err != nil {
-					log.Println(err)
-					return
-				}
-				pipeline.Add(importPath)
-			})
-			pipeline.Done()
-		}()*/
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			forEachRepository(func(r Repo) {
 				pipeline.AddRepository(r)
@@ -252,44 +238,37 @@ func main() {
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			br := bufio.NewReader(os.Stdin)
-			packages := 0
 			for line, err := br.ReadString('\n'); err == nil; line, err = br.ReadString('\n') {
 				importPath := line[:len(line)-1] // Trim last newline.
 				pipeline.Add(importPath)
-				packages++
 			}
 			pipeline.Done()
-			fmt.Printf("%v packages.\n", packages)
 		}()
 		updater = repo.GopathUpdater{}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)
 		if err != nil {
-			// TODO: Handle errors more gracefully.
-			log.Fatalln("readGodeps:", err)
+			log.Fatalln("Failed to read Godeps.json file", err)
 		}
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range g.Deps {
 				pipeline.AddRevision(dependency.ImportPath, dependency.Rev)
 			}
 			pipeline.Done()
-			fmt.Println("loadGoPackagesFromGodeps done")
 		}()
 		updater = nil
 	case *govendorFlag != "":
 		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)
 		v, err := readGovendor(*govendorFlag)
 		if err != nil {
-			// TODO: Handle errors more gracefully.
-			log.Fatalln("readGovendor:", err)
+			log.Fatalln("Failed to read vendor.json file:", err)
 		}
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range v.Package {
 				pipeline.AddRevision(dependency.Path, dependency.Revision)
 			}
 			pipeline.Done()
-			fmt.Println("loadGoPackagesFromGovendor done")
 		}()
 		updater = nil
 	}

@@ -10,10 +10,11 @@ import (
 	"golang.org/x/tools/go/vcs"
 )
 
+// forEachRepository calls found for each repository it finds in all GOPATH workspaces.
 func forEachRepository(found func(Repo)) {
 	for _, workspace := range filepath.SplitList(build.Default.GOPATH) {
 		srcRoot := filepath.Join(workspace, "src")
-		if fi, err := os.Stat(srcRoot); err != nil || !fi.IsDir() {
+		if _, err := os.Stat(srcRoot); os.IsNotExist(err) {
 			continue
 		}
 		_ = filepath.Walk(srcRoot, func(path string, fi os.FileInfo, err error) error {
@@ -27,9 +28,6 @@ func forEachRepository(found func(Repo)) {
 			if strings.HasPrefix(fi.Name(), ".") || strings.HasPrefix(fi.Name(), "_") || fi.Name() == "testdata" {
 				return filepath.SkipDir
 			}
-			/*if fi.Name() == "vendor" { // THINK.
-				return filepath.SkipDir
-			}*/
 			// Determine repo root. This is potentially somewhat slow.
 			vcsCmd, root, err := vcs.FromDir(path, srcRoot)
 			if err != nil {
