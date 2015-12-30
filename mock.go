@@ -26,8 +26,18 @@ func mockHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	_ = commonHead(w)
-	defer func() { _ = commonTail(w) }()
+	data := struct {
+		Production bool
+		HTTPAddr   string
+	}{
+		Production: production,
+		HTTPAddr:   *httpFlag,
+	}
+	err := t.ExecuteTemplate(w, "head.html.tmpl", data)
+	if err != nil {
+		log.Println("ExecuteTemplate head.html.tmpl:", err)
+		return
+	}
 
 	flusher := w.(http.Flusher)
 	flusher.Flush()
@@ -38,7 +48,12 @@ func mockHandler(w http.ResponseWriter, req *http.Request) {
 		time.Sleep(time.Second)
 
 		updatesAvailable++
-		writeRepoHTML2(w, repoPresenter)
+
+		err := t.ExecuteTemplate(w, "repo.html.tmpl", repoPresenter)
+		if err != nil {
+			log.Println("ExecuteTemplate repo.html.tmpl:", err)
+			return
+		}
 
 		flusher.Flush()
 	}
@@ -48,13 +63,11 @@ func mockHandler(w http.ResponseWriter, req *http.Request) {
 	if updatesAvailable == 0 {
 		io.WriteString(w, `<script>document.getElementById("no_updates").style.display = "";</script>`)
 	}
-}
 
-func writeRepoHTML2(w http.ResponseWriter, repoPresenter interface{}) {
-	err := t.ExecuteTemplate(w, "repo.html.tmpl", repoPresenter)
+	err = t.ExecuteTemplate(w, "tail.html.tmpl", nil)
 	if err != nil {
-		log.Println("t.ExecuteTemplate:", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println("ExecuteTemplate tail.html.tmpl:", err)
+		return
 	}
 }
 

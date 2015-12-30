@@ -14,7 +14,6 @@ import (
 	"os"
 
 	"github.com/shurcooL/Go-Package-Store/pkg"
-	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/Go-Package-Store/repo"
 	"github.com/shurcooL/go/gzip_file_server"
 	"github.com/shurcooL/go/u/u4"
@@ -22,23 +21,10 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-func commonHead(w io.Writer) error {
-	data := struct {
-		Production bool
-		HTTPAddr   string
-	}{
-		Production: production,
-		HTTPAddr:   *httpFlag,
-	}
-	return t.ExecuteTemplate(w, "head.html.tmpl", data)
-}
-func commonTail(w io.Writer) error {
-	return t.ExecuteTemplate(w, "tail.html.tmpl", nil)
-}
-
 // shouldPresentUpdate determines if the given goPackage should be presented as an available update.
 // It checks that the Go package is on default branch, does not have a dirty working tree, and does not have the remote revision.
 func shouldPresentUpdate(repo *pkg.Repo) bool {
+	// TODO: Replicate the previous behavior fully, then remove this commented out code:
 	//return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
 
 	if repo.RemoteURL == "" || repo.Local.Revision == "" || repo.Remote.Revision == "" {
@@ -59,15 +45,6 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 	}
 
 	return repo.Local.Revision != repo.Remote.Revision
-}
-
-// writeRepoHTML writes a <div> presentation for an available update.
-func writeRepoHTML(w http.ResponseWriter, repoPresenter presenter.Presenter) {
-	err := t.ExecuteTemplate(w, "repo.html.tmpl", repoPresenter)
-	if err != nil {
-		log.Println("t.ExecuteTemplate:", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
 }
 
 var (
@@ -118,7 +95,7 @@ func updateWorker() {
 	}
 }
 
-// Handler for update requests.
+// updateHandler is the handler for update requests.
 func updateHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		w.Header().Set("Allow", "POST")
@@ -138,7 +115,7 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 	_ = err // TODO: Maybe display error in frontend. For now, don't do anything.
 }
 
-// Main index page handler.
+// mainHandler is the handler for the index page.
 func mainHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
 		w.Header().Set("Allow", "GET")
@@ -154,8 +131,18 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	_ = commonHead(w)
-	defer func() { _ = commonTail(w) }()
+	data := struct {
+		Production bool
+		HTTPAddr   string
+	}{
+		Production: production,
+		HTTPAddr:   *httpFlag,
+	}
+	err := t.ExecuteTemplate(w, "head.html.tmpl", data)
+	if err != nil {
+		log.Println("ExecuteTemplate head.html.tmpl:", err)
+		return
+	}
 
 	flusher := w.(http.Flusher)
 	flusher.Flush()
@@ -164,13 +151,24 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 	for presented := range pipeline.Presented() {
 		updatesAvailable++
-		writeRepoHTML(w, presented.Presenter)
+
+		err := t.ExecuteTemplate(w, "repo.html.tmpl", presented.Presenter)
+		if err != nil {
+			log.Println("ExecuteTemplate repo.html.tmpl:", err)
+			return
+		}
 
 		flusher.Flush()
 	}
 
 	if updatesAvailable == 0 {
 		io.WriteString(w, `<script>document.getElementById("no_updates").style.display = "";</script>`)
+	}
+
+	err = t.ExecuteTemplate(w, "tail.html.tmpl", nil)
+	if err != nil {
+		log.Println("ExecuteTemplate tail.html.tmpl:", err)
+		return
 	}
 }
 

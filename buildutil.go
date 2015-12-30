@@ -17,6 +17,7 @@ func forEachRepository(found func(Repo)) {
 		if _, err := os.Stat(srcRoot); os.IsNotExist(err) {
 			continue
 		}
+		// TODO: Confirm that ignoring filepath.Walk error is correct/desired behavior.
 		_ = filepath.Walk(srcRoot, func(path string, fi os.FileInfo, err error) error {
 			if err != nil {
 				log.Printf("can't stat file %s: %v\n", path, err)

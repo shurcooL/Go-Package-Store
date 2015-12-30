@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"go/build"
 	"log"
 	"sync"
-	"time"
 
 	"github.com/bradfitz/iter"
 	"github.com/shurcooL/Go-Package-Store/pkg"
@@ -289,14 +287,13 @@ func (w *workspace) importPathWorker(wg *sync.WaitGroup) {
 func (w *workspace) importPathRevisionWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for p := range w.importPathRevisions {
-		//started := time.Now()
 		// Determine repo root.
 		// This is potentially somewhat slow.
 		rr, err := vcs.RepoRootForImportPath(p.importPath, false)
 		if err != nil {
-			panic(err) // TODO.
+			log.Printf("failed to dynamically determine repo root for %v: %v\n", p.importPath, err)
+			continue
 		}
-		//fmt.Printf("rr: %v ms.\n", time.Since(started).Seconds()*1000)
 		remoteVCS, err := vcsstate.NewRemoteVCS(rr.VCS)
 		if err != nil {
 			log.Printf("repo %v not supported by vcsstate: %v\n", rr.Root, err)
@@ -311,12 +308,9 @@ func (w *workspace) importPathRevisionWorker(wg *sync.WaitGroup) {
 				RemoteURL: rr.Repo,
 				Cmd:       rr.VCS,
 				RemoteVCS: remoteVCS,
-				// TODO: Maybe keep track of import paths inside, etc.
 			}
 			repo.Local.Revision = p.revision
 			w.repos[rr.Root] = repo
-		} else {
-			// TODO: Maybe keep track of import paths inside, etc.
 		}
 		w.reposMu.Unlock()
 
@@ -332,7 +326,6 @@ func (w *workspace) importPathRevisionWorker(wg *sync.WaitGroup) {
 func (w *workspace) processFilterWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for p := range w.unique {
-		//started := time.Now()
 		// Determine remote revision.
 		// This is slow because it requires a network operation.
 		var remoteRevision string
@@ -345,7 +338,6 @@ func (w *workspace) processFilterWorker(wg *sync.WaitGroup) {
 			remoteRevision, err = p.RemoteVCS.RemoteRevision(p.RemoteURL)
 			_ = err // TODO.
 		}
-		//fmt.Printf("remoteVCS.GetRemoteRev: %v ms.\n", time.Since(started).Seconds()*1000)
 
 		p.Remote.Revision = remoteRevision
 
@@ -375,12 +367,8 @@ func (w *workspace) processFilterWorker(wg *sync.WaitGroup) {
 func (w *workspace) presenterWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for repo := range w.processedFiltered {
-		started := time.Now()
-
 		// This part might take a while.
 		repoPresenter := presenter.New(repo)
-
-		fmt.Printf("Part 2b: %v ms.\n", time.Since(started).Seconds()*1000)
 
 		w.presented <- &RepoPresenter{
 			Repo:      repo,
