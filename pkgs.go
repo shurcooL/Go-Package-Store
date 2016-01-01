@@ -15,6 +15,6 @@ type GoPackageList struct {
 }
 
 type RepoPresenter struct {
-	Repo      *pkg.Repo
-	Presenter presenter.Presenter
+	Repo *pkg.Repo
+	presenter.Presenter
 }

@@ -42,11 +42,7 @@ func newGitHubPresenter(repo *pkg.Repo, gitHubOwner, gitHubRepo string) *gitHubP
 	return p
 }
 
-func (p gitHubPresenter) Repo() *pkg.Repo {
-	return p.repo
-}
-
-func (p gitHubPresenter) HomePage() *template.URL {
+func (p gitHubPresenter) Home() *template.URL {
 	switch {
 	case strings.HasPrefix(p.repo.Root, "github.com/"):
 		url := template.URL("https://github.com/" + p.gitHubOwner + "/" + p.gitHubRepo)

@@ -4,16 +4,16 @@
 	{{/*if eq (len .Repo.GoPackages) 1*/}}
 	{{if false}}
 		<span title="{{.Repo.ImportPaths}}">
-			{{if .HomePage}}
-				<a href="{{.HomePage}}" target="_blank"><strong>{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</strong></a>
+			{{if .Home}}
+				<a href="{{.Home}}" target="_blank"><strong>{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</strong></a>
 			{{else}}
 				{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}
 			{{end}}
 		</span>
 	{{else}}
 		<span title="{{.Repo.ImportPathPattern}}">
-			{{if .HomePage}}
-				<a href="{{.HomePage}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
+			{{if .Home}}
+				<a href="{{.Home}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
 			{{else}}
 				{{.Repo.ImportPathPattern}}
 			{{end}}

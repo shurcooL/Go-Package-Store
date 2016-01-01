@@ -10,11 +10,7 @@ type genericPresenter struct {
 	repo *pkg.Repo
 }
 
-func (g genericPresenter) Repo() *pkg.Repo {
-	return g.repo
-}
-
-func (g genericPresenter) HomePage() *template.URL {
+func (g genericPresenter) Home() *template.URL {
 	url := template.URL("https://" + g.repo.Root)
 	return &url
 }

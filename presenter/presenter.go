@@ -9,11 +9,9 @@ import (
 
 // Presenter is for displaying various info about a given Go package repo with an update available.
 type Presenter interface {
-	Repo() *pkg.Repo
-
-	HomePage() *template.URL // Home page url of the Go package, optional (nil means none available).
-	Image() template.URL     // Image representing the Go package, typically its owner.
-	Changes() <-chan Change  // List of changes, starting with the most recent.
+	Home() *template.URL    // Home page URL of the Go package, optional (nil means none available).
+	Image() template.URL    // Image representing the Go package, typically its owner.
+	Changes() <-chan Change // List of changes, starting with the most recent.
 }
 
 // Change represents a single commit message.
