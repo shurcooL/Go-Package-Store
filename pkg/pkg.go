@@ -31,7 +31,6 @@ type Repo struct {
 	Remote struct {
 		Revision string
 	}
-	LocalContainsRemoteRevision bool
 }
 
 // ImportPathPattern returns an import path pattern that matches all of the Go packages in this repo.

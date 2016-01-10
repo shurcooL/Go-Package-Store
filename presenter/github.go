@@ -10,30 +10,30 @@ import (
 )
 
 type gitHubPresenter struct {
-	repo        *pkg.Repo
-	gitHubOwner string
-	gitHubRepo  string
+	repo    *pkg.Repo
+	ghOwner string
+	ghRepo  string
 
 	cc    *github.CommitsComparison
 	image template.URL
 }
 
-func newGitHubPresenter(repo *pkg.Repo, gitHubOwner, gitHubRepo string) *gitHubPresenter {
+func newGitHubPresenter(repo *pkg.Repo, ghOwner, ghRepo string) *gitHubPresenter {
 	p := &gitHubPresenter{
-		repo:        repo,
-		gitHubOwner: gitHubOwner,
-		gitHubRepo:  gitHubRepo,
+		repo:    repo,
+		ghOwner: ghOwner,
+		ghRepo:  ghRepo,
 	}
 
 	// This might take a while.
-	if cc, _, err := gh.Repositories.CompareCommits(gitHubOwner, gitHubRepo, repo.Local.Revision, repo.Remote.Revision); err == nil {
+	if cc, _, err := gh.Repositories.CompareCommits(ghOwner, ghRepo, repo.Local.Revision, repo.Remote.Revision); err == nil {
 		p.cc = cc
 	} else {
 		log.Println("warning: gh.Repositories.CompareCommits:", err)
 	}
 
 	// Use the repo owner avatar image.
-	if user, _, err := gh.Users.Get(gitHubOwner); err == nil && user.AvatarURL != nil {
+	if user, _, err := gh.Users.Get(ghOwner); err == nil && user.AvatarURL != nil {
 		p.image = template.URL(*user.AvatarURL)
 	} else {
 		p.image = "https://github.com/images/gravatars/gravatar-user-420.png"
@@ -45,7 +45,7 @@ func newGitHubPresenter(repo *pkg.Repo, gitHubOwner, gitHubRepo string) *gitHubP
 func (p gitHubPresenter) Home() *template.URL {
 	switch {
 	case strings.HasPrefix(p.repo.Root, "github.com/"):
-		url := template.URL("https://github.com/" + p.gitHubOwner + "/" + p.gitHubRepo)
+		url := template.URL("https://github.com/" + p.ghOwner + "/" + p.ghRepo)
 		return &url
 	default:
 		url := template.URL("http://" + p.repo.Root)

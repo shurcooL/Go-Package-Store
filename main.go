@@ -32,14 +32,13 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 	}
 
 	if repo.VCS != nil {
-		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision); err != nil || c {
-			return false
-		}
-
 		if b, err := repo.VCS.Branch(repo.Path); err != nil || b != repo.VCS.DefaultBranch() {
 			return false
 		}
 		if s, err := repo.VCS.Status(repo.Path); err != nil || s != "" {
+			return false
+		}
+		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision); err != nil || c {
 			return false
 		}
 	}
@@ -189,6 +188,7 @@ func loadTemplates() error {
 	var err error
 	t = template.New("").Funcs(template.FuncMap{
 		"updateSupported": func() bool { return updater != nil },
+		"commitID":        func(commitID string) string { return commitID[:8] },
 	})
 	t, err = vfstemplate.ParseGlob(assets, t, "/assets/*.tmpl")
 	return err
