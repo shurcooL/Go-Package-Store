@@ -55,8 +55,11 @@ func init() {
 	addProvider(func(repo *pkg.Repo) Presenter {
 		switch {
 		case strings.HasPrefix(repo.Root, "github.com/"):
-			importPathElements := strings.Split(repo.Root, "/")
-			return newGitHubPresenter(repo, importPathElements[1], importPathElements[2])
+			elems := strings.Split(repo.Root, "/")
+			if len(elems) != 3 {
+				return nil
+			}
+			return newGitHubPresenter(repo, elems[1], elems[2])
 		// azul3d.org package (an instance of semver-based domain, see https://azul3d.org/semver).
 		// Once there are other semver based Go packages, consider adding more generalized support.
 		case strings.HasPrefix(repo.Root, "azul3d.org/"):
@@ -74,8 +77,11 @@ func init() {
 			return newGitHubPresenter(repo, gitHubOwner, gitHubRepo)
 		// Underlying GitHub remote.
 		case strings.HasPrefix(repo.RemoteURL, "https://github.com/"):
-			importPathElements := strings.Split(strings.TrimSuffix(repo.RemoteURL[len("https://"):], ".git"), "/")
-			return newGitHubPresenter(repo, importPathElements[1], importPathElements[2])
+			elems := strings.Split(strings.TrimSuffix(repo.RemoteURL[len("https://"):], ".git"), "/")
+			if len(elems) != 3 {
+				return nil
+			}
+			return newGitHubPresenter(repo, elems[1], elems[2])
 		// Go repo remote has a GitHub mirror repo.
 		case strings.HasPrefix(repo.RemoteURL, "https://go.googlesource.com/"):
 			repoName := repo.RemoteURL[len("https://go.googlesource.com/"):]
