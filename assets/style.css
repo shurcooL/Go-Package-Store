@@ -36,6 +36,9 @@ span.smaller {
 	font-size: 11px;
 	color: gray;
 }
+span.gray {
+	color: gray;
+}
 
 div.list-entry {
 	border: 1px solid #ddd;
@@ -66,4 +69,9 @@ div.list-entry-body {
 }
 li:hover .highlight-on-hover {
 	opacity: 1.0;
+}
+
+.commitID {
+	background-color: rgb(238, 238, 238);
+	padding: 1px 4px;
 }

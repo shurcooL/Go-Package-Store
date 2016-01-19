@@ -12,9 +12,10 @@ import (
 
 var document = dom.GetWindow().Document().(dom.HTMLDocument)
 
-// UpdateGoPackage updates Go packages specified by importPathPattern.
-func UpdateGoPackage(importPathPattern string) {
-	var goPackage = document.GetElementByID(importPathPattern)
+// UpdateRepository updates specified repository.
+// repoRoot is the import path corresponding to the root of the repository.
+func UpdateRepository(repoRoot string) {
+	var goPackage = document.GetElementByID(repoRoot)
 	var goPackageButton = goPackage.GetElementsByClassName("update-button")[0].(*dom.HTMLAnchorElement)
 
 	goPackageButton.SetTextContent("Updating...")
@@ -25,7 +26,7 @@ func UpdateGoPackage(importPathPattern string) {
 	go func() {
 		req := xhr.NewRequest("POST", "/-/update")
 		req.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded")
-		err := req.Send(url.Values{"import_path_pattern": {importPathPattern}}.Encode())
+		err := req.Send(url.Values{"repo_root": {repoRoot}}.Encode())
 		if err != nil {
 			println(err.Error())
 			return
@@ -58,5 +59,5 @@ func hasUpdatesAvailable() bool {
 }
 
 func main() {
-	js.Global.Set("update_go_package", UpdateGoPackage)
+	js.Global.Set("UpdateRepository", UpdateRepository)
 }

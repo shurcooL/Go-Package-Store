@@ -2,68 +2,75 @@ package presenter
 
 import (
 	"html/template"
+	"log"
 	"strings"
 
 	"github.com/google/go-github/github"
-	"github.com/shurcooL/go/exp/13"
-	"github.com/shurcooL/go/gists/gist7480523"
-	"github.com/shurcooL/go/gists/gist7802150"
+	"github.com/shurcooL/Go-Package-Store/pkg"
 )
 
 type gitHubPresenter struct {
-	repo        *gist7480523.GoPackageRepo
-	gitHubOwner string
-	gitHubRepo  string
+	repo    *pkg.Repo
+	ghOwner string
+	ghRepo  string
 
-	comparison *githubComparison
+	cc    *github.CommitsComparison
+	image template.URL
 }
 
-func newGitHubPresenter(repo *gist7480523.GoPackageRepo, gitHubOwner, gitHubRepo string) Presenter {
-	goPackage := repo.GoPackages()[0]
-	comparison := newGithubComparison(gitHubOwner, gitHubRepo, goPackage.Dir.Repo.VcsLocal, goPackage.Dir.Repo.VcsRemote)
-	gist7802150.MakeUpdated(comparison)
+func newGitHubPresenter(repo *pkg.Repo, ghOwner, ghRepo string) *gitHubPresenter {
+	p := &gitHubPresenter{
+		repo:    repo,
+		ghOwner: ghOwner,
+		ghRepo:  ghRepo,
+	}
 
-	p := &gitHubPresenter{repo: repo, gitHubOwner: gitHubOwner, gitHubRepo: gitHubRepo, comparison: comparison}
+	// This might take a while.
+	if cc, _, err := gh.Repositories.CompareCommits(ghOwner, ghRepo, repo.Local.Revision, repo.Remote.Revision); err == nil {
+		p.cc = cc
+	} else {
+		log.Println("warning: gh.Repositories.CompareCommits:", err)
+	}
+
+	// Use the repo owner avatar image.
+	if user, _, err := gh.Users.Get(ghOwner); err == nil && user.AvatarURL != nil {
+		p.image = template.URL(*user.AvatarURL)
+	} else {
+		p.image = "https://github.com/images/gravatars/gravatar-user-420.png"
+	}
+
 	return p
 }
 
-func (this gitHubPresenter) Repo() *gist7480523.GoPackageRepo {
-	return this.repo
-}
-
-func (this gitHubPresenter) HomePage() *template.URL {
-	switch goPackage := this.repo.GoPackages()[0]; {
-	case strings.HasPrefix(goPackage.Bpkg.ImportPath, "github.com/"):
-		url := template.URL("https://github.com/" + this.gitHubOwner + "/" + this.gitHubRepo)
+func (p gitHubPresenter) Home() *template.URL {
+	switch {
+	case strings.HasPrefix(p.repo.Root, "github.com/"):
+		url := template.URL("https://github.com/" + p.ghOwner + "/" + p.ghRepo)
 		return &url
 	default:
-		url := template.URL("http://" + goPackage.Bpkg.ImportPath)
+		url := template.URL("http://" + p.repo.Root)
 		return &url
 	}
 }
 
-func (this gitHubPresenter) Image() template.URL {
-	// Use the repo owner avatar image.
-	if user, _, err := gh.Users.Get(this.gitHubOwner); err == nil && user.AvatarURL != nil {
-		return template.URL(*user.AvatarURL)
-	}
-	return "https://github.com/images/gravatars/gravatar-user-420.png"
+func (p gitHubPresenter) Image() template.URL {
+	return p.image
 }
 
-func (this gitHubPresenter) Changes() <-chan Change {
-	if this.comparison.err != nil {
+func (p gitHubPresenter) Changes() <-chan Change {
+	if p.cc == nil {
 		return nil
 	}
 	out := make(chan Change)
 	go func() {
-		for index := range this.comparison.cc.Commits {
+		for index := range p.cc.Commits {
 			change := Change{
-				Message: firstParagraph(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].Commit.Message),
-				Url:     template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL),
+				Message: firstParagraph(*p.cc.Commits[len(p.cc.Commits)-1-index].Commit.Message),
+				URL:     template.URL(*p.cc.Commits[len(p.cc.Commits)-1-index].HTMLURL),
 			}
-			if commentCount := this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].Commit.CommentCount; commentCount != nil && *commentCount > 0 {
+			if commentCount := p.cc.Commits[len(p.cc.Commits)-1-index].Commit.CommentCount; commentCount != nil && *commentCount > 0 {
 				change.Comments.Count = *commentCount
-				change.Comments.Url = template.URL(*this.comparison.cc.Commits[len(this.comparison.cc.Commits)-1-index].HTMLURL + "#comments")
+				change.Comments.URL = template.URL(*p.cc.Commits[len(p.cc.Commits)-1-index].HTMLURL + "#comments")
 			}
 			out <- change
 		}
@@ -74,35 +81,12 @@ func (this gitHubPresenter) Changes() <-chan Change {
 
 // firstParagraph returns the first paragraph of a string.
 func firstParagraph(s string) string {
-	if index := strings.Index(s, "\n\n"); index != -1 {
-		return s[:index]
+	index := strings.Index(s, "\n\n")
+	if index == -1 {
+		return s
 	}
-	return s
+	return s[:index]
 }
 
-// ---
-
+//var gh = github.NewClient(oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: ""})))
 var gh = github.NewClient(nil)
-
-func newGithubComparison(gitHubOwner, gitHubRepo string, local *exp13.VcsLocal, remote *exp13.VcsRemote) *githubComparison {
-	this := &githubComparison{gitHubOwner: gitHubOwner, gitHubRepo: gitHubRepo}
-	this.AddSources(local, remote)
-	return this
-}
-
-type githubComparison struct {
-	gitHubOwner string
-	gitHubRepo  string
-
-	cc  *github.CommitsComparison
-	err error
-
-	gist7802150.DepNode2
-}
-
-func (this *githubComparison) Update() {
-	localRev := this.GetSources()[0].(*exp13.VcsLocal).LocalRev
-	remoteRev := this.GetSources()[1].(*exp13.VcsRemote).RemoteRev
-
-	this.cc, _, this.err = gh.Repositories.CompareCommits(this.gitHubOwner, this.gitHubRepo, localRev, remoteRev)
-}
