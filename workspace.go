@@ -12,6 +12,18 @@ import (
 	"golang.org/x/tools/go/vcs"
 )
 
+type GoPackageList struct {
+	// TODO: Merge the List and OrderedList into a single struct to better communicate that it's a single data structure.
+	sync.Mutex
+	OrderedList []*RepoPresenter          // OrderedList has the same contents as List, but gives it a stable order.
+	List        map[string]*RepoPresenter // Map key is repoRoot.
+}
+
+type RepoPresenter struct {
+	Repo *pkg.Repo
+	presenter.Presenter
+}
+
 // workspace is a workspace environment, meaning each repo has local and remote components.
 type workspace struct {
 	repositories        chan Repo
