@@ -14,6 +14,7 @@ import (
 	"os"
 
 	"github.com/shurcooL/Go-Package-Store/pkg"
+	_ "github.com/shurcooL/Go-Package-Store/presenter/github"
 	"github.com/shurcooL/Go-Package-Store/repo"
 	"github.com/shurcooL/go/gzip_file_server"
 	"github.com/shurcooL/go/u/u4"
@@ -118,7 +119,7 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 func mainHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
 		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method should be GET.", http.StatusMethodNotAllowed)
+		http.Error(w, "method should be GET", http.StatusMethodNotAllowed)
 		return
 	}
 

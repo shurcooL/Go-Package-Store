@@ -1,15 +1,16 @@
+// Package presenter defines an interface for a repository presenter,
+// and a means of registering presenter providers.
 package presenter
 
 import (
 	"html/template"
-	"strings"
 
 	"github.com/shurcooL/Go-Package-Store/pkg"
 )
 
 // Presenter is for displaying various info about a given Go package repo with an update available.
 type Presenter interface {
-	Home() *template.URL    // Home page URL of the Go package, optional (nil means none available).
+	Home() *template.URL    // Home URL of the Go package. Optional (nil means none available).
 	Image() template.URL    // Image representing the Go package, typically its owner.
 	Changes() <-chan Change // List of changes, starting with the most recent.
 }
@@ -27,66 +28,25 @@ type Comments struct {
 	URL   template.URL
 }
 
-// TODO: Change signature to return (Presenter, error). Some Presenters may or may not match, so we can fall back to another.
-type presenterProvider func(repo *pkg.Repo) Presenter
+// Provider returns a Presenter for the given repo, or nil if it can't.
+type Provider func(repo *pkg.Repo) Presenter
 
-var presenterProviders []presenterProvider
-
-func addProvider(p presenterProvider) {
-	presenterProviders = append(presenterProviders, p)
+// RegisterProvider registers a presenter provider.
+// Providers are consulted in the same order that they were registered.
+func RegisterProvider(p Provider) {
+	providers = append(providers, p)
 }
 
+var providers []Provider
+
 // New takes a repository containing 1 or more Go packages, and returns a Presenter
-// for it. It tries to find the best Presenter for the given repository, but falls back
-// to a generic presenter if there's nothing better.
+// for it. It tries to find the best Presenter for the given repository out of the regsitered ones,
+// but falls back to a generic presenter if there's nothing better.
 func New(repo *pkg.Repo) Presenter {
-	// TODO: Potentially check in parallel.
-	for _, provider := range presenterProviders {
+	for _, provider := range providers {
 		if presenter := provider(repo); presenter != nil {
 			return presenter
 		}
 	}
-
 	return genericPresenter{repo: repo}
-}
-
-func init() {
-	// GitHub.
-	addProvider(func(repo *pkg.Repo) Presenter {
-		switch {
-		case strings.HasPrefix(repo.Root, "github.com/"):
-			elems := strings.Split(repo.Root, "/")
-			if len(elems) != 3 {
-				return nil
-			}
-			return newGitHubPresenter(repo, elems[1], elems[2])
-		// azul3d.org package (an instance of semver-based domain, see https://azul3d.org/semver).
-		// Once there are other semver based Go packages, consider adding more generalized support.
-		case strings.HasPrefix(repo.Root, "azul3d.org/"):
-			gitHubOwner, gitHubRepo, err := azul3dOrgImportPathToGitHub(repo.Root)
-			if err != nil {
-				return nil
-			}
-			return newGitHubPresenter(repo, gitHubOwner, gitHubRepo)
-		// gopkg.in package.
-		case strings.HasPrefix(repo.Root, "gopkg.in/"):
-			gitHubOwner, gitHubRepo, err := gopkgInImportPathToGitHub(repo.Root)
-			if err != nil {
-				return nil
-			}
-			return newGitHubPresenter(repo, gitHubOwner, gitHubRepo)
-		// Underlying GitHub remote.
-		case strings.HasPrefix(repo.RemoteURL, "https://github.com/"):
-			elems := strings.Split(strings.TrimSuffix(repo.RemoteURL[len("https://"):], ".git"), "/")
-			if len(elems) != 3 {
-				return nil
-			}
-			return newGitHubPresenter(repo, elems[1], elems[2])
-		// Go repo remote has a GitHub mirror repo.
-		case strings.HasPrefix(repo.RemoteURL, "https://go.googlesource.com/"):
-			repoName := repo.RemoteURL[len("https://go.googlesource.com/"):]
-			return newGitHubPresenter(repo, "golang", repoName)
-		}
-		return nil
-	})
 }

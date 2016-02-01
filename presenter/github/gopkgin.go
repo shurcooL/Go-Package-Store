@@ -1,4 +1,4 @@
-package presenter
+package github
 
 import (
 	"fmt"

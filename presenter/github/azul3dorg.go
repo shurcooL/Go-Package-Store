@@ -1,6 +1,6 @@
 // +build enable_azul3d
 
-package presenter
+package github
 
 import (
 	"errors"
