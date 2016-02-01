@@ -88,8 +88,8 @@ var repoPresenters = []map[string]interface{}{
 				},
 			},
 		},
-		"HomePage": (*template.URL)(newTemplateURL("https://github.com/gopherjs/gopherjs")),
-		"Image":    (template.URL)("https://avatars.githubusercontent.com/u/6654647?v=3"),
+		"Home":  (*template.URL)(newTemplateURL("https://github.com/gopherjs/gopherjs")),
+		"Image": (template.URL)("https://avatars.githubusercontent.com/u/6654647?v=3"),
 		"Changes": ([]presenter.Change)([]presenter.Change{
 			(presenter.Change)(presenter.Change{
 				Message: (string)("improved reflect support for blocking functions"),
@@ -134,8 +134,8 @@ var repoPresenters = []map[string]interface{}{
 				},
 			},
 		},
-		"HomePage": (*template.URL)(newTemplateURL("http://golang.org/x/image/bmp")),
-		"Image":    (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
+		"Home":  (*template.URL)(newTemplateURL("http://golang.org/x/image/bmp")),
+		"Image": (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
 		"Changes": ([]presenter.Change)([]presenter.Change{
 			(presenter.Change)(presenter.Change{
 				Message: (string)("draw: generate code paths for image.Gray sources."),
@@ -164,8 +164,8 @@ var repoPresenters = []map[string]interface{}{
 				},
 			},
 		},
-		"HomePage": (*template.URL)(newTemplateURL("https://github.com/influxdb/influxdb")),
-		"Image":    (template.URL)("https://avatars.githubusercontent.com/u/5713248?v=3"),
+		"Home":  (*template.URL)(newTemplateURL("https://github.com/influxdb/influxdb")),
+		"Image": (template.URL)("https://avatars.githubusercontent.com/u/5713248?v=3"),
 		"Changes": ([]presenter.Change)([]presenter.Change{
 			(presenter.Change)(presenter.Change{
 				Message: (string)("Add link to \"How to Report Bugs Effectively\""),
