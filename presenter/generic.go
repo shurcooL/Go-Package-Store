@@ -20,3 +20,5 @@ func (genericPresenter) Image() template.URL {
 }
 
 func (genericPresenter) Changes() <-chan Change { return nil }
+
+func (genericPresenter) Error() error { return nil }

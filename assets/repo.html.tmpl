@@ -45,6 +45,9 @@
 					{{with .Repo.Remote.Revision}}to {{template "commitID" .}}{{end}}
 				</div>
 			{{end}}
+			{{with .Error}}
+				<p class="presenter-error"><strong>Error:</strong> {{.}}</p>
+			{{end}}
 		</div>
 		<div style="clear: both;"></div>
 	</div>

@@ -2,11 +2,12 @@
 package github
 
 import (
+	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"strings"
 
+	"github.com/dustin/go-humanize"
 	"github.com/google/go-github/github"
 	"github.com/shurcooL/Go-Package-Store/pkg"
 	"github.com/shurcooL/Go-Package-Store/presenter"
@@ -71,6 +72,7 @@ type gitHubPresenter struct {
 
 	cc    *github.CommitsComparison
 	image template.URL
+	err   error
 }
 
 func newGitHubPresenter(repo *pkg.Repo, ghOwner, ghRepo string) *gitHubPresenter {
@@ -78,21 +80,26 @@ func newGitHubPresenter(repo *pkg.Repo, ghOwner, ghRepo string) *gitHubPresenter
 		repo:    repo,
 		ghOwner: ghOwner,
 		ghRepo:  ghRepo,
+
+		image: "https://github.com/images/gravatars/gravatar-user-420.png", // Default fallback.
 	}
 
 	// This might take a while.
 	if cc, _, err := gh.Repositories.CompareCommits(ghOwner, ghRepo, repo.Local.Revision, repo.Remote.Revision); err == nil {
 		p.cc = cc
+	} else if rateLimitErr, ok := err.(*github.RateLimitError); ok {
+		p.setFirstError(rateLimitError{rateLimitErr})
 	} else {
-		// TODO: If hit rate limit, consider not continuing or do something better than just spamming rate-limit-exceeded errors, etc.
-		log.Println("warning: gh.Repositories.CompareCommits:", err)
+		p.setFirstError(fmt.Errorf("gh.Repositories.CompareCommits: %v", err))
 	}
 
 	// Use the repo owner avatar image.
 	if user, _, err := gh.Users.Get(ghOwner); err == nil && user.AvatarURL != nil {
 		p.image = template.URL(*user.AvatarURL)
+	} else if rateLimitErr, ok := err.(*github.RateLimitError); ok {
+		p.setFirstError(rateLimitError{rateLimitErr})
 	} else {
-		p.image = "https://github.com/images/gravatars/gravatar-user-420.png"
+		p.setFirstError(fmt.Errorf("gh.Users.Get: %v", err))
 	}
 
 	return p
@@ -133,6 +140,25 @@ func (p gitHubPresenter) Changes() <-chan presenter.Change {
 		close(out)
 	}()
 	return out
+}
+
+func (p gitHubPresenter) Error() error { return p.err }
+
+// setFirstError sets error if it's the first one. It does nothing otherwise.
+func (p *gitHubPresenter) setFirstError(err error) {
+	if p.err != nil {
+		return
+	}
+	p.err = err
+}
+
+// rateLimitError is an error presentation wrapper for consistent display of *github.RateLimitError.
+type rateLimitError struct {
+	err *github.RateLimitError
+}
+
+func (r rateLimitError) Error() string {
+	return fmt.Sprintf("GitHub API rate limit exceeded; it will be reset in %v", humanize.Time(r.err.Rate.Reset.Time))
 }
 
 // firstParagraph returns the first paragraph of a string.
