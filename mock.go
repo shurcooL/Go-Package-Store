@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/shurcooL/Go-Package-Store/pkg"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 )
 
@@ -75,18 +77,7 @@ var repoPresenters = []map[string]interface{}{
 	{
 		"Repo": map[string]interface{}{
 			"ImportPathPattern": (string)("github.com/gopherjs/gopherjs/..."),
-			"ImportPaths":       (string)("github.com/gopherjs/gopherjs/compiler\ngithub.com/gopherjs/gopherjs/compiler/astutil\ngithub.com/gopherjs/gopherjs/nosync\ngithub.com/gopherjs/gopherjs/tests\ngithub.com/gopherjs/gopherjs/compiler/analysis\ngithub.com/gopherjs/gopherjs/compiler/typesutil\ngithub.com/gopherjs/gopherjs/js\ngithub.com/gopherjs/gopherjs/build\ngithub.com/gopherjs/gopherjs/compiler/filter\ngithub.com/gopherjs/gopherjs/gcexporter\ngithub.com/gopherjs/gopherjs\ngithub.com/gopherjs/gopherjs/compiler/prelude"),
-			"GoPackages": [12]interface{}{
-				map[string]interface{}{
-					"Bpkg": map[string]interface{}{"ImportPath": (string)("github.com/gopherjs/gopherjs/compiler")},
-					"Dir": map[string]interface{}{
-						"Repo": map[string]interface{}{
-							"VcsLocal":  map[string]interface{}{"LocalRev": (string)("aff1494482d249eb0a3803abbd434f4c9143a3de")},
-							"VcsRemote": map[string]interface{}{"RemoteRev": (string)("87bf7e405aa3df6df0dcbb9385713f997408d7b9")},
-						},
-					},
-				},
-			},
+			"Repo":              (*pkg.Repo)(&pkg.Repo{}),
 		},
 		"Home":  (*template.URL)(newTemplateURL("https://github.com/gopherjs/gopherjs")),
 		"Image": (template.URL)("https://avatars.githubusercontent.com/u/6654647?v=3"),
@@ -121,20 +112,9 @@ var repoPresenters = []map[string]interface{}{
 	{
 		"Repo": map[string]interface{}{
 			"ImportPathPattern": (string)("golang.org/x/image/..."),
-			"ImportPaths":       (string)("golang.org/x/image/bmp\ngolang.org/x/image/cmd/webp-manual-test\ngolang.org/x/image/draw\ngolang.org/x/image/riff\ngolang.org/x/image/tiff\ngolang.org/x/image/tiff/lzw\ngolang.org/x/image/vp8\ngolang.org/x/image/vp8l\ngolang.org/x/image/webp\ngolang.org/x/image/webp/nycbcra"),
-			"GoPackages": [10]interface{}{
-				map[string]interface{}{
-					"Bpkg": map[string]interface{}{"ImportPath": (string)("github.com/gopherjs/gopherjs/compiler")},
-					"Dir": map[string]interface{}{
-						"Repo": map[string]interface{}{
-							"VcsLocal":  map[string]interface{}{"LocalRev": (string)("b57ddf1b6833a418ae37c0b2e3570507379abfa3")},
-							"VcsRemote": map[string]interface{}{"RemoteRev": (string)("f510ad81a1256ee96a2870647b74fa144a30c249")},
-						},
-					},
-				},
-			},
+			"Repo":              (*pkg.Repo)(&pkg.Repo{}),
 		},
-		"Home":  (*template.URL)(newTemplateURL("http://golang.org/x/image/bmp")),
+		"Home":  (*template.URL)(newTemplateURL("http://golang.org/x/image")),
 		"Image": (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
 		"Changes": ([]presenter.Change)([]presenter.Change{
 			(presenter.Change)(presenter.Change{
@@ -150,19 +130,19 @@ var repoPresenters = []map[string]interface{}{
 
 	{
 		"Repo": map[string]interface{}{
+			"ImportPathPattern": (string)("golang.org/x/foobar/..."),
+			"Repo":              (*pkg.Repo)(&pkg.Repo{}),
+		},
+		"Home":    (*template.URL)(newTemplateURL("http://golang.org/x/foobar")),
+		"Image":   (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
+		"Changes": ([]presenter.Change)(nil),
+		"Error":   (error)(errors.New("something went wrong\n\nnew lines are kept -    spaces are too.")),
+	},
+
+	{
+		"Repo": map[string]interface{}{
 			"ImportPathPattern": (string)("github.com/influxdb/influxdb/..."),
-			"ImportPaths":       (string)("github.com/influxdb/influxdb\ngithub.com/influxdb/influxdb/admin\ngithub.com/influxdb/influxdb/client\ngithub.com/influxdb/influxdb/cmd/influxd\ngithub.com/influxdb/influxdb/graphite\ngithub.com/influxdb/influxdb/influxql\ngithub.com/influxdb/influxdb/cmd/influx\ngithub.com/influxdb/influxdb/httpd\ngithub.com/influxdb/influxdb/statik\ngithub.com/influxdb/influxdb/messaging\ngithub.com/influxdb/influxdb/raft\ngithub.com/influxdb/influxdb/collectd"),
-			"GoPackages": [12]interface{}{
-				map[string]interface{}{
-					"Bpkg": map[string]interface{}{"ImportPath": (string)("github.com/influxdb/influxdb")},
-					"Dir": map[string]interface{}{
-						"Repo": map[string]interface{}{
-							"VcsLocal":  map[string]interface{}{"LocalRev": (string)("325f613a5dca621460cc06d47ac7bf327a9b0e73")},
-							"VcsRemote": map[string]interface{}{"RemoteRev": (string)("6f398c1daf88fe34faede69f4404a334202acae8")},
-						},
-					},
-				},
-			},
+			"Repo":              (*pkg.Repo)(&pkg.Repo{}),
 		},
 		"Home":  (*template.URL)(newTemplateURL("https://github.com/influxdb/influxdb")),
 		"Image": (template.URL)("https://avatars.githubusercontent.com/u/5713248?v=3"),
