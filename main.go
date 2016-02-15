@@ -12,11 +12,15 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 
+	"github.com/gregjones/httpcache"
+	"github.com/gregjones/httpcache/diskcache"
 	"github.com/shurcooL/Go-Package-Store/pkg"
-	_ "github.com/shurcooL/Go-Package-Store/presenter/github"
+	"github.com/shurcooL/Go-Package-Store/presenter/github"
 	"github.com/shurcooL/Go-Package-Store/repo"
 	"github.com/shurcooL/go/gzip_file_server"
+	"github.com/shurcooL/go/ospath"
 	"github.com/shurcooL/go/u/u4"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"golang.org/x/net/websocket"
@@ -222,6 +226,16 @@ Examples:
 func main() {
 	flag.Usage = usage
 	flag.Parse()
+
+	// If we can have access to a cache directory on this system, use it for caching
+	// HTTP requests of GitHub presenter.
+	if cacheDir, err := ospath.CacheDir("github.com/shurcooL/Go-Package-Store"); err == nil {
+		diskCache := diskcache.New(filepath.Join(cacheDir, "github-presenter"))
+		client := &http.Client{Transport: httpcache.NewTransport(diskCache)}
+		github.SetClient(client)
+	} else {
+		log.Println("skipping persistent on-disk caching, because unable to acquire a cache dir:", err)
+	}
 
 	switch {
 	default:
