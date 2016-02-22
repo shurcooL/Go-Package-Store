@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
@@ -192,6 +193,10 @@ var t *template.Template
 func loadTemplates() error {
 	var err error
 	t = template.New("").Funcs(template.FuncMap{
+		"json": func(v interface{}) (string, error) {
+			b, err := json.Marshal(v)
+			return string(b), err
+		},
 		"updateSupported": func() bool { return updater != nil },
 		"commitID":        func(commitID string) string { return commitID[:8] },
 	})

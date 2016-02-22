@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/gopherjs/gopherjs/js"
+	"github.com/shurcooL/go/gopherjs_http/jsutil"
 	"honnef.co/go/js/dom"
 	"honnef.co/go/js/xhr"
 )
@@ -14,7 +15,12 @@ var document = dom.GetWindow().Document().(dom.HTMLDocument)
 
 // UpdateRepository updates specified repository.
 // repoRoot is the import path corresponding to the root of the repository.
-func UpdateRepository(repoRoot string) {
+func UpdateRepository(event dom.Event, repoRoot string) {
+	event.PreventDefault()
+	if event.(*dom.MouseEvent).Button != 0 {
+		return
+	}
+
 	var goPackage = document.GetElementByID(repoRoot)
 	var goPackageButton = goPackage.GetElementsByClassName("update-button")[0].(*dom.HTMLAnchorElement)
 
@@ -59,5 +65,5 @@ func hasUpdatesAvailable() bool {
 }
 
 func main() {
-	js.Global.Set("UpdateRepository", UpdateRepository)
+	js.Global.Set("UpdateRepository", jsutil.Wrap(UpdateRepository))
 }
