@@ -37,7 +37,7 @@ func UpdateRepository(repoRoot string) {
 
 		// Show "No Updates Available" if there are no remaining updates.
 		if !hasUpdatesAvailable() {
-			document.GetElementByID("no_updates").(dom.HTMLElement).Style().SetProperty("display", "none", "")
+			document.GetElementByID("no_updates").(dom.HTMLElement).Style().SetProperty("display", "", "")
 		}
 
 		// Move this Go package to "Installed Updates" list.
