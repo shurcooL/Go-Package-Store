@@ -25,6 +25,7 @@ import (
 	"github.com/shurcooL/go/u/u4"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"golang.org/x/net/websocket"
+	"golang.org/x/oauth2"
 )
 
 // shouldPresentUpdate determines if the given goPackage should be presented as an available update.
@@ -236,8 +237,17 @@ func main() {
 	// HTTP requests of GitHub presenter.
 	if cacheDir, err := ospath.CacheDir("github.com/shurcooL/Go-Package-Store"); err == nil {
 		diskCache := diskcache.New(filepath.Join(cacheDir, "github-presenter"))
-		client := &http.Client{Transport: httpcache.NewTransport(diskCache)}
-		github.SetClient(client)
+		cacheTransport := httpcache.NewTransport(diskCache)
+
+		// Optionally, perform GitHub API authentication with provided token.
+		if token := os.Getenv("GO_PACKAGE_STORE_GITHUB_TOKEN"); token != "" {
+			authTransport := &oauth2.Transport{
+				Source: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}),
+			}
+			cacheTransport.Transport = authTransport
+		}
+
+		github.SetClient(&http.Client{Transport: cacheTransport})
 	} else {
 		log.Println("skipping persistent on-disk caching, because unable to acquire a cache dir:", err)
 	}

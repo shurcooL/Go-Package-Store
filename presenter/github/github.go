@@ -158,7 +158,7 @@ type rateLimitError struct {
 }
 
 func (r rateLimitError) Error() string {
-	return fmt.Sprintf("GitHub API rate limit exceeded; it will be reset in %v", humanize.Time(r.err.Rate.Reset.Time))
+	return fmt.Sprintf("GitHub API rate limit exceeded; it will be reset in %v (but you can set GO_PACKAGE_STORE_GITHUB_TOKEN env var for higher rate limit)", humanize.Time(r.err.Rate.Reset.Time))
 }
 
 // firstParagraph returns the first paragraph of a string.
