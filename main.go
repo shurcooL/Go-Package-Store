@@ -233,23 +233,30 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	// If we can have access to a cache directory on this system, use it for caching
-	// HTTP requests of GitHub presenter.
-	if cacheDir, err := ospath.CacheDir("github.com/shurcooL/Go-Package-Store"); err == nil {
-		diskCache := diskcache.New(filepath.Join(cacheDir, "github-presenter"))
-		cacheTransport := httpcache.NewTransport(diskCache)
+	// Set GitHub presenter client.
+	{
+		var transport http.RoundTripper
 
 		// Optionally, perform GitHub API authentication with provided token.
 		if token := os.Getenv("GO_PACKAGE_STORE_GITHUB_TOKEN"); token != "" {
-			authTransport := &oauth2.Transport{
+			transport = &oauth2.Transport{
 				Source: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}),
 			}
-			cacheTransport.Transport = authTransport
 		}
 
-		github.SetClient(&http.Client{Transport: cacheTransport})
-	} else {
-		log.Println("skipping persistent on-disk caching, because unable to acquire a cache dir:", err)
+		// If we can have access to a cache directory on this system, use it for caching
+		// HTTP requests of GitHub presenter.
+		if cacheDir, err := ospath.CacheDir("github.com/shurcooL/Go-Package-Store"); err == nil {
+			transport = &httpcache.Transport{
+				Transport:           transport,
+				Cache:               diskcache.New(filepath.Join(cacheDir, "github-presenter")),
+				MarkCachedResponses: true,
+			}
+		} else {
+			log.Println("skipping persistent on-disk caching, because unable to acquire a cache dir:", err)
+		}
+
+		github.SetClient(&http.Client{Transport: transport})
 	}
 
 	switch {
