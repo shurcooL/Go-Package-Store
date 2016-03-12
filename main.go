@@ -118,7 +118,10 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 	updateRequestChan <- updateRequest
 
 	err := <-updateRequest.resultChan
-	_ = err // TODO: Maybe display error in frontend. For now, don't do anything.
+	// TODO: Display error in frontend.
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // mainHandler is the handler for the index page.
@@ -305,7 +308,11 @@ func main() {
 			}
 			pipeline.Done()
 		}()
-		updater = nil
+		if gu, err := repo.NewGovendorUpdater(""); err == nil {
+			updater = gu
+		} else {
+			log.Println("govendor updater is not available:", err)
+		}
 	}
 	if !production {
 		updater = repo.MockUpdater{}
