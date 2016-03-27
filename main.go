@@ -21,8 +21,8 @@ import (
 	"github.com/shurcooL/Go-Package-Store/presenter/github"
 	"github.com/shurcooL/Go-Package-Store/repo"
 	"github.com/shurcooL/go/gzip_file_server"
+	"github.com/shurcooL/go/open"
 	"github.com/shurcooL/go/ospath"
-	"github.com/shurcooL/go/u/u4"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
@@ -342,7 +342,7 @@ func main() {
 
 	if production {
 		// Open a browser tab and navigate to the main page.
-		go u4.Open("http://" + *httpFlag + "/index.html")
+		go open.Open("http://" + *httpFlag + "/index.html")
 	}
 
 	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/index.html.")
