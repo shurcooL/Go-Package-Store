@@ -1,4 +1,4 @@
-# Go-Package-Store [![Build Status](https://travis-ci.org/shurcooL/Go-Package-Store.svg?branch=master)](https://travis-ci.org/shurcooL/Go-Package-Store) [![GoDoc](https://godoc.org/github.com/shurcooL/Go-Package-Store?status.svg)](https://godoc.org/github.com/shurcooL/Go-Package-Store)
+# Go Package Store [![Build Status](https://travis-ci.org/shurcooL/Go-Package-Store.svg?branch=master)](https://travis-ci.org/shurcooL/Go-Package-Store) [![GoDoc](https://godoc.org/github.com/shurcooL/Go-Package-Store?status.svg)](https://godoc.org/github.com/shurcooL/Go-Package-Store)
 
 Go Package Store displays updates for the Go packages in your GOPATH.
 
@@ -37,6 +37,11 @@ When you're done with development, you should run `go generate` before committin
 ```bash
 go generate github.com/shurcooL/Go-Package-Store/...
 ```
+
+Alternatives
+------------
+
+-	[GoFresh](https://github.com/divan/gofresh) - Console tool for checking and updating package dependencies (imports).
 
 License
 -------
