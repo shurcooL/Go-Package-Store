@@ -317,11 +317,11 @@ func (w *workspace) importPathRevisionWorker(wg *sync.WaitGroup) {
 		if _, ok := w.repos[rr.Root]; !ok {
 			repo = &pkg.Repo{
 				Root:      rr.Root,
-				RemoteURL: rr.Repo,
 				Cmd:       rr.VCS,
 				RemoteVCS: remoteVCS,
 			}
 			repo.Local.Revision = p.revision
+			repo.Remote.RepoURL = rr.Repo
 			w.repos[rr.Root] = repo
 		}
 		w.reposMu.Unlock()
@@ -344,27 +344,31 @@ func (w *workspace) processFilterWorker(wg *sync.WaitGroup) {
 		case p.VCS != nil:
 			var err error
 			p.Remote.Branch, p.Remote.Revision, err = p.VCS.RemoteBranchAndRevision(p.Path)
-			_ = err // TODO.
-		case p.RemoteVCS != nil:
-			var err error
-			p.Remote.Branch, p.Remote.Revision, err = p.RemoteVCS.RemoteBranchAndRevision(p.RemoteURL)
-			_ = err // TODO.
-		default:
-			panic("internal error: precondition failed, expected one of p.VCS or p.RemoteVCS to not be nil")
-		}
-
-		// TODO: Organize.
-		if p.Local.Revision == "" && p.VCS != nil {
-			if r, err := p.VCS.LocalRevision(p.Path, p.Remote.Branch); err == nil {
-				p.Local.Revision = r
+			if err != nil {
+				log.Printf("skipping %q because of remote error:\n%v\n", p.Root, err)
+				continue
 			}
 
-			// TODO: Organize.
-			if p.RemoteVCS == nil && p.RemoteURL == "" {
-				if r, err := p.VCS.RemoteURL(p.Path); err == nil {
-					p.RemoteURL = r
+			if p.Local.Revision == "" {
+				if r, err := p.VCS.LocalRevision(p.Path, p.Remote.Branch); err == nil {
+					p.Local.Revision = r
 				}
 			}
+			if r, err := p.VCS.RemoteURL(p.Path); err == nil {
+				p.Local.RemoteURL = r
+			}
+			if rr, err := vcs.RepoRootForImportPath(p.Root, false); err == nil {
+				p.Remote.RepoURL = rr.Repo
+			}
+		case p.RemoteVCS != nil:
+			var err error
+			p.Remote.Branch, p.Remote.Revision, err = p.RemoteVCS.RemoteBranchAndRevision(p.Remote.RepoURL)
+			if err != nil {
+				log.Printf("skipping %q because of remote error:\n%v\n", p.Root, err)
+				continue
+			}
+		default:
+			panic("internal error: precondition failed, expected one of p.VCS or p.RemoteVCS to not be nil")
 		}
 
 		if !shouldPresentUpdate(p) {

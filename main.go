@@ -31,18 +31,18 @@ import (
 // shouldPresentUpdate determines if the given goPackage should be presented as an available update.
 // It checks that the Go package is on default branch, does not have a dirty working tree, and does not have the remote revision.
 func shouldPresentUpdate(repo *pkg.Repo) bool {
-	// TODO: Replicate the previous behavior fully, then remove this commented out code:
-	//return status.PlumbingPresenterV2(goPackage)[:3] == "  +" // Ignore stash.
-
-	if repo.RemoteURL == "" || repo.Local.Revision == "" || repo.Remote.Revision == "" {
+	if repo.Remote.RepoURL == "" || repo.Local.Revision == "" || repo.Remote.Revision == "" {
 		return false
 	}
 
 	if repo.VCS != nil {
-		if b, err := repo.VCS.Branch(repo.Path); err != nil || b != repo.Remote.Branch {
+		if localBranch, err := repo.VCS.Branch(repo.Path); err != nil || localBranch != repo.Remote.Branch {
 			return false
 		}
-		if s, err := repo.VCS.Status(repo.Path); err != nil || s != "" {
+		if status, err := repo.VCS.Status(repo.Path); err != nil || status != "" {
+			return false
+		}
+		if repo.Local.RemoteURL != repo.Remote.RepoURL {
 			return false
 		}
 		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch); err != nil || c {

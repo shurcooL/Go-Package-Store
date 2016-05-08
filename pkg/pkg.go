@@ -13,10 +13,6 @@ type Repo struct {
 	// Root is the import path corresponding to the root of the repository.
 	Root string
 
-	// RemoteURL is the remote URL, including scheme.
-	// TODO: Consider moving/renaming to Remote.RepoURL.
-	RemoteURL string
-
 	// TODO: Consider.
 	Cmd *vcs.Cmd
 
@@ -27,9 +23,15 @@ type Repo struct {
 	RemoteVCS vcsstate.RemoteVCS
 
 	Local struct {
+		// RemoteURL is the remote URL, including scheme.
+		RemoteURL string
+
 		Revision string
 	}
 	Remote struct {
+		// RepoURL is the repository URL, including scheme, as determined dynamically from the import path.
+		RepoURL string
+
 		Branch   string // Default branch, as determined from remote.
 		Revision string
 	}

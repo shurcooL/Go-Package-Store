@@ -49,15 +49,15 @@ func init() {
 			}
 			return newGitHubPresenter(repo, gitHubOwner, gitHubRepo)
 		// Underlying GitHub remote.
-		case strings.HasPrefix(repo.RemoteURL, "https://github.com/"):
-			elems := strings.Split(strings.TrimSuffix(repo.RemoteURL[len("https://"):], ".git"), "/")
+		case strings.HasPrefix(repo.Remote.RepoURL, "https://github.com/"):
+			elems := strings.Split(strings.TrimSuffix(repo.Remote.RepoURL[len("https://"):], ".git"), "/")
 			if len(elems) != 3 {
 				return nil
 			}
 			return newGitHubPresenter(repo, elems[1], elems[2])
 		// Go repo remote has a GitHub mirror repo.
-		case strings.HasPrefix(repo.RemoteURL, "https://go.googlesource.com/"):
-			repoName := repo.RemoteURL[len("https://go.googlesource.com/"):]
+		case strings.HasPrefix(repo.Remote.RepoURL, "https://go.googlesource.com/"):
+			repoName := repo.Remote.RepoURL[len("https://go.googlesource.com/"):]
 			return newGitHubPresenter(repo, "golang", repoName)
 		default:
 			return nil
