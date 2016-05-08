@@ -39,13 +39,13 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 	}
 
 	if repo.VCS != nil {
-		if b, err := repo.VCS.Branch(repo.Path); err != nil || b != repo.VCS.DefaultBranch() {
+		if b, err := repo.VCS.Branch(repo.Path); err != nil || b != repo.Remote.Branch {
 			return false
 		}
 		if s, err := repo.VCS.Status(repo.Path); err != nil || s != "" {
 			return false
 		}
-		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision); err != nil || c {
+		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch); err != nil || c {
 			return false
 		}
 	}

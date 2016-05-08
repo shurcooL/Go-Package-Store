@@ -340,22 +340,22 @@ func (w *workspace) processFilterWorker(wg *sync.WaitGroup) {
 	for p := range w.unique {
 		// Determine remote revision.
 		// This is slow because it requires a network operation.
-		var remoteRevision string
-		if p.VCS != nil {
+		switch {
+		case p.VCS != nil:
 			var err error
-			remoteRevision, err = p.VCS.RemoteRevision(p.Path)
+			p.Remote.Branch, p.Remote.Revision, err = p.VCS.RemoteBranchAndRevision(p.Path)
 			_ = err // TODO.
-		} else if p.RemoteVCS != nil {
+		case p.RemoteVCS != nil:
 			var err error
-			remoteRevision, err = p.RemoteVCS.RemoteRevision(p.RemoteURL)
+			p.Remote.Branch, p.Remote.Revision, err = p.RemoteVCS.RemoteBranchAndRevision(p.RemoteURL)
 			_ = err // TODO.
+		default:
+			panic("internal error: precondition failed, expected one of p.VCS or p.RemoteVCS to not be nil")
 		}
-
-		p.Remote.Revision = remoteRevision
 
 		// TODO: Organize.
 		if p.Local.Revision == "" && p.VCS != nil {
-			if r, err := p.VCS.LocalRevision(p.Path); err == nil {
+			if r, err := p.VCS.LocalRevision(p.Path, p.Remote.Branch); err == nil {
 				p.Local.Revision = r
 			}
 

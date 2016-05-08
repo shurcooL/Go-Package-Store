@@ -1,3 +1,4 @@
+// Package pkg provides a definition of a repository.
 package pkg
 
 import (
@@ -29,6 +30,7 @@ type Repo struct {
 		Revision string
 	}
 	Remote struct {
+		Branch   string // Default branch, as determined from remote.
 		Revision string
 	}
 }
