@@ -23,6 +23,7 @@ import (
 	"github.com/shurcooL/go/gzip_file_server"
 	"github.com/shurcooL/go/open"
 	"github.com/shurcooL/go/ospath"
+	"github.com/shurcooL/gostatus/status"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
@@ -42,7 +43,7 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 		if status, err := repo.VCS.Status(repo.Path); err != nil || status != "" {
 			return false
 		}
-		if repo.Local.RemoteURL != repo.Remote.RepoURL {
+		if !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
 			return false
 		}
 		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch); err != nil || c {
