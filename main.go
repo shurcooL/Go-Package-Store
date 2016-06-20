@@ -328,7 +328,7 @@ func main() {
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	fileServer := gzip_file_server.New(assets)
 	http.Handle("/assets/", fileServer)
-	http.Handle("/assets/octicons/", http.StripPrefix("/assets/", fileServer))
+	http.Handle("/assets/octicons/", http.StripPrefix("/assets", fileServer))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
 	if updater != nil {
 		http.HandleFunc("/-/update", updateHandler)
