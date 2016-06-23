@@ -25,7 +25,7 @@ type govendorUpdater struct {
 }
 
 func (gu govendorUpdater) Update(repo *pkg.Repo) error {
-	cmd := exec.Command("govendor", "update", repo.ImportPathPattern())
+	cmd := exec.Command("govendor", "fetch", repo.ImportPathPattern()+"@"+repo.Remote.Revision)
 	fmt.Print(strings.Join(cmd.Args, " "))
 	cmd.Dir = gu.dir
 	cmd.Stdout = os.Stdout
