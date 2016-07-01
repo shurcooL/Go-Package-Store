@@ -19,6 +19,7 @@ import (
 	"github.com/gregjones/httpcache/diskcache"
 	"github.com/shurcooL/Go-Package-Store/pkg"
 	"github.com/shurcooL/Go-Package-Store/presenter/github"
+	"github.com/shurcooL/Go-Package-Store/presenter/gitiles"
 	"github.com/shurcooL/Go-Package-Store/repo"
 	"github.com/shurcooL/go/gzip_file_server"
 	"github.com/shurcooL/go/open"
@@ -30,6 +31,7 @@ import (
 
 	// Register presenters.
 	_ "github.com/shurcooL/Go-Package-Store/presenter/github"
+	_ "github.com/shurcooL/Go-Package-Store/presenter/gitiles"
 )
 
 // shouldPresentUpdate determines if the given goPackage should be presented as an available update.
@@ -240,6 +242,14 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	// If we can have access to a cache directory on this system, use it for
+	// caching HTTP requests of presenters.
+	cacheDir, err := ospath.CacheDir("github.com/shurcooL/Go-Package-Store")
+	if err != nil {
+		log.Println("skipping persistent on-disk caching, because unable to acquire a cache dir:", err)
+		cacheDir = ""
+	}
+
 	// Set GitHub presenter client.
 	{
 		var transport http.RoundTripper
@@ -251,19 +261,30 @@ func main() {
 			}
 		}
 
-		// If we can have access to a cache directory on this system, use it for caching
-		// HTTP requests of GitHub presenter.
-		if cacheDir, err := ospath.CacheDir("github.com/shurcooL/Go-Package-Store"); err == nil {
+		if cacheDir != "" {
 			transport = &httpcache.Transport{
 				Transport:           transport,
 				Cache:               diskcache.New(filepath.Join(cacheDir, "github-presenter")),
 				MarkCachedResponses: true,
 			}
-		} else {
-			log.Println("skipping persistent on-disk caching, because unable to acquire a cache dir:", err)
 		}
 
 		github.SetClient(&http.Client{Transport: transport})
+	}
+
+	// Set Gitiles presenter client.
+	{
+		var transport http.RoundTripper
+
+		if cacheDir != "" {
+			transport = &httpcache.Transport{
+				Transport:           transport,
+				Cache:               diskcache.New(filepath.Join(cacheDir, "gitiles-presenter")),
+				MarkCachedResponses: true,
+			}
+		}
+
+		gitiles.SetClient(&http.Client{Transport: transport})
 	}
 
 	switch {
@@ -322,7 +343,7 @@ func main() {
 		updater = repo.MockUpdater{}
 	}
 
-	err := loadTemplates()
+	err = loadTemplates()
 	if err != nil {
 		log.Fatalln("loadTemplates:", err)
 	}

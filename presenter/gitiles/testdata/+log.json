@@ -1,0 +1,1806 @@
+)]}'
+{
+  "log": [
+    {
+      "commit": "7a1b48a03240285fcdb91f7890f647cd90358f84",
+      "tree": "12329a8bb567f1aca059f01da73983a99f807e5a",
+      "parents": [
+        "63ade871fd3aec1225809d496e81ec91ab76ea29"
+      ],
+      "author": {
+        "name": "Chris Broadfoot",
+        "email": "cbro@golang.org",
+        "time": "Fri Jun 24 17:27:31 2016 -0700"
+      },
+      "committer": {
+        "name": "Chris Broadfoot",
+        "email": "cbro@google.com",
+        "time": "Mon Jun 27 18:00:52 2016 +0000"
+      },
+      "message": "google-api-go-client: update all APIs\n\nChange-Id: If682f3b0bcf992351f82763cd76561c7c30466a5\nReviewed-on: https://code-review.googlesource.com/5051\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "63ade871fd3aec1225809d496e81ec91ab76ea29",
+      "tree": "9499b72a98f2c17f448795c087279b5e2da8e90c",
+      "parents": [
+        "aa89374d6f4a7f9ab85dcb3b01c95d2d3bd7f10a"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue May 31 16:42:46 2016 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jun 01 00:40:28 2016 +0000"
+      },
+      "message": "generator: support data wrapper for responses.\n\nThe change is in the generator.  This should result in no change in\nfunctionality to any generated file except\ntranslate/v2/translate-gen.go.\n\nFixes #79.\n\nChange-Id: I3c22e230e1b5cc88ebe037cbf4704430232eb70e\nReviewed-on: https://code-review.googlesource.com/4901\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "aa89374d6f4a7f9ab85dcb3b01c95d2d3bd7f10a",
+      "tree": "b6f94235935913d26e5ec6361c188ec3f09d2fb3",
+      "parents": [
+        "7059a7f3d456870ff1e8424a6b1f62abe5f95f36"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Mon May 23 13:06:21 2016 -0700"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon May 23 23:40:04 2016 +0000"
+      },
+      "message": "google-api-go-client: update all APIs\n\nRequested by Classroom API team.\n\nChange-Id: I0f1ad39757688a9c577f6606880fd25d17c6beb7\nReviewed-on: https://code-review.googlesource.com/4860\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "7059a7f3d456870ff1e8424a6b1f62abe5f95f36",
+      "tree": "fc8b4035f565a289f62fca310f5e82afdc068f27",
+      "parents": [
+        "b34a26664e9b96e9d4aab8a6e8175ea07af5b8b6"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu May 12 15:45:26 2016 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed May 18 01:00:10 2016 +0000"
+      },
+      "message": "generator: simplify doRequest.\n\ndoRequest has organically grown into a bit of a mess.\n\nThis is a limited cleanup which reduces the number of code paths a bit.\n\nChange-Id: Ida634aa1be9a13c761fc7df173726b9bc4cb3e0c\nReviewed-on: https://code-review.googlesource.com/4760\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "b34a26664e9b96e9d4aab8a6e8175ea07af5b8b6",
+      "tree": "1ab84e166fcdcfd71c2bcf73ff77d60780f8ea79",
+      "parents": [
+        "4300f6b0c8a7f09e521dd0af2cee27e28846e037"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue May 17 15:00:45 2016 +1000"
+      },
+      "committer": {
+        "name": "Brad Fitzpatrick",
+        "email": "bradfitz@golang.org",
+        "time": "Tue May 17 14:33:37 2016 +0000"
+      },
+      "message": "google-api-go-client: update all APIs.\n\nChange-Id: Idc616709138d8152420af1435966db844748ea75\nReviewed-on: https://code-review.googlesource.com/4782\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "4300f6b0c8a7f09e521dd0af2cee27e28846e037",
+      "tree": "8b2a93973fd95ba85f8658e4286e827a46300d14",
+      "parents": [
+        "68d2045ae9f51df061629c98988f210ed6bb0127"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu May 12 12:12:15 2016 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu May 12 21:25:20 2016 +0000"
+      },
+      "message": "google-api-go-client: update all APIs.\n\nRequested by the sqladmin API team.\n\nNo old APIs have been deleted.\n\nChange-Id: I2cfedf6b60aab0fa43db94f591b881f9502bccb8\nReviewed-on: https://code-review.googlesource.com/4751\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "68d2045ae9f51df061629c98988f210ed6bb0127",
+      "tree": "23c96084ebe83ffe3aeb7260f17921cacb893ef9",
+      "parents": [
+        "f9a4669e07732c84854dce1f5c451c22427228fb"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed May 11 11:39:49 2016 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed May 11 04:33:00 2016 +0000"
+      },
+      "message": "gensupport: rename ResumableBuffer -\u003e MediaBuffer.\n\nMediaBuffer will be used to aid retries of uploads that use the\nnon-resumable code path, so this more general name makes more sense.\n\nChange-Id: Iff641a38b06898b837ed017436ea88f27c07070c\nReviewed-on: https://code-review.googlesource.com/4740\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "f9a4669e07732c84854dce1f5c451c22427228fb",
+      "tree": "aeb05efb0c5c354241e1ad9436d77bba6d4f7ce4",
+      "parents": [
+        "ff0a1ff302946b997eb1832381419d1f95143483"
+      ],
+      "author": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Tue May 03 17:43:48 2016 -0700"
+      },
+      "committer": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Wed May 04 00:54:13 2016 +0000"
+      },
+      "message": "Special-case appengine/v1beta5 \"Service\" type to avoid it being \"Service1\".\n\nPut it back to its previous name, \"Module\".\n\nChange-Id: Ibd5331c142c755fd0af2e0a88b0f31c37143fac5\nReviewed-on: https://code-review.googlesource.com/4680\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\nReviewed-by: Russ Cox \u003crsc@swtch.com\u003e\nReviewed-by: Chris Broadfoot \u003ccbro@google.com\u003e\n"
+    },
+    {
+      "commit": "ff0a1ff302946b997eb1832381419d1f95143483",
+      "tree": "982bfeae62c24940671365cd69cd863d33b2ded1",
+      "parents": [
+        "9737cc9e103c00d06a8f3993361dec083df3d252"
+      ],
+      "author": {
+        "name": "Michael Marineau",
+        "email": "michael.marineau@coreos.com",
+        "time": "Thu Apr 28 20:50:51 2016 -0700"
+      },
+      "committer": {
+        "name": "Brad Fitzpatrick",
+        "email": "bradfitz@golang.org",
+        "time": "Sun May 01 19:00:44 2016 +0000"
+      },
+      "message": "Regenerate APIs.\n\nChange-Id: Id7cc4597b6b7d9439063d6358512cdb504b5376f\nReviewed-on: https://code-review.googlesource.com/4651\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "9737cc9e103c00d06a8f3993361dec083df3d252",
+      "tree": "9b005e8308f17c1db1d222209b5f249f7070085a",
+      "parents": [
+        "6dcd0d8ed711248e845137a35720e88b3ed2e04a"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Fri Apr 08 16:59:26 2016 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Fri Apr 08 07:11:26 2016 +0000"
+      },
+      "message": "generator: don\u0027t retry initial media upload request.\n\nWhen non-resumable upload is used, the media to be uploaded is read from\nan io.Reader, and the contents of this reader are read in the first\nupload attempt. If this first attempt fails, the existing code tries\nagain with a second attempt, and reads from the Reader again, which\nreturns 0 bytes.\n\nResumable upload handles this case by buffering the data to be uploaded,\nbut the non-resumable case does not.\n\nThis change prevents erroneously attempting to re-read the media body by\nnot retrying failed initial requests.  This will result in more observed\nupload failures, but will prevent truncated upload being reported as\nsuccessful.\n\nA future change can reinstate retries while avoiding this problem.\n\nChange-Id: I00389ea0196cf4d6bb567c3aa5109f3830d91c7e\nReviewed-on: https://code-review.googlesource.com/4501\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "6dcd0d8ed711248e845137a35720e88b3ed2e04a",
+      "tree": "91f03693827ee8a6c9adbd9f8b52552bc3242f1e",
+      "parents": [
+        "43c645d4bcf9251ced36c823a93b6d198764aae4"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Apr 06 10:26:44 2016 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Apr 06 06:27:27 2016 +0000"
+      },
+      "message": "googleapi: Add support for trace tokens.\n\nChange-Id: I0d3226f7aa429b50fc122e10ef47d479985dc36a\nReviewed-on: https://code-review.googlesource.com/4453\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "43c645d4bcf9251ced36c823a93b6d198764aae4",
+      "tree": "ffb1bb8f4e4068543746183dd4e10550491fa54b",
+      "parents": [
+        "9bf6e6e569ff057f75d9604a46c52928f17d2b54"
+      ],
+      "author": {
+        "name": "Chris Broadfoot",
+        "email": "cbro@golang.org",
+        "time": "Thu Mar 24 10:48:31 2016 -0700"
+      },
+      "committer": {
+        "name": "Chris Broadfoot",
+        "email": "cbro@google.com",
+        "time": "Thu Mar 24 17:57:52 2016 +0000"
+      },
+      "message": "container: regenerate container:v1\n\nUpdates #127.\n\nChange-Id: I93a7cbe79546535bb07f67b1eb8697142d1bacd5\nReviewed-on: https://code-review.googlesource.com/4381\nReviewed-by: Evan Brown \u003cevanbrown@google.com\u003e\nReviewed-by: Chris Broadfoot \u003ccbro@google.com\u003e\n"
+    },
+    {
+      "commit": "9bf6e6e569ff057f75d9604a46c52928f17d2b54",
+      "tree": "d2e1579c1d850d9f45e7eab14e204a8563d5e8c6",
+      "parents": [
+        "fceeaa645c4015c833842e6ed6052b2dda667079"
+      ],
+      "author": {
+        "name": "Chris Broadfoot",
+        "email": "cbro@golang.org",
+        "time": "Mon Mar 21 16:44:42 2016 -0700"
+      },
+      "committer": {
+        "name": "Chris Broadfoot",
+        "email": "cbro@google.com",
+        "time": "Tue Mar 22 02:51:52 2016 +0000"
+      },
+      "message": "monitoring: regenerate monitoring:v3\n\nChange-Id: Ic61497994af45f683898776b8c0432f3b0584460\nReviewed-on: https://code-review.googlesource.com/4343\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "fceeaa645c4015c833842e6ed6052b2dda667079",
+      "tree": "34aff06236352964b18b8dc453c433cc258c5592",
+      "parents": [
+        "910020f453d58af7ffc8e53499c4fdfbbda05656"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Feb 18 15:56:17 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Mar 16 22:48:02 2016 +0000"
+      },
+      "message": "generator: support map from string to array of \"any\" type.\n\nFixes #130\n\nChange-Id: I6f7212a74e30906fc5831e2c389c1d447490f768\nReviewed-on: https://code-review.googlesource.com/4191\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "910020f453d58af7ffc8e53499c4fdfbbda05656",
+      "tree": "834e8d5c31e7c4b4d5ab5642e48304ff1327c584",
+      "parents": [
+        "e61f6e00cdf8b78313641288c50f6e2d4e3d749c"
+      ],
+      "author": {
+        "name": "Chris Broadfoot",
+        "email": "cbro@golang.org",
+        "time": "Wed Mar 16 12:18:57 2016 -0700"
+      },
+      "committer": {
+        "name": "Brad Fitzpatrick",
+        "email": "bradfitz@golang.org",
+        "time": "Wed Mar 16 20:41:43 2016 +0000"
+      },
+      "message": "Regenerate APIs.\n\nChange-Id: I79d882a9a77cf49bcdbd394dbb98e3f285aa4dfb\nReviewed-on: https://code-review.googlesource.com/4320\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "e61f6e00cdf8b78313641288c50f6e2d4e3d749c",
+      "tree": "338ed4285feb8784f15f4b00cd6ebba98ddcd722",
+      "parents": [
+        "9dd147171c9080fd31fe304a6d852aaac845f9f6"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Mar 03 16:36:50 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Mar 03 23:25:31 2016 +0000"
+      },
+      "message": "generator: Allow supression of Content-Type header.\n\nThis allows users to upload media via the Media method without sending a\nContent-Type header. Some APIs (e.g. storage) can detect this and use\nanother mechanism for determining the content type (e.g. the storage API\ncan inspect the contentType field in the object).\n\nFixes #134\n\nChange-Id: Ib39a405a179358dfc736a08f0af47856155319d4\nReviewed-on: https://code-review.googlesource.com/4276\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "9dd147171c9080fd31fe304a6d852aaac845f9f6",
+      "tree": "07812166bc1d0d640f1ae28748be1a44493a227c",
+      "parents": [
+        "a1a3189e71b3a1266c30d8f07bf6e469f7541f79"
+      ],
+      "author": {
+        "name": "Brad Fitzpatrick",
+        "email": "bradfitz@golang.org",
+        "time": "Wed Mar 02 01:48:40 2016 +0000"
+      },
+      "committer": {
+        "name": "Brad Fitzpatrick",
+        "email": "bradfitz@golang.org",
+        "time": "Wed Mar 02 03:26:17 2016 +0000"
+      },
+      "message": "More doc tweaks to GettingStarted\n\nChange-Id: I4f6b9e27c5c897509b63ea166bbb85b2f6b089f9\nReviewed-on: https://code-review.googlesource.com/4242\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "a1a3189e71b3a1266c30d8f07bf6e469f7541f79",
+      "tree": "fc47822dfe9193e5b696aad5773e31930f47b11f",
+      "parents": [
+        "286e8c9bcb5f84d8dcac21634d79ab16428b1b78"
+      ],
+      "author": {
+        "name": "Brad Fitzpatrick",
+        "email": "bradfitz@golang.org",
+        "time": "Tue Mar 01 11:00:25 2016 -0800"
+      },
+      "committer": {
+        "name": "Brad Fitzpatrick",
+        "email": "bradfitz@golang.org",
+        "time": "Wed Mar 02 00:55:19 2016 +0000"
+      },
+      "message": "Update GettingStarted a bit.\n\nProbably needs much more love, but this is a bit better.\n\nChange-Id: I3b509a0e2ff0488acc2e15e505d52ec4c01b00f7\nReviewed-on: https://code-review.googlesource.com/4241\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "286e8c9bcb5f84d8dcac21634d79ab16428b1b78",
+      "tree": "04a1f8d427bf6c659365bf696efeab53a7acdada",
+      "parents": [
+        "33bb8a035a2fb15e13125a3c3096e1b65fbb751b"
+      ],
+      "author": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Fri Feb 26 15:15:36 2016 +1100"
+      },
+      "committer": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Fri Feb 26 05:56:01 2016 +0000"
+      },
+      "message": "uritemplates: correct handling of empty values\n\nAs per the spec, empty values and absent values have different\nbehaviour.\n\nWhile I\u0027m here, remove error returns from methods when the error is\nalways nil.\n\nChange-Id: I9652c020a58cb14f69ce037aa1c33e5fa781ab49\nReviewed-on: https://code-review.googlesource.com/4266\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "33bb8a035a2fb15e13125a3c3096e1b65fbb751b",
+      "tree": "f14033f360aa718f9a60e27434b129a0bc0bcf85",
+      "parents": [
+        "e6294e63a06b2be522ff3d328d8cacded0b1bd31"
+      ],
+      "author": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Fri Feb 26 14:12:26 2016 +1100"
+      },
+      "committer": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Fri Feb 26 04:19:41 2016 +0000"
+      },
+      "message": "uritemplates: simplify and add tests\n\nThe generated APIs only ever pass map[string]string as the values, which\nwas leaving a lot of complex, unexercised code in the uritemplates\npackage. Simplifying this package will allow future changes to be\nimplemented more safely.\n\nAdd unit tests, all taken directly from the RFC, to ensure correctness.\n\nChange-Id: I5a4ef07347475649d79e02b957105ef018f14fbc\nReviewed-on: https://code-review.googlesource.com/4265\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "e6294e63a06b2be522ff3d328d8cacded0b1bd31",
+      "tree": "3198bdaa0814eb1ddb73a129ad918d53dd3d4d32",
+      "parents": [
+        "e95532744d7a13e9a8098c13f0868dfff77bb108"
+      ],
+      "author": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Fri Feb 19 16:41:36 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Fri Feb 19 05:54:22 2016 +0000"
+      },
+      "message": "travis: drop 1.4 build, add 1.6 build\n\nChange-Id: I7c6858452271b04fb7943f899c931ff4bbc4dcde\nReviewed-on: https://code-review.googlesource.com/4211\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "e95532744d7a13e9a8098c13f0868dfff77bb108",
+      "tree": "7ac861495436d5aebb6858dd133c6b53fc71dc28",
+      "parents": [
+        "d2bfc4131a034197ecc039fe5326701001e90254"
+      ],
+      "author": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Mon Feb 15 17:10:33 2016 +1100"
+      },
+      "committer": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Tue Feb 16 00:30:52 2016 +0000"
+      },
+      "message": "Automatically retry failed media upload requests.\n\nPrevious retry changes have only added retry logic to uploading the main\nmedia body. This change also adds retry to the initial (or sometimes\nonly) request.\n\nTo be conservative, we don\u0027t add equivalent retry logic to other request\ntypes yet.\n\nFixes GoogleCloudPlatform/gcloud-golang#179\n\nChange-Id: I580a872e504faa2ca0b1761c19602a37fc233e16\nReviewed-on: https://code-review.googlesource.com/4175\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "d2bfc4131a034197ecc039fe5326701001e90254",
+      "tree": "ab20440d62946058d344ab7a13abdd7b0ce1b058",
+      "parents": [
+        "8a448fd57af58b0eaeb8fde0345ec7ae88e55076"
+      ],
+      "author": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Mon Feb 15 15:21:21 2016 +1100"
+      },
+      "committer": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Mon Feb 15 05:41:24 2016 +0000"
+      },
+      "message": "gensupport: add a helper Retry function\n\nThis function invokes the given function a number of times using the\nsame logic as used by ResumableUpload.Upload. I\u0027m introducing it to add\nsimilar retry logic to single-request uploads too for #179.\n\nWhile I\u0027m here, simplify NoPauseStrategy.\n\nChange-Id: I8c5247bcba5bb704fc2e35dec4f3b61c6b0b59e9\nReviewed-on: https://code-review.googlesource.com/4173\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "8a448fd57af58b0eaeb8fde0345ec7ae88e55076",
+      "tree": "d2de1244884078418d0d37b99782afe74e72f044",
+      "parents": [
+        "ad6c2cd766aa31d72fe3fce08189e0ba6e5002b9"
+      ],
+      "author": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Fri Feb 12 10:41:35 2016 +1100"
+      },
+      "committer": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Fri Feb 12 02:24:20 2016 +0000"
+      },
+      "message": "gensupport: rework retry logic\n\nChange retry logic so that only some HTTP response codes and errors\nwill cause subsequent retries.\n\nThe HTTP response codes that trigger retry are server errors [500, 600)\nas well as over limit error 429.\nThe errors that trigger retry are those that indicate a temporary error\nor interrupted connection.\n\nFixes #128\nFixes GoogleCloudPlatform/gcloud-golang#179\n\nChange-Id: I531abf2ded273783e66467898833672cfe9c5241\nReviewed-on: https://code-review.googlesource.com/4157\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "ad6c2cd766aa31d72fe3fce08189e0ba6e5002b9",
+      "tree": "34a358e1e9b23da0e59d0a8ff3b47fc40fbc5536",
+      "parents": [
+        "ddff2aff599105a55549cf173852507dfa094b7f"
+      ],
+      "author": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Thu Feb 04 16:19:49 2016 +1100"
+      },
+      "committer": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Sun Feb 07 22:45:04 2016 +0000"
+      },
+      "message": "gensupport: add jitter and timeout to exponential back off\n\nThis also reduces the minimum retry duration to something more\nreasonable.\n\nChange-Id: I437042f63740cf73ed1c1589ae1269f430f1a0e6\nReviewed-on: https://code-review.googlesource.com/4116\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "ddff2aff599105a55549cf173852507dfa094b7f",
+      "tree": "2ca2334855be047f317391fb134e5bc82ee14430",
+      "parents": [
+        "56858378d684b61701ab955fc11429dcf6ce5331"
+      ],
+      "author": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Thu Feb 04 15:02:10 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Feb 04 04:43:19 2016 +0000"
+      },
+      "message": "Update codegen testdata.\n\nChange-Id: Ia9d11ccc1b572ddd659bb0957b2a47ff87c67de5\nReviewed-on: https://code-review.googlesource.com/4114\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "56858378d684b61701ab955fc11429dcf6ce5331",
+      "tree": "fd27853947690f657da6fcd230f27e94b25ada48",
+      "parents": [
+        "61d74df3f9f3a66898c8e08aa7e702337b34dda3"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Feb 02 12:25:58 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Feb 04 03:00:58 2016 +0000"
+      },
+      "message": "generator: Fix documenation for {,Resumable}Media.\n\nChange-Id: I219447619d4432911666831e18225d84d3840373\nReviewed-on: https://code-review.googlesource.com/4112\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "61d74df3f9f3a66898c8e08aa7e702337b34dda3",
+      "tree": "fe19da160a3a5c4d55b4132c88b59d0b436c94fc",
+      "parents": [
+        "8363a38d2c47439699b871a586b8946e8ffad8d2"
+      ],
+      "author": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Thu Feb 04 11:47:03 2016 +1100"
+      },
+      "committer": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Thu Feb 04 00:55:12 2016 +0000"
+      },
+      "message": "Update to new mechanism for finding the discovery URL for APIs.\n\nThe discovery API itself got broken under us; discoveryLink is no\nlonger populated and discoveryRestUrl is now an absolute URL to use.\n\nRegenerate all the APIs as a result, and add a few new ones that\nhave now appeared.\n\nChange-Id: Ie68f6af5288f3e3c5ee77536d6a255af90689cca\nReviewed-on: https://code-review.googlesource.com/4111\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "8363a38d2c47439699b871a586b8946e8ffad8d2",
+      "tree": "f7adf5b3f9c024e6fabb0fc9eeae1bb925b17fd7",
+      "parents": [
+        "8fa1015948e6fc21c025050624e4c4e2f4f405c4"
+      ],
+      "author": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Mon Jan 11 13:44:40 2016 +1100"
+      },
+      "committer": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Thu Feb 04 00:14:01 2016 +0000"
+      },
+      "message": "Add generated paging helpers.\n\nWhen an API method meets certain requirements, generate a Pages method\non the call type that will yield successive pages to a provided func.\nThe requirements are, roughly:\n\t- the call has a non-required pageToken parameter\n\t- the call returns a struct with a parameter that looks like a\n\t  page token\n\nThe sophistication of those rules could be increased later to\nidentify a few more places where paging helpers could be added.\n\nFixes #114.\n\nChange-Id: I22865b7768a77320072f939e3f1bf742206385fa\nReviewed-on: https://code-review.googlesource.com/3993\nReviewed-by: David Symonds \u003cdsymonds@golang.org\u003e\n"
+    },
+    {
+      "commit": "8fa1015948e6fc21c025050624e4c4e2f4f405c4",
+      "tree": "a7e660da7b1db4fe14601a9e2dbb1f30eeee14a9",
+      "parents": [
+        "716f353926648bf50fbecb557ca557f5518c79fd"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Feb 02 12:25:58 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Feb 02 02:05:59 2016 +0000"
+      },
+      "message": "generator: Remove dead code.\n\nSince cb1db97 , overrideParameterName is no longer needed.\n\nChange-Id: I1819b7befe78e6facbd730c9d8070d61edd4b5ab\nReviewed-on: https://code-review.googlesource.com/4095\nReviewed-by: David Symonds \u003cdsymonds@golang.org\u003e\n"
+    },
+    {
+      "commit": "716f353926648bf50fbecb557ca557f5518c79fd",
+      "tree": "d697a2df73d7bcfa9a8c6ffdea0e2a2782a635da",
+      "parents": [
+        "f6ba98773d96b877b246f3a9266493dfc11e276b"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Feb 01 14:17:04 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Feb 02 01:19:48 2016 +0000"
+      },
+      "message": "all: Clean up resumable upload request loop.\n\nThis is mostly refactoring of old code.\nIt also introduces an exponential backoff retry strategy.\n\nChange-Id: Ia325ff2dae4715805080b3a6cf21b79a9345b0ca\nReviewed-on: https://code-review.googlesource.com/4092\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "f6ba98773d96b877b246f3a9266493dfc11e276b",
+      "tree": "e71418ad25cd566b2e36571fe7dcd299bf4fc793",
+      "parents": [
+        "0caa37974a5f5ae67172acf68b4970f7864f994c"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 28 11:22:04 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 28 02:07:50 2016 +0000"
+      },
+      "message": "gensupport: Allow ReaderAt to be reused.\n\nReaderAtToReader currently checks to see whether the supplied ReaderAt\nalso implements Reader, and if so, just returns that Reader.  This is\nincorrect, since Reader may already have been read from, but the\nsemantics of supplying a ReaderAt is that it should be read from the\nbeginning.  This change ensures that the returned Reader always reads\nfrom the beginning of the ReaderAt.\n\nFixes #126\n\nChange-Id: I09c32f9a8a9f2c3e514679a7c822451d5d2cc16c\nReviewed-on: https://code-review.googlesource.com/4070\nReviewed-by: David Symonds \u003cdsymonds@golang.org\u003e\n"
+    },
+    {
+      "commit": "0caa37974a5f5ae67172acf68b4970f7864f994c",
+      "tree": "742d98b31aa905ec31b1f9f05a6bc943235042cb",
+      "parents": [
+        "cb1db97256a1b26df34011e6fc504e7c074c91ec"
+      ],
+      "author": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Tue Jan 19 13:45:30 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 19 03:14:59 2016 +0000"
+      },
+      "message": "Update golden data for generator test.\n\nChange-Id: I925ed0a813aed2173f29ea92fbd09301111643cb\nReviewed-on: https://code-review.googlesource.com/4028\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "cb1db97256a1b26df34011e6fc504e7c074c91ec",
+      "tree": "1520c734cb2e7af353e05ca8e4106cd821514898",
+      "parents": [
+        "f70ad682fde08f28c80f8e7a5cf17c21244ddaaa"
+      ],
+      "author": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Mon Jan 11 10:59:52 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 19 02:36:52 2016 +0000"
+      },
+      "message": "Simplify per-call API by factoring common cross-API parameters.\n\nThis introduces googleapi.CallOption to replace the QuotaUser and UserIP\nmethods that are attached to many Call types.\n\nInstead of\n\ttype AclDeleteCall\n\tfunc (c *AclDeleteCall) Do() error\n\tfunc (c *AclDeleteCall) QuotaUser(quotaUser string) *AclDeleteCall\n\tfunc (c *AclDeleteCall) UserIP(userIP string) *AclDeleteCall\nwe now generate\n\ttype AclDeleteCall\n\tfunc (c *AclDeleteCall) Do(...googleapi.CallOption) error\nand supply in package googleapi\n\ttype CallOption\n\tfunc QuotaUser(u string) CallOption\n\tfunc UserIP(ip string) CallOption\n\nChange-Id: I41518390cfd9d13150aaf35b5fe703e812e3643e\nReviewed-on: https://code-review.googlesource.com/3992\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "f70ad682fde08f28c80f8e7a5cf17c21244ddaaa",
+      "tree": "1ee0bc0495046e40f8eb71052109e963ec917f7c",
+      "parents": [
+        "89913f6d79db461b370e87affbed92536c6029a2"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Jan 18 16:21:33 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 19 00:18:39 2016 +0000"
+      },
+      "message": "google-api-go-client: Make Media support resumable uploads.\n\nAllow users to use Media methods for resumable uploads. This means that:\n* A ReaderAt is no longer needed for resumable uploads.\n* The size of the content no long needs to be known a priori.\n* The use can configure the chunk size to be used.\n\nResumableMedia is now deprecated in favor of Media.\n\nChange-Id: Ifa3845f88abe82773392d36f34bbd3ce0e3c1f0a\nReviewed-on: https://code-review.googlesource.com/4027\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "89913f6d79db461b370e87affbed92536c6029a2",
+      "tree": "83e4a48a6bff24c21e0e8031db72655e2066e7d2",
+      "parents": [
+        "b55544c941dfadb60c112dbeb8e1354f1c2c34bf"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Jan 18 16:21:33 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Jan 18 05:41:23 2016 +0000"
+      },
+      "message": "gensupport: fix the build.\n\nChange-Id: Ie818ee564e5c115d5719721fc6357248c0bf5236\nReviewed-on: https://code-review.googlesource.com/4026\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "b55544c941dfadb60c112dbeb8e1354f1c2c34bf",
+      "tree": "b821175d21a1f05a6a6a7b6e13d62408097f4e2e",
+      "parents": [
+        "ec89ab60f4b5d66700aba395c0ec1a9f9811e998"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 14 14:56:10 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Jan 18 05:16:04 2016 +0000"
+      },
+      "message": "googleapi: Share more code between Media \u0026 ResumableMedia.\n\nUntil now, Media and ResumableMedia stored content to be uploaded in\nseparate fields of the Call struct.  This merges those fields.\n\nChange-Id: I67baecc85e149eea1cc2413c7fa585f891850a03\nReviewed-on: https://code-review.googlesource.com/4025\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "ec89ab60f4b5d66700aba395c0ec1a9f9811e998",
+      "tree": "f10465253f82c2386cd8124ea2b47b624ab9ed0e",
+      "parents": [
+        "b2be3c69519a81292faa7016d3c87f8b68c6f0d9"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 14 14:56:10 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Jan 18 02:53:39 2016 +0000"
+      },
+      "message": "googleapi: Refactor ResumableUpload to use ResumableBuffer.\n\nAlso cleaned up some tests along the way.\n\nChange-Id: I9537f403951103b8b9a42eb348079f117230b274\nReviewed-on: https://code-review.googlesource.com/4022\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "b2be3c69519a81292faa7016d3c87f8b68c6f0d9",
+      "tree": "e21ebd666efe8be22b840880180f94b6d453f9d3",
+      "parents": [
+        "5f60caa8e6b14382dde84104e808dadb51e1180a"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 14 14:56:10 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 14 05:05:31 2016 +0000"
+      },
+      "message": "googleapi: Move ResumableUpload to gensupport.\n\nChange-Id: Ib4b5c633068fc91db935f1a584482aa0d9e66b93\nReviewed-on: https://code-review.googlesource.com/4020\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "5f60caa8e6b14382dde84104e808dadb51e1180a",
+      "tree": "41b290ae4f0d412d5628452a2b34e232879339a7",
+      "parents": [
+        "83f801e4c423dc658849f683d8d9611df1fd4bae"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 14 10:31:12 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 14 05:02:53 2016 +0000"
+      },
+      "message": "gensupport: Add a buffer for resumable uploads.\n\nresumableBuffer is a new type which buffers chunks of data to be\nuploaded via resumable upload.\n\nChange-Id: Iacd9694ec36f5da579aedc0b8da7f644d42d9f69\nReviewed-on: https://code-review.googlesource.com/4005\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "83f801e4c423dc658849f683d8d9611df1fd4bae",
+      "tree": "8b16c4e53d20ab5d3010399dc285d0e0518d9127",
+      "parents": [
+        "2e67b990535ff1a7a7fe084ca0ee69d3aa031fbc"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 13 11:06:39 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 13 00:26:21 2016 +0000"
+      },
+      "message": "all: Update all APIs.\n\nFixes #120\n\nChange-Id: Id53302e28911f1b9cfb0950524e805b6ffa94aca\nReviewed-on: https://code-review.googlesource.com/4004\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "2e67b990535ff1a7a7fe084ca0ee69d3aa031fbc",
+      "tree": "3a2e676c04955b1d71fda86ff34772a3cc6385eb",
+      "parents": [
+        "2897ed5fbf1057b44c2f012e0ae1f90e3f82970f"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 12 11:56:22 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 12 23:02:35 2016 +0000"
+      },
+      "message": "gensupport: Simplify IncludeMedia.\n\nThis remove some of the in/out parameter weirdness and simplifies some\nof the implementation.\n\nChange-Id: I48fecd74042014ed718f12d3ae99234e1281c59a\nReviewed-on: https://code-review.googlesource.com/4001\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "2897ed5fbf1057b44c2f012e0ae1f90e3f82970f",
+      "tree": "fc5b20e022fadffdb9ca8dbde9562fd548679678",
+      "parents": [
+        "b2650c8219cf09f3279bd64db247f2b768b32307"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 12 16:39:09 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 12 23:01:54 2016 +0000"
+      },
+      "message": "gensupport: Dead code removal.\n\nRemove unused getMediaType function.\n\nChange-Id: I2779b49dec069cd0c5ad437ae1ff57c1c6f13b58\nReviewed-on: https://code-review.googlesource.com/4002\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "b2650c8219cf09f3279bd64db247f2b768b32307",
+      "tree": "7644bb075ff94a7005ad3aedbed0e1b2fd87e236",
+      "parents": [
+        "f98effadce73f357b6887f9d357a4371bd0859db"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 12 11:56:22 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 12 05:33:03 2016 +0000"
+      },
+      "message": "generator: Add MediaOptions to Media methods.\n\nThe first MediaOption allows specifying the content type of the supplied\nreader.\n\nChange-Id: If77c2253849fc1a13efcf89c847ac143a743782f\nReviewed-on: https://code-review.googlesource.com/4000\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "f98effadce73f357b6887f9d357a4371bd0859db",
+      "tree": "fe1f3d4ea2c8010d7a843ca255835a8cf5d6340b",
+      "parents": [
+        "77e7d383beb96054547729f49c372b3d01e196ff"
+      ],
+      "author": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Mon Jan 11 10:28:04 2016 +1100"
+      },
+      "committer": {
+        "name": "David Symonds",
+        "email": "dsymonds@golang.org",
+        "time": "Sun Jan 10 23:51:19 2016 +0000"
+      },
+      "message": "Regenerate APIs.\n\nChange-Id: I55ac2f61097aeb9fd976d255861295cda9bbd5c5\nReviewed-on: https://code-review.googlesource.com/3991\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "77e7d383beb96054547729f49c372b3d01e196ff",
+      "tree": "0f259b166507b030658fb210e53664a40add3a4a",
+      "parents": [
+        "7285216b0ce086018feab8ff428178f0a6bd95d0"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 06 14:23:34 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 07 23:54:28 2016 +0000"
+      },
+      "message": "google-api-go-client/all: Move nil media check to callers.\n\nConditionallyIncludeMedia does nothing if media is nil.\n\nSimplify by not calling this function if media is nil.\n\nChange-Id: I4657a0c5a7e02b78d28317b3bab94f713261ced9\nReviewed-on: https://code-review.googlesource.com/3976\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "7285216b0ce086018feab8ff428178f0a6bd95d0",
+      "tree": "649790af3814df0fa190e97ba8ef5613a1c056f0",
+      "parents": [
+        "52ece9b8dc561f8ba70cc2ad17d958bc06fb601a"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 06 14:23:34 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 07 23:38:14 2016 +0000"
+      },
+      "message": "google-api-go-client/all: Use content sniffer.\n\nUse ContentSniffer instead of a pipe \u0026 goroutine in getMediaType.\n\nChange-Id: I95353eb49d8dc38e62e491c2dcf3edb9e4d0ba7e\nReviewed-on: https://code-review.googlesource.com/3974\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "52ece9b8dc561f8ba70cc2ad17d958bc06fb601a",
+      "tree": "7bb86a1da3ea4f6eb889ccdcf1d58304b1c5b5ec",
+      "parents": [
+        "ef50e660312352c0d2792bf264c0aaeb893171b5"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 06 14:23:34 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 07 04:31:32 2016 +0000"
+      },
+      "message": "google-api-go-client/all: Add content sniffer.\n\nThis adds a wrapper around io.Reader which sniffs the Reader\u0027s media\ntype without the use of pipes \u0026 goroutines.\n\nVarious other content-sniffing code in gensupport will be refactored in\na subsequent change to remove the pipe/goroutine-based code.\n\nChange-Id: Ic1260fa28ea39116a0531a333edd49679ab8e9e8\nReviewed-on: https://code-review.googlesource.com/3973\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "ef50e660312352c0d2792bf264c0aaeb893171b5",
+      "tree": "54a9fe4e94811c5f4a8b79575f5cab937cd67d06",
+      "parents": [
+        "f5b7ec483f357a211c03c6722a840444c2d395dc"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 06 14:23:34 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Jan 07 03:52:48 2016 +0000"
+      },
+      "message": "google-api-go-client/all: Move media funcs to gensupport.\n\nChange-Id: I5f7f94af50336a05b0824bf255c4834cb1460ce3\nReviewed-on: https://code-review.googlesource.com/3971\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "f5b7ec483f357a211c03c6722a840444c2d395dc",
+      "tree": "d7151ec468a547d891336af12ed070f41b0434ff",
+      "parents": [
+        "5eb6bc39fc2e09e11aec26f00e901104bbb6f3e9"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 06 14:29:43 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 06 05:21:53 2016 +0000"
+      },
+      "message": "google-api-go-client: gensupport package cleanup.\n\nMove package doc to its own file -- it\u0027s not json-specific.\n\nChange-Id: Ia93f040367fca97a94664d62a3721843f2c32ec4\nReviewed-on: https://code-review.googlesource.com/3972\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "5eb6bc39fc2e09e11aec26f00e901104bbb6f3e9",
+      "tree": "e8955cbcc49fc7b8ba7669af5ce8a232aaeaa0a3",
+      "parents": [
+        "743ca501d8146d453ed0d7a56f135bdb54943dd2"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 05 15:08:20 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 06 03:12:27 2016 +0000"
+      },
+      "message": "google-api-go-client/generator: simplify function signature.\n\nSimplify ConditionallyIncludeMedia by removing unused return parameter,\nand always returning a non-nil cancel func.\n\nChange-Id: Ic5c8a36cc6c8157867024b799fdba369a83b99bb\nReviewed-on: https://code-review.googlesource.com/3946\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "743ca501d8146d453ed0d7a56f135bdb54943dd2",
+      "tree": "fb5f036fc0ed8b9434dd241a2955fdcd26afb0d6",
+      "parents": [
+        "40e8982bc18ef49b340c9da2c2bd9d49f94befcd"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 06 13:40:33 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Jan 06 03:04:26 2016 +0000"
+      },
+      "message": "google-api-go-client/googleapi: remove unused interface.\n\nLengther was used by code that has now been deleted.  Remove it.\n\nChange-Id: If1f3fab50ede1bd1b4190552a1160c8f5e772c9c\nReviewed-on: https://code-review.googlesource.com/3970\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "40e8982bc18ef49b340c9da2c2bd9d49f94befcd",
+      "tree": "dd7505be0ab78d6a730fa4e2c3a642cd80b2ab9d",
+      "parents": [
+        "40188352bd74db962ac45ffa44ddda18d719a14b"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 05 15:11:57 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 05 04:48:26 2016 +0000"
+      },
+      "message": "google-api-go-client: Fix Makefile.\n\nThe command `make local` was not matching all local JSON files.  This\nchange fixes that.\n\nChange-Id: Ib06dbad3968376fb7d9f61cc212e1ffc93a9d525\nReviewed-on: https://code-review.googlesource.com/3945\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "40188352bd74db962ac45ffa44ddda18d719a14b",
+      "tree": "d6b2cfdab982ba30a14c58176e4dd04ec667569d",
+      "parents": [
+        "1a6dd38b47790eaa9db23f4b66a379d8e2b981e8"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 05 15:11:57 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 05 04:34:50 2016 +0000"
+      },
+      "message": "google-api-go-client: update all APIs.\n\nChange-Id: I0d5225c903edd5d7e1e7d15be3b7c121f6dbdd47\nReviewed-on: https://code-review.googlesource.com/3943\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "1a6dd38b47790eaa9db23f4b66a379d8e2b981e8",
+      "tree": "cc10ef1fedde91dfa3f06a4e2ccdc249814eb7d2",
+      "parents": [
+        "dc6d2353af16e2a2b0ff6986af051d473a4ed468"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Jan 04 17:05:39 2016 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jan 05 02:53:47 2016 +0000"
+      },
+      "message": "generator: Remove a dependence on content size.\n\nResumable uploads store the content size to pass to the ProgressUpdater\ncallback. This refactoring change removes the need to store the size for\nthat purpose.\n\nChange-Id: I91e85584cb5451f33efca60925f3cec46625a646\nReviewed-on: https://code-review.googlesource.com/3942\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "dc6d2353af16e2a2b0ff6986af051d473a4ed468",
+      "tree": "82bab4814565ac4f718ba5f692350dfd8af4e421",
+      "parents": [
+        "fb9a762b1ba5eb828d4c3ea6b53755f290ca27ad"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Wed Dec 16 13:09:16 2015 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Dec 17 00:24:15 2015 +0000"
+      },
+      "message": "generator: support quotaUser,userIp parameters.\n\nThis change adds support for the commmon parameters \"quotaUser\" and\n\"userIp\" for APIs which support them.\n\nChange-Id: Ieffcf932bbbcc58642f6703f0a6f9ecfb907a88a\nReviewed-on: https://code-review.googlesource.com/3890\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "fb9a762b1ba5eb828d4c3ea6b53755f290ca27ad",
+      "tree": "6fc3016950cca85ccf652f4321e77f2bf748e3e0",
+      "parents": [
+        "80b32e23dd3e75da09373e0566232a3fe91ec43e"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Dec 14 10:25:01 2015 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Sun Dec 13 23:36:15 2015 +0000"
+      },
+      "message": "all: update apis.\n\nChange-Id: Icbb1d36830ef7ff10b605df25c1c927753304f15\nReviewed-on: https://code-review.googlesource.com/3880\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\n"
+    },
+    {
+      "commit": "80b32e23dd3e75da09373e0566232a3fe91ec43e",
+      "tree": "50c7220a591f053b30d02a1debd58313cbbadac9",
+      "parents": [
+        "ac3c98838f3e512d7636b885f3a021b60dacd1c8"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Fri Dec 11 15:56:33 2015 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Fri Dec 11 04:57:38 2015 +0000"
+      },
+      "message": "storage: fix integration test by removing unconditional error.\n\nChange-Id: I8ee836b307883edb0ff15d99a05d66b1af3be044\nReviewed-on: https://code-review.googlesource.com/3862\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "ac3c98838f3e512d7636b885f3a021b60dacd1c8",
+      "tree": "ad4e578ce96575c0a8c3752dcc62710d7c5e4689",
+      "parents": [
+        "a5fc36f5bea02232ff3221875504c71a1de9a98b"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Fri Dec 11 10:44:50 2015 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Dec 10 23:47:49 2015 +0000"
+      },
+      "message": "google-api-go-client: Don\u0027t strip body when doing resumable uploads.\n\nAlso add integration test for resumable uploads using the storage API.\n\nChange-Id: I4a9d85b55431975db0c17161766ab6f8af1e3c73\nReviewed-on: https://code-review.googlesource.com/3861\nReviewed-by: David Symonds \u003cdsymonds@golang.org\u003e\n"
+    },
+    {
+      "commit": "a5fc36f5bea02232ff3221875504c71a1de9a98b",
+      "tree": "a0939570e5717fb8dfcc831a46bd247a4d28540e",
+      "parents": [
+        "ece7143efeb53ec1839b960a0849db4e57d3cfa2"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Oct 29 19:53:30 2015 -0700"
+      },
+      "committer": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Thu Dec 10 23:42:22 2015 +0000"
+      },
+      "message": "google-api-go-client: rollback commits due to licensing issues\n\nThis reverts the following commits:\nhttps://github.com/google/google-api-go-client/commit/661ac69e128b9f939c5b7b73b963a74808ec3220\nhttps://github.com/google/google-api-go-client/commit/fd68af889f2caf67cfe5eba4669f24fa2d9d2520\nhttps://github.com/google/google-api-go-client/commit/b036f299349024651e818cd2641fddfb9ddadf59\n\nChange-Id: I2b45d76c69bb97617cef44c71386e4ba5587e8c5\nReviewed-on: https://code-review.googlesource.com/3701\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "ece7143efeb53ec1839b960a0849db4e57d3cfa2",
+      "tree": "a43d30b6096dac075beef02958329f7bc637dfc6",
+      "parents": [
+        "030d584ade5f79aa2ed0ce067e8f7da50c9a10d5"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Mon Nov 30 12:43:58 2015 -0800"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Mon Nov 30 21:09:38 2015 +0000"
+      },
+      "message": "google-api-go-client: update all APIs\n\nChange-Id: I1c46a757151ef0b288982c6010027bb6bc5c90ee\nReviewed-on: https://code-review.googlesource.com/3800\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "030d584ade5f79aa2ed0ce067e8f7da50c9a10d5",
+      "tree": "815633b4220384785e9e7cc76b3552aba6d4fd79",
+      "parents": [
+        "b21645f24c3cc4fdbcd52c3b8ee7e43fb02a3953"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Sun Nov 15 22:49:48 2015 -0800"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Mon Nov 16 23:50:37 2015 +0000"
+      },
+      "message": "google-api-go-client: switch [] repeated params to ...\n\nChange-Id: I67a49d06f9c812c14092320f8e9706b0a2c656b2\nReviewed-on: https://code-review.googlesource.com/3758\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "b21645f24c3cc4fdbcd52c3b8ee7e43fb02a3953",
+      "tree": "5db47abafa9fe2da9d0e60b3966b15f6e9bf7a0d",
+      "parents": [
+        "4d6c29dd67d8f208c6924fb66ce80b12a0db1920"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Sun Nov 15 21:11:34 2015 -0800"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Mon Nov 16 05:20:28 2015 +0000"
+      },
+      "message": "google-api-go-client: update all APIs and test against Go 1.5, not tip\n\nChange-Id: Ifa7101c4ab09c9fe64c0343652e34375ac1bfa3c\nReviewed-on: https://code-review.googlesource.com/3757\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "4d6c29dd67d8f208c6924fb66ce80b12a0db1920",
+      "tree": "1cb53cb6d73b797c6b938896c565a36cb5d69830",
+      "parents": [
+        "c12ea1cd9ca9fc80d03f056ff6d1dea3eb41630c"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Nov 06 15:08:30 2015 -0800"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Mon Nov 16 04:51:22 2015 +0000"
+      },
+      "message": "google-api-go-client: add support for \"repeated\" params\n\nFixes #105 and #110.\n\nRecommended reading order:\n1) google-api-go-generator/gen.go\n2) google-api-go-generator/gen_test.go\n3) internal/params.go\n4) google-api-go-generator/testdata/repeated.*\n5) google-api-go-generator/testdata/param-rename.*\n6) spot-check random APIs and/or other testdata/*\n\nThe problem with the last solution was that sometimes the generator\nchanges the argument name from the API name, and this was not being\nhandled properly. There is now a new test (param-rename.*) that\nchecks for the proper renaming of argument to API names.\n\nSpecifically, the only changes made since the last\nreview (apart from the new unit test) were to\nlines 1577-1585 (arg.goname \u003d\u003e arg.apiname) in\ngoogle-api-go-generator/gen.go.\n\nThe original implementation (which was reverted) and its review\nis located here: https://code-review.googlesource.com/#/c/3520/\nand the accidentally-submitted version is located here:\nhttps://code-review.googlesource.com/#/c/3610/\nwhich was also reverted.\n\nChange-Id: I8ccf11cd2ef62430beac842fb6ef237ef7c730ca\nReviewed-on: https://code-review.googlesource.com/3732\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "c12ea1cd9ca9fc80d03f056ff6d1dea3eb41630c",
+      "tree": "6c95aef888fad6e23533e55ef3d4420c210491ee",
+      "parents": [
+        "e4bb4e4880a5cabeec41cbff1095e86059f2f908"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Nov 13 15:05:10 2015 -0800"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Mon Nov 16 04:32:48 2015 +0000"
+      },
+      "message": "google-api-go-client: update all APIs and remove old ones\n\nThe following APIs have been removed:\n    container:v1beta1\n    pubsub:v1beta1\n\nNote that the small change in google-api-go-generator/gen.go\nwill be addressed with unit tests in\nhttps://code-review.googlesource.com/#/c/3732/\n\nChange-Id: Ic978e4b2ba125e46d00c856b511a7a752dc0400d\nReviewed-on: https://code-review.googlesource.com/3756\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "e4bb4e4880a5cabeec41cbff1095e86059f2f908",
+      "tree": "24b08df887d66896b92b20b9bb43ef07aa04aa8f",
+      "parents": [
+        "baa070d77756cbc5be50095dfac3544e5b7b67d1"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Wed Nov 11 21:56:56 2015 -0800"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Nov 13 05:54:42 2015 +0000"
+      },
+      "message": "google-api-go-client/integration_test: pass key to test for Travis CI\n\nChange-Id: If4bae655fa7f81159f497bb80f7802a5503ffb07\nReviewed-on: https://code-review.googlesource.com/3755\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "baa070d77756cbc5be50095dfac3544e5b7b67d1",
+      "tree": "45f47631c223fdb84cbfb0ca2aae11b80108f1ac",
+      "parents": [
+        "1b8ee7376ba9dcdc9ed4e9b701fa38ea9bddede3"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Wed Nov 11 21:21:42 2015 -0800"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Nov 12 05:27:52 2015 +0000"
+      },
+      "message": "google-api-go-client: check all errors in storage integration_test.go\n\nChange-Id: I690cba230d666ecb9863fd8281d6c9e1a76d067d\nReviewed-on: https://code-review.googlesource.com/3754\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "1b8ee7376ba9dcdc9ed4e9b701fa38ea9bddede3",
+      "tree": "6371da238ff8df3be18cd74076272454a25121d0",
+      "parents": [
+        "890a90146f8ab6cb3cc95054b1f566400aea139a"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Wed Nov 11 16:20:51 2015 -0800"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Nov 12 04:48:39 2015 +0000"
+      },
+      "message": "google-api-go-client: fix passing of env vars to Travis CI tests\n\nChange-Id: I05544e6e4372057b1dd14851da7f1f9835690c24\nReviewed-on: https://code-review.googlesource.com/3752\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "890a90146f8ab6cb3cc95054b1f566400aea139a",
+      "tree": "cf8948735827dc25de60edf2e028397c0d2aff2f",
+      "parents": [
+        "fd081149e482b10c55262756934088ffe3197ea3"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Mon Oct 26 21:49:49 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Nov 12 00:17:44 2015 +0000"
+      },
+      "message": "google-api-go-client: add start of integration tests for major APIs\n\nNOTE that any GCS bucket this test is run on will destroy *ALL*\ncontents of the bucket! Use only a test bucket for this integration\ntest!\n\nChange-Id: I25f3e01cd658786420859548927abb2b0e1effa1\nReviewed-on: https://code-review.googlesource.com/3680\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "fd081149e482b10c55262756934088ffe3197ea3",
+      "tree": "44906e11acd0004678f580bab496bc5d22a2a7a0",
+      "parents": [
+        "cd02e6c188e4cf3d6f0cdede8e86ac89e2c81702"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Nov 10 12:36:16 2015 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Nov 10 02:23:05 2015 +0000"
+      },
+      "message": "container/v1beta1: regenerate.\n\nChange-Id: I260b7c5253c632f6caa644a31389d3eeea747778\nReviewed-on: https://code-review.googlesource.com/3740\nReviewed-by: Glenn Lewis \u003cgmlewis@google.com\u003e\n"
+    },
+    {
+      "commit": "cd02e6c188e4cf3d6f0cdede8e86ac89e2c81702",
+      "tree": "215e2362be9b189233e1444a1fc4c7848348e82c",
+      "parents": [
+        "a42d61d9c2a5d4ec49ca228ecfcd5ad85843ac8c"
+      ],
+      "author": {
+        "name": "Dan Jacques",
+        "email": "dnj@google.com",
+        "time": "Sun Nov 01 09:34:18 2015 -0800"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Nov 10 01:18:32 2015 +0000"
+      },
+      "message": "google-api-go-client: external friendliness\n\nAdds some features to `google-api-go-client` to enable its use for\nservice generation outside of \"google.golang.org/api\". This allows\nthe generation of consistent code for other Cloud Endpoints services.\n\nAdded features:\n- Move remaining \"golang.google.org/api/internal\" code into \"gensupport\"\n  so services resident in other packages can compile under Go 1.5.\n- Add `-base_url` flag to override the default service URL. This enables\n  generation against local `dev_appserver.py` instances to use a base\n  URL other than \"http://localhost:8080\".\n- Add `-header_path` optional flag, which, when supplied, is a path to a\n  file whose contents will be prepended to generated stubs. This is\n  useful for adding project licenses to generated code.\n- Fix a bug where generated code references to overridden package path\n  require the overriding packages to use the default package\u0027s name.\n- Fix a bug where \"compute\" API was included when generating \u0027*\u0027 for any\n  discovery URL, not just Google\u0027s.\n\nFixes #112.\n\nChange-Id: I16d0a5992fc41f958468620cbe13a9177414fe41\nReviewed-on: https://code-review.googlesource.com/3706\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "a42d61d9c2a5d4ec49ca228ecfcd5ad85843ac8c",
+      "tree": "497358bdff6f040181d2a5e27e1290e4d77d05bd",
+      "parents": [
+        "6e98bbb11ec677f838f4ccd2c573080d8fb45ebc"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Nov 06 16:43:17 2015 +0000"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Nov 06 22:48:07 2015 +0000"
+      },
+      "message": "Shoot - I meant to submit the integration tests first.\nReverting.\n\nRevert \"google-api-go-client: add support for \"repeated\" params\"\n\nThis reverts commit 6e98bbb11ec677f838f4ccd2c573080d8fb45ebc.\n\nChange-Id: I277fa1556107b4a08d14a22f004318bddce7164b\nReviewed-on: https://code-review.googlesource.com/3731\nReviewed-by: Glenn Lewis \u003cgmlewis@google.com\u003e\n"
+    },
+    {
+      "commit": "6e98bbb11ec677f838f4ccd2c573080d8fb45ebc",
+      "tree": "a845302e3309b5e48d8df460746323fdb90b6498",
+      "parents": [
+        "c83ee8e9b7e6c40a486c0992a963ea8b6911de67"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Oct 15 15:50:27 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Nov 06 16:42:26 2015 +0000"
+      },
+      "message": "google-api-go-client: add support for \"repeated\" params\n\nFixes #105 and #110.\n\nRecommended reading order:\n1) google-api-go-generator/gen.go\n2) google-api-go-generator/gen_test.go\n3) internal/params.go\n4) google-api-go-generator/testdata/repeated.*\n5) google-api-go-generator/testdata/param-rename.*\n6) spot-check random APIs and/or other testdata/*\n\nThe problem with the last solution was that sometimes the generator\nchanges the argument name from the API name, and this was not being\nhandled properly. There is now a new test (param-rename.*) that\nchecks for the proper renaming of argument to API names.\n\nSpecifically, the only changes made since the last\nreview (apart from the new unit test) were to\nlines 1577-1585 (arg.goname \u003d\u003e arg.apiname) in\ngoogle-api-go-generator/gen.go.\n\nThe original implementation (which was reverted) and its review\nis located here: https://code-review.googlesource.com/#/c/3520/\n\nChange-Id: Iea5673a800f0e1aec4ad788fd2f621965d4386a1\nReviewed-on: https://code-review.googlesource.com/3610\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "c83ee8e9b7e6c40a486c0992a963ea8b6911de67",
+      "tree": "497358bdff6f040181d2a5e27e1290e4d77d05bd",
+      "parents": [
+        "73781a6ca4d12290ff2db685952206a502e5fd41"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Oct 16 22:06:20 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Sat Oct 17 18:01:37 2015 +0000"
+      },
+      "message": "google-api-go-client: update all APIs\n\nRequested by sqladmin team.\n\nChange-Id: Ifd7f163af74a099acb82d1985095c46fc90c39c2\nReviewed-on: https://code-review.googlesource.com/3620\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "73781a6ca4d12290ff2db685952206a502e5fd41",
+      "tree": "79fd9f9a25164acde9543e9b4fbe7a52ab2d0d3b",
+      "parents": [
+        "e2903ca9e33d6cbaedda541d96996219056e8214"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Oct 13 16:44:16 2015 +1100"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Fri Oct 16 00:49:47 2015 +0000"
+      },
+      "message": "all: make imported package paths configurable.\n\nThis facilitates building the APIs within a custom build environment,\nsuch as the one used by Google.\n\nChange-Id: I76c110d493813d1944dd99a39eb05793914d961c\nReviewed-on: https://code-review.googlesource.com/3576\nReviewed-by: David Symonds \u003cdsymonds@golang.org\u003e\nReviewed-by: Glenn Lewis \u003cgmlewis@google.com\u003e\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "e2903ca9e33d6cbaedda541d96996219056e8214",
+      "tree": "2fe12ae98d473869404b30193ea9624f7dff5825",
+      "parents": [
+        "69e492629e49bc7ff3c791ac7630836813268b45"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Oct 15 03:48:07 2015 +0000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Oct 15 03:51:45 2015 +0000"
+      },
+      "message": "Revert \"google-api-go-client: add support for \"repeated\" params\"\n\nThis reverts commit 69e492629e49bc7ff3c791ac7630836813268b45.\n\nFixes #110.\n\nChange-Id: I00c32ad2865fa2eef667b2a97261f920317ca6fd\nReviewed-on: https://code-review.googlesource.com/3592\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "69e492629e49bc7ff3c791ac7630836813268b45",
+      "tree": "a7a5b1bb6a517797586ade97eaa3f3ddb29c9a3a",
+      "parents": [
+        "5be63c51278ae030647b2c8f5b4cbf99f3559f5d"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Wed Sep 30 14:45:43 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Wed Oct 14 22:55:46 2015 +0000"
+      },
+      "message": "google-api-go-client: add support for \"repeated\" params\n\nFixes #105.\n\nRecommended reading order:\n1) google-api-go-generator/gen.go\n2) google-api-go-generator/gen_test.go\n3) internal/params.go\n4) google-api-go-generator/testdata/repeated.*\n5) spot-check random APIs and/or other testdata/*\n\nChange-Id: I69f453afcba8d4e724a46ed2fa0e2b7197b4c8b9\nReviewed-on: https://code-review.googlesource.com/3520\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "5be63c51278ae030647b2c8f5b4cbf99f3559f5d",
+      "tree": "2fe12ae98d473869404b30193ea9624f7dff5825",
+      "parents": [
+        "bce17bfa8913f8777eb5221beb361c03edf5817e"
+      ],
+      "author": {
+        "name": "John ShaggyTwoDope Jenkins",
+        "email": "twodopeshaggy@gmail.com",
+        "time": "Tue Oct 13 14:28:12 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Tue Oct 13 23:38:39 2015 +0000"
+      },
+      "message": "small typo in googleapi_test.go\n\nChange-Id: Ic49745dca9f4958bba21e21badb8ccd11ccb7892\nReviewed-on: https://code-review.googlesource.com/3591\nReviewed-by: Glenn Lewis \u003cgmlewis@google.com\u003e\n"
+    },
+    {
+      "commit": "bce17bfa8913f8777eb5221beb361c03edf5817e",
+      "tree": "3def7fabaf9416e21c48573ea337bbcd74864be3",
+      "parents": [
+        "7f3774db0aa426a2390fa9abcccbc272dbb93111"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Mon Oct 05 11:54:10 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Oct 08 19:46:11 2015 +0000"
+      },
+      "message": "google-api-go-client: make apiPackageBase a flag\n\nhttps://github.com/google/google-api-go-client/commit/d604dad6\nadded the following line to google-api-go-generator/gen:\n\n    const apiPackageBase \u003d \"google.golang.org/api\"\n\nwhich hard-codes the location of this collection of APIs to\na base of \"google.golang.org/api/...\".\nThis breaks the use of this collection of APIs within a custom\nbuild environment, such as the one used by Google.\n\nThis change turns \"apiPackageBase\" into a flag so that it can\nbe used in custom build environments.\n\nNote that if you used to use the flag: -googleapi_pkg\u003dsome/path/googleapi\nyou will now instead use the new flag: -api_pkg_base\u003dsome/path\n\nChange-Id: Iacb66f8374addfbba7060d2a58807a39924da45f\nReviewed-on: https://code-review.googlesource.com/3540\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "7f3774db0aa426a2390fa9abcccbc272dbb93111",
+      "tree": "7951824545c7a4d844e261ccd1ccf69d1fb8f69d",
+      "parents": [
+        "09c6521081a8b11e2c277b747b24324cfdfa5c25"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Sep 04 21:43:50 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Oct 02 17:49:24 2015 +0000"
+      },
+      "message": "google-api-go-client: add If-None-Match support\n\nFixes #86.\n\nNote that examples/storage.go demonstrates the use of the new\nIf-None-Match support.\n\nAdditionally, this change allows the headers of all responses\nto be inspected so that \"ETag\", for example, could be extracted\nfrom the response. This could be especially useful for the\nCompute API and other APIs that do not explicitly return ETag\nwithin the body of their responses.\n\nNote also that examples/compute.go now demonstrates the use of the\nnew googleapi.ServiceResponse and \"ETag\" extraction from the header.\n\nChange-Id: Ic6fc35c6bdd4aca87ba0ee51b59f94b8de34d5ea\nReviewed-on: https://code-review.googlesource.com/3375\nReviewed-by: Glenn Lewis \u003cgmlewis@google.com\u003e\n"
+    },
+    {
+      "commit": "09c6521081a8b11e2c277b747b24324cfdfa5c25",
+      "tree": "7926f3266fea324728432c7b4b0d96db5c8cc09a",
+      "parents": [
+        "a4024444ccab011ed7d21b11f38f990a7bfdb4c6"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Tue Sep 29 08:39:37 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Tue Sep 29 16:38:52 2015 +0000"
+      },
+      "message": "google-api-go-client: add canonical import paths\n\nhttps://golang.org/s/go14customimport\n\nFixes #106.\n\nChange-Id: I49516da7293f76f62e3a534b360be284681b7107\nReviewed-on: https://code-review.googlesource.com/3511\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "a4024444ccab011ed7d21b11f38f990a7bfdb4c6",
+      "tree": "3a49cb558999de8600d11aa2a1d1c44fcd529400",
+      "parents": [
+        "78786a0c27510823260988be047c0c5f6a26dee5"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Tue Sep 29 08:51:40 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Tue Sep 29 16:15:19 2015 +0000"
+      },
+      "message": "google-api-go-client: fix breakage caused by d604dad\n\nChange-Id: Iad8de83866bc60c5265d6dd784482e18a964bac9\nReviewed-on: https://code-review.googlesource.com/3510\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "78786a0c27510823260988be047c0c5f6a26dee5",
+      "tree": "313bbc6bf19723d8b9f7da9ab478a1f7381fd230",
+      "parents": [
+        "253d40011ee46ae2f022f74886564cdf64b7f5ef"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Sep 07 11:58:22 2015 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Sep 29 06:21:44 2015 +0000"
+      },
+      "message": "google-api-go-client: Use pointers for Point values in cloud monitoring.\n\nFixes #54.\n\nChange-Id: Ic525fa520f7295604fe546c01ff829e41bb48071\nReviewed-on: https://code-review.googlesource.com/3384\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "253d40011ee46ae2f022f74886564cdf64b7f5ef",
+      "tree": "6d22fb2285ddbfcf4735393800380d1a41adcbe9",
+      "parents": [
+        "d604dad6fa7f098a8ac36a19598c161acf70c5c3"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Sep 29 15:54:41 2015 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Sep 29 06:17:36 2015 +0000"
+      },
+      "message": "generator: remove check for string-encoded pointer fields.\n\nencoding/json handles them correctly, as does the ForceSendFields code.\n\nThis change also makes Property.IntegerValue a pointer field for the\ndatastore:v1beta2 API.\n\nAlso fix json_test so that the PIStr field name matches that in the\nForceSendFields list.  The test was not broken since PIStr is a pointer\nfield, and ForceSendFields has no effect on it, but it\u0027s nice to be\nconsistent.\n\nChange-Id: Ia5a060c54bef1a5597edfbf716bdd95b02b690fa\nReviewed-on: https://code-review.googlesource.com/3501\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "d604dad6fa7f098a8ac36a19598c161acf70c5c3",
+      "tree": "bcae7f670c2d90d76de41b0f329b05a33b2f237e",
+      "parents": [
+        "77b0a8cf996ff3872eaa73c089d272613e63204c"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Sep 07 16:48:35 2015 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Sep 28 23:30:39 2015 +0000"
+      },
+      "message": "all: add ForceSendFields support\n\nAllow users to nominate fields that should be included in requests to\nthe server, regardless of field contents.  This makes it possible to\nperform patch requests involving fields with emtpy values -- a common\nuse case.\n\nThis change will also enable immediate workarounds for APIs which expect\nvalues to be present for particular fields in update requests (such as\nthose in #54).\n\nThe custom JSON marshaling code introduced here is applicable to both\nupdate and patch payloads, and extends naturally to hierarchical\nschemas.\n\nNote: this change will result in non-deterministic ordering of fields in the JSON\nrepresentation of schemas, due to the intermediate use of a map.\n\nChange-Id: I141cfabcbd500ca15b512cf17665344ba4a66887\nReviewed-on: https://code-review.googlesource.com/3386\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "77b0a8cf996ff3872eaa73c089d272613e63204c",
+      "tree": "e5be21dc68f9c50d02bd6e6bf101b87e5ef0ea30",
+      "parents": [
+        "b82cbee675293441769a97b99710295d58dac769"
+      ],
+      "author": {
+        "name": "Dave Day",
+        "email": "djd@golang.org",
+        "time": "Tue Sep 22 12:55:28 2015 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Sep 28 00:17:16 2015 +0000"
+      },
+      "message": "Add golang.org/x/net/context support.\n\nAdd a Context method to every call object which associates a context\nwith the call\u0027s Do (and Download) method. Make sure all HTTP calls\nare made context-aware when a context is available.\n\nChange-Id: I493cce4d43411810eb30b6c02dc151ef970a6254\nReviewed-on: https://code-review.googlesource.com/3472\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "b82cbee675293441769a97b99710295d58dac769",
+      "tree": "50c0ed4f53bdffb221a52f760b1bf96f1ed36f8a",
+      "parents": [
+        "ebc7799043c9e8d3c71fedcb958ac491caad03d4"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Tue Sep 22 16:01:42 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Wed Sep 23 14:17:06 2015 +0000"
+      },
+      "message": "google-api-go-client: update all APIs\n\nThis was requested by the script:v1 team.\n\nChange-Id: Idf87e2bb3ef4f76b84cf3ffb09ea7f9d2cecc0e6\nReviewed-on: https://code-review.googlesource.com/3464\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "ebc7799043c9e8d3c71fedcb958ac491caad03d4",
+      "tree": "f210f047d12b2f29e548ca63aaf1463bc89b8850",
+      "parents": [
+        "ed920dd8e2feb14c95aa03d78c8057e02ef61190"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Sep 18 10:01:55 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Sep 18 20:44:04 2015 +0000"
+      },
+      "message": "google-api-go-client: update all APIs\n\nRequested by clouduseraccounts API team.\n\nChange-Id: I36afb21396ecd091f8c8b0858601c124b479d19a\nReviewed-on: https://code-review.googlesource.com/3463\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "ed920dd8e2feb14c95aa03d78c8057e02ef61190",
+      "tree": "70387211ddaccf7f55d2f49617cc8da835fba4c4",
+      "parents": [
+        "8cbf97d5e925c857511aedf459affeed490e6861"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Sep 17 11:50:45 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Sep 17 19:26:59 2015 +0000"
+      },
+      "message": "google-api-go-client: resurrect deleted container:v1beta1 API\n\nThese two files were extracted from git with the following commands:\n$ git show f9554945d4885e1b1fe619ee7cd306203fb0f1b7:container/v1beta1/container-api.json \u003e container/v1beta1/container-api.json\n$ git show f9554945d4885e1b1fe619ee7cd306203fb0f1b7:container/v1beta1/container-gen.go \u003e container/v1beta1/container-gen.go\n\nChange-Id: I8c01d280199f93e20616c61408b5db747a2cef81\nReviewed-on: https://code-review.googlesource.com/3445\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "8cbf97d5e925c857511aedf459affeed490e6861",
+      "tree": "2ede1d17dbcdcca092c669ae52b7bac0c5a536e8",
+      "parents": [
+        "e7c0934161b3fabbb4495f81509a646aeae54f1b"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Wed Jul 29 10:54:04 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Sep 11 01:10:17 2015 +0000"
+      },
+      "message": "google-api-go-client: add Application Default Credential example\n\nI\u0027ve copied the example that Chris wrote here:\nhttps://developers.google.com/identity/protocols/application-default-credentials#callinggo\n\nFixes #89\n\nChange-Id: Ib565a0280f6b42151d7876e1a50a0d5d416e2e90\nReviewed-on: https://code-review.googlesource.com/3263\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "e7c0934161b3fabbb4495f81509a646aeae54f1b",
+      "tree": "6f9989881ee8edbcd331103ce2c658c60e94e3cd",
+      "parents": [
+        "85c92808928b0629b3532cefeed044f09c1a7c67"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Sep 10 10:18:16 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Sep 10 21:17:28 2015 +0000"
+      },
+      "message": "google-api-go-client: update all APIs\n\nChange-Id: If32e320fc93c1118a8e36f629dc1db12cbc89e23\nReviewed-on: https://code-review.googlesource.com/3411\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "85c92808928b0629b3532cefeed044f09c1a7c67",
+      "tree": "87102a9256029fef3514c56a940bb777640d1e67",
+      "parents": [
+        "f9554945d4885e1b1fe619ee7cd306203fb0f1b7"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Tue Sep 08 10:27:54 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Tue Sep 08 17:36:36 2015 +0000"
+      },
+      "message": "google-api-go-client: update all APIs\n\nChange-Id: Ic72bbb5924295d9aeab7d4f6ba05115b6f5b857d\nReviewed-on: https://code-review.googlesource.com/3378\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "f9554945d4885e1b1fe619ee7cd306203fb0f1b7",
+      "tree": "5dac50514a7b6f7253fd6c472dc36c4a7c34e006",
+      "parents": [
+        "09c6edb917cedacf98ad78257552abedabb5f5c8"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Sep 07 14:27:35 2015 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Sep 07 04:33:06 2015 +0000"
+      },
+      "message": "google-api-go-generator: Fix broken IntegerValue field in datastore API.\n\nIntervalue is string-encoded, which does not play well with the change\nto make IntegerValue a pointer field.\n\nChange-Id: I7a8fbe21b599e0b7de25073920bbc611f1ba35bc\nReviewed-on: https://code-review.googlesource.com/3385\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "09c6edb917cedacf98ad78257552abedabb5f5c8",
+      "tree": "4831ff68ea193733b8a28c06e5ba8d30be9b95d9",
+      "parents": [
+        "2b9259b4009849e00be1bdbc6e44fd880550f19f"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Aug 27 19:55:27 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Sat Sep 05 16:29:33 2015 +0000"
+      },
+      "message": "google-api-go-client: clean up README.md and remove tabs.\n\nChange-Id: Icf4b4d9ed8051162c8d8b4c6c3af4ea1f42637b7\nReviewed-on: https://code-review.googlesource.com/3352\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "2b9259b4009849e00be1bdbc6e44fd880550f19f",
+      "tree": "e49b09c8a7f9ff65116e8d973306f3ece2c7d56a",
+      "parents": [
+        "636998d1deefd6bd0cd18f6dd7d8d1e04fc163fc"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Sep 04 22:15:34 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Sat Sep 05 16:29:03 2015 +0000"
+      },
+      "message": "google-api-go-client: restore accidentally removed tests\n\nI commented out most of the tests in:\nhttps://github.com/google/google-api-go-client/commit/ca0499560ea76ac6561548f36ffe841364fe2348\nI apologize. This restores the tests and updates them.\n\nChange-Id: I66a235d244517143d90c20b30707b0456e2f6b56\nReviewed-on: https://code-review.googlesource.com/3376\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "636998d1deefd6bd0cd18f6dd7d8d1e04fc163fc",
+      "tree": "46c82fd32e69c1f945d7aae9552138267f91b11f",
+      "parents": [
+        "381e13c897e25a83973e3ea8beed668ff6f46805"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Fri Sep 04 11:58:43 2015 +1000"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Sep 04 14:16:26 2015 +0000"
+      },
+      "message": "google-api-go-client: Use pointers for property values in datastore.\n\nFixes bug mentioned in #61 (which is dupe of #54).\n\nChange-Id: I82a5202ea98abaf211e5857693ede0ad2c0e3f5b\nReviewed-on: https://code-review.googlesource.com/3383\nReviewed-by: Dave Day \u003cdjd@golang.org\u003e\nReviewed-by: Glenn Lewis \u003cgmlewis@google.com\u003e\n"
+    },
+    {
+      "commit": "381e13c897e25a83973e3ea8beed668ff6f46805",
+      "tree": "17fb345dbc9952297d91fde38828a87b79b9babe",
+      "parents": [
+        "146d5758d64a078e697703fc482cec7293afe3d7"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Sep 03 16:25:09 2015 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Thu Sep 03 21:03:35 2015 +0000"
+      },
+      "message": "google-api-go-client: Force use of some pointer fields.\n\nThis fixes most of the issues in mentioned in #54, but I need to dig a\nbit further into datastore (specifically the example mentioned in #61)\nand cloud monitoring to see if there are extra fields that need the same\ntreatment.\n\nChange-Id: I462336d31fef8ca7a87ab45494e6f1733a6dac1c\nReviewed-on: https://code-review.googlesource.com/3382\nReviewed-by: Glenn Lewis \u003cgmlewis@google.com\u003e\n"
+    },
+    {
+      "commit": "146d5758d64a078e697703fc482cec7293afe3d7",
+      "tree": "2a547f3197927221ab2e787f6e42c0df00968b74",
+      "parents": [
+        "4af91da60108e4a6d2547bb4adce3f611c4d1f20"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Aug 31 16:45:02 2015 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Aug 31 23:55:02 2015 +0000"
+      },
+      "message": "google-api-go-generator: add helpers for converting basic types to pointers.\n\nThese helpers are derived from github.com/golang/protobuf/proto.\nFloat32 has been dropped, as float32 does not appear in the googleapi\ngenerated code.\n\nChange-Id: Ifc36c15c1b254370dbeaf243f9fbcfc93440b0a3\nReviewed-on: https://code-review.googlesource.com/3363\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    },
+    {
+      "commit": "4af91da60108e4a6d2547bb4adce3f611c4d1f20",
+      "tree": "cb630b06e9791cea62ab3d1101d5e8cdf7b6ad90",
+      "parents": [
+        "a5c3e2a4792aff40e59840d9ecdff0542a202a80"
+      ],
+      "author": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Tue Jun 23 16:54:01 2015 +1000"
+      },
+      "committer": {
+        "name": "Michael McGreevy",
+        "email": "mcgreevy@golang.org",
+        "time": "Mon Aug 31 01:35:35 2015 +0000"
+      },
+      "message": "google-api-go-generator: Add the ability to use pointer types for a\nspecific list of API fields.\n\nChange-Id: Iebef16ff5a7cc57141021caf41ed46a974a85742\nReviewed-on: https://code-review.googlesource.com/2907\nReviewed-by: Glenn Lewis \u003cgmlewis@google.com\u003e\nReviewed-by: Brad Fitzpatrick \u003cbradfitz@golang.org\u003e\n"
+    },
+    {
+      "commit": "a5c3e2a4792aff40e59840d9ecdff0542a202a80",
+      "tree": "f7c8a755c0dc1483ceb95dbaa4893ee42e19fc28",
+      "parents": [
+        "0bacdc65dfd3dae28a124e21ecebb6f3f3c22087"
+      ],
+      "author": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Fri Aug 07 21:35:18 2015 -0700"
+      },
+      "committer": {
+        "name": "Glenn Lewis",
+        "email": "gmlewis@google.com",
+        "time": "Thu Aug 20 04:12:44 2015 +0000"
+      },
+      "message": "google-api-go-client: update all APIs.\n\nThis fixes issue #94.\n\nChange-Id: Ib9129331170389eb71881077cc32f25535039fdb\nReviewed-on: https://code-review.googlesource.com/3310\nReviewed-by: Michael McGreevy \u003cmcgreevy@golang.org\u003e\n"
+    }
+  ],
+  "next": "0bacdc65dfd3dae28a124e21ecebb6f3f3c22087"
+}

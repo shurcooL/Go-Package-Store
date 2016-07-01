@@ -17,8 +17,8 @@ import (
 // By default, http.DefaultClient is used.
 //
 // It should not be called while the presenter is in use.
-func SetClient(client *http.Client) {
-	gh = github.NewClient(client)
+func SetClient(httpClient *http.Client) {
+	gh = github.NewClient(httpClient)
 	gh.UserAgent = "github.com/shurcooL/Go-Package-Store/presenter/github"
 }
 
@@ -132,7 +132,7 @@ func (p gitHubPresenter) Changes() <-chan presenter.Change {
 		for i := range p.cc.Commits {
 			c := p.cc.Commits[len(p.cc.Commits)-1-i] // Reverse order.
 			change := presenter.Change{
-				Message: firstParagraph(*c.Commit.Message),
+				Message: presenter.FirstParagraph(*c.Commit.Message),
 				URL:     template.URL(*c.HTMLURL),
 			}
 			if commentCount := c.Commit.CommentCount; commentCount != nil && *commentCount > 0 {
@@ -163,13 +163,4 @@ type rateLimitError struct {
 
 func (r rateLimitError) Error() string {
 	return fmt.Sprintf("GitHub API rate limit exceeded; it will be reset in %v (but you can set GO_PACKAGE_STORE_GITHUB_TOKEN env var for higher rate limit)", humanize.Time(r.err.Rate.Reset.Time))
-}
-
-// firstParagraph returns the first paragraph of text s.
-func firstParagraph(s string) string {
-	i := strings.Index(s, "\n\n")
-	if i == -1 {
-		return s
-	}
-	return s[:i]
 }

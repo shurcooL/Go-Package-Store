@@ -4,6 +4,7 @@ package presenter
 
 import (
 	"html/template"
+	"strings"
 
 	"github.com/shurcooL/Go-Package-Store/pkg"
 )
@@ -50,4 +51,13 @@ func New(repo *pkg.Repo) Presenter {
 		}
 	}
 	return genericPresenter{repo: repo}
+}
+
+// FirstParagraph returns the first paragraph of text s.
+func FirstParagraph(s string) string {
+	i := strings.Index(s, "\n\n")
+	if i == -1 {
+		return s
+	}
+	return s[:i]
 }
