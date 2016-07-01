@@ -33,9 +33,9 @@
 		<img style="float: left; border-radius: 4px;" src="{{.Image}}" width="36" height="36">
 
 		<div>
-			{{if .Changes}}
+			{{with .Changes}}
 				<ul class="changes-list">
-					{{range .Changes}}<li>{{.Message}}<span class="highlight-on-hover"><a href="{{.URL}}" target="_blank"><span class="octicon octicon-git-commit gray" title="Commit"></span></a></span><span style="float: right; margin-right: 6px;">{{template "comments" .Comments}}</span></li>
+					{{range .}}<li>{{.Message}}<span class="highlight-on-hover"><a href="{{.URL}}" target="_blank"><span class="octicon octicon-git-commit gray" title="Commit"></span></a></span><span style="float: right; margin-right: 6px;">{{template "comments" .Comments}}</span></li>
 					{{end}}
 				</ul>
 			{{else}}
