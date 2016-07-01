@@ -19,12 +19,15 @@ import (
 // It should not be called while the presenter is in use.
 func SetClient(client *http.Client) {
 	gh = github.NewClient(client)
+	gh.UserAgent = "github.com/shurcooL/Go-Package-Store/presenter/github"
 }
 
 // gh is the GitHub API client used by this presenter.
-var gh = github.NewClient(nil)
+var gh *github.Client
 
 func init() {
+	SetClient(nil)
+
 	presenter.RegisterProvider(func(repo *pkg.Repo) presenter.Presenter {
 		switch {
 		case strings.HasPrefix(repo.Root, "github.com/"):
@@ -75,7 +78,7 @@ type gitHubPresenter struct {
 	err   error
 }
 
-func newGitHubPresenter(repo *pkg.Repo, ghOwner, ghRepo string) *gitHubPresenter {
+func newGitHubPresenter(repo *pkg.Repo, ghOwner, ghRepo string) presenter.Presenter {
 	p := &gitHubPresenter{
 		repo:    repo,
 		ghOwner: ghOwner,
@@ -126,14 +129,15 @@ func (p gitHubPresenter) Changes() <-chan presenter.Change {
 	}
 	out := make(chan presenter.Change)
 	go func() {
-		for index := range p.cc.Commits {
+		for i := range p.cc.Commits {
+			c := p.cc.Commits[len(p.cc.Commits)-1-i] // Reverse order.
 			change := presenter.Change{
-				Message: firstParagraph(*p.cc.Commits[len(p.cc.Commits)-1-index].Commit.Message),
-				URL:     template.URL(*p.cc.Commits[len(p.cc.Commits)-1-index].HTMLURL),
+				Message: firstParagraph(*c.Commit.Message),
+				URL:     template.URL(*c.HTMLURL),
 			}
-			if commentCount := p.cc.Commits[len(p.cc.Commits)-1-index].Commit.CommentCount; commentCount != nil && *commentCount > 0 {
+			if commentCount := c.Commit.CommentCount; commentCount != nil && *commentCount > 0 {
 				change.Comments.Count = *commentCount
-				change.Comments.URL = template.URL(*p.cc.Commits[len(p.cc.Commits)-1-index].HTMLURL + "#comments")
+				change.Comments.URL = template.URL(*c.HTMLURL + "#comments")
 			}
 			out <- change
 		}
@@ -161,11 +165,11 @@ func (r rateLimitError) Error() string {
 	return fmt.Sprintf("GitHub API rate limit exceeded; it will be reset in %v (but you can set GO_PACKAGE_STORE_GITHUB_TOKEN env var for higher rate limit)", humanize.Time(r.err.Rate.Reset.Time))
 }
 
-// firstParagraph returns the first paragraph of a string.
+// firstParagraph returns the first paragraph of text s.
 func firstParagraph(s string) string {
-	index := strings.Index(s, "\n\n")
-	if index == -1 {
+	i := strings.Index(s, "\n\n")
+	if i == -1 {
 		return s
 	}
-	return s[:index]
+	return s[:i]
 }

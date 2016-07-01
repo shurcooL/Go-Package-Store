@@ -27,6 +27,9 @@ import (
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
+
+	// Register presenters.
+	_ "github.com/shurcooL/Go-Package-Store/presenter/github"
 )
 
 // shouldPresentUpdate determines if the given goPackage should be presented as an available update.
