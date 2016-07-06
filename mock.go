@@ -20,6 +20,8 @@ func init() {
 }
 
 func mockHandler(w http.ResponseWriter, req *http.Request) {
+	populateMockRepoPresenters()
+
 	if err := loadTemplates(); err != nil {
 		fmt.Fprintln(w, "loadTemplates:", err)
 		return
@@ -73,9 +75,20 @@ func mockHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// populateMockRepoPresenters so that updateWorker can find the packages.
+func populateMockRepoPresenters() {
+	pipeline.GoPackageList.Lock()
+	defer pipeline.GoPackageList.Unlock()
+	for _, repoPresenter := range repoPresenters {
+		root := repoPresenter["Repo"].(map[string]interface{})["Root"].(string)
+		pipeline.GoPackageList.List[root] = &RepoPresenter{Repo: &pkg.Repo{Root: root}}
+	}
+}
+
 var repoPresenters = []map[string]interface{}{
 	{
 		"Repo": map[string]interface{}{
+			"Root":              (string)("github.com/gopherjs/gopherjs"),
 			"ImportPathPattern": (string)("github.com/gopherjs/gopherjs/..."),
 			"Repo":              (*pkg.Repo)(&pkg.Repo{}),
 		},
@@ -111,6 +124,7 @@ var repoPresenters = []map[string]interface{}{
 
 	{
 		"Repo": map[string]interface{}{
+			"Root":              (string)("golang.org/x/image"),
 			"ImportPathPattern": (string)("golang.org/x/image/..."),
 			"Repo":              (*pkg.Repo)(&pkg.Repo{}),
 		},
@@ -130,6 +144,7 @@ var repoPresenters = []map[string]interface{}{
 
 	{
 		"Repo": map[string]interface{}{
+			"Root":              (string)("golang.org/x/foobar"),
 			"ImportPathPattern": (string)("golang.org/x/foobar/..."),
 			"Repo":              (*pkg.Repo)(&pkg.Repo{}),
 		},
@@ -141,6 +156,7 @@ var repoPresenters = []map[string]interface{}{
 
 	{
 		"Repo": map[string]interface{}{
+			"Root":              (string)("github.com/influxdb/influxdb"),
 			"ImportPathPattern": (string)("github.com/influxdb/influxdb/..."),
 			"Repo":              (*pkg.Repo)(&pkg.Repo{}),
 		},

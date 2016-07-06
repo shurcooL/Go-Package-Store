@@ -13,6 +13,10 @@ import (
 
 var document = dom.GetWindow().Document().(dom.HTMLDocument)
 
+func main() {
+	js.Global.Set("UpdateRepository", jsutil.Wrap(UpdateRepository))
+}
+
 // UpdateRepository updates specified repository.
 // repoRoot is the import path corresponding to the root of the repository.
 func UpdateRepository(event dom.Event, repoRoot string) {
@@ -21,13 +25,13 @@ func UpdateRepository(event dom.Event, repoRoot string) {
 		return
 	}
 
-	var goPackage = document.GetElementByID(repoRoot)
-	var goPackageButton = goPackage.GetElementsByClassName("update-button")[0].(*dom.HTMLAnchorElement)
+	repoUpdate := document.GetElementByID(repoRoot)
+	updateButton := repoUpdate.GetElementsByClassName("update-button")[0].(*dom.HTMLAnchorElement)
 
-	goPackageButton.SetTextContent("Updating...")
-	goPackageButton.AddEventListener("click", false, func(event dom.Event) { event.PreventDefault() })
-	goPackageButton.SetTabIndex(-1)
-	goPackageButton.Class().Add("disabled")
+	updateButton.SetTextContent("Updating...")
+	updateButton.AddEventListener("click", false, func(event dom.Event) { event.PreventDefault() })
+	updateButton.SetTabIndex(-1)
+	updateButton.Class().Add("disabled")
 
 	go func() {
 		req := xhr.NewRequest("POST", "/-/update")
@@ -39,31 +43,29 @@ func UpdateRepository(event dom.Event, repoRoot string) {
 		}
 
 		// Hide the "Updating..." label.
-		goPackageButton.Style().SetProperty("display", "none", "")
+		updateButton.Style().SetProperty("display", "none", "")
 
 		// Show "No Updates Available" if there are no remaining updates.
-		if !hasUpdatesAvailable() {
+		if !anyUpdatesRemaining() {
 			document.GetElementByID("no_updates").(dom.HTMLElement).Style().SetProperty("display", "", "")
 		}
 
 		// Move this Go package to "Installed Updates" list.
 		installedUpdates := document.GetElementByID("installed_updates").(dom.HTMLElement)
 		installedUpdates.Style().SetProperty("display", "", "")
-		installedUpdates.ParentNode().InsertBefore(goPackage, installedUpdates.NextSibling()) // Insert after.
+		installedUpdates.ParentNode().InsertBefore(repoUpdate, installedUpdates.NextSibling()) // Insert after.
 	}()
 }
 
-// hasUpdatesAvailable returns true if there's at least one remaining update.
-func hasUpdatesAvailable() bool {
+// anyUpdatesRemaining reports if there's at least one available or in-flight update.
+func anyUpdatesRemaining() bool {
 	updates := document.GetElementsByClassName("go-package-update")
 	for _, update := range updates {
-		if len(update.GetElementsByClassName("disabled")) == 0 {
+		updateButton := update.GetElementsByClassName("update-button")[0].(*dom.HTMLAnchorElement)
+		updateButtonVisible := updateButton.Style().GetPropertyValue("display") != "none"
+		if updateButtonVisible {
 			return true
 		}
 	}
 	return false
-}
-
-func main() {
-	js.Global.Set("UpdateRepository", jsutil.Wrap(UpdateRepository))
 }
