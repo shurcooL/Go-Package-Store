@@ -21,11 +21,11 @@ import (
 	"github.com/shurcooL/Go-Package-Store/presenter/github"
 	"github.com/shurcooL/Go-Package-Store/presenter/gitiles"
 	"github.com/shurcooL/Go-Package-Store/repo"
-	"github.com/shurcooL/go/gzip_file_server"
 	"github.com/shurcooL/go/open"
 	"github.com/shurcooL/go/ospath"
 	"github.com/shurcooL/gostatus/status"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
+	"github.com/shurcooL/httpgzip"
 	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
 
@@ -350,7 +350,7 @@ func main() {
 
 	http.HandleFunc("/index.html", mainHandler)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
-	fileServer := gzip_file_server.New(assets)
+	fileServer := httpgzip.FileServer(assets, httpgzip.FileServerOptions{ServeError: httpgzip.Detailed})
 	http.Handle("/assets/", fileServer)
 	http.Handle("/assets/octicons/", http.StripPrefix("/assets", fileServer))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
