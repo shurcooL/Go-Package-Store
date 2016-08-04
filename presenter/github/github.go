@@ -39,18 +39,18 @@ func init() {
 		// azul3d.org package (an instance of semver-based domain, see https://azul3d.org/semver).
 		// Once there are other semver based Go packages, consider adding more generalized support.
 		case strings.HasPrefix(repo.Root, "azul3d.org/"):
-			gitHubOwner, gitHubRepo, err := azul3dOrgImportPathToGitHub(repo.Root)
+			githubOwner, githubRepo, err := azul3dOrgImportPathToGitHub(repo.Root)
 			if err != nil {
 				return nil
 			}
-			return newGitHubPresenter(repo, gitHubOwner, gitHubRepo)
+			return newGitHubPresenter(repo, githubOwner, githubRepo)
 		// gopkg.in package.
 		case strings.HasPrefix(repo.Root, "gopkg.in/"):
-			gitHubOwner, gitHubRepo, err := gopkgInImportPathToGitHub(repo.Root)
+			githubOwner, githubRepo, err := gopkgInImportPathToGitHub(repo.Root)
 			if err != nil {
 				return nil
 			}
-			return newGitHubPresenter(repo, gitHubOwner, gitHubRepo)
+			return newGitHubPresenter(repo, githubOwner, githubRepo)
 		// Underlying GitHub remote.
 		case strings.HasPrefix(repo.Remote.RepoURL, "https://github.com/"):
 			elems := strings.Split(strings.TrimSuffix(repo.Remote.RepoURL[len("https://"):], ".git"), "/")
@@ -68,7 +68,7 @@ func init() {
 	})
 }
 
-type gitHubPresenter struct {
+type githubPresenter struct {
 	repo    *pkg.Repo
 	ghOwner string
 	ghRepo  string
@@ -79,7 +79,7 @@ type gitHubPresenter struct {
 }
 
 func newGitHubPresenter(repo *pkg.Repo, ghOwner, ghRepo string) presenter.Presenter {
-	p := &gitHubPresenter{
+	p := &githubPresenter{
 		repo:    repo,
 		ghOwner: ghOwner,
 		ghRepo:  ghRepo,
@@ -108,7 +108,7 @@ func newGitHubPresenter(repo *pkg.Repo, ghOwner, ghRepo string) presenter.Presen
 	return p
 }
 
-func (p gitHubPresenter) Home() *template.URL {
+func (p githubPresenter) Home() *template.URL {
 	switch {
 	case strings.HasPrefix(p.repo.Root, "github.com/"):
 		url := template.URL("https://github.com/" + p.ghOwner + "/" + p.ghRepo)
@@ -119,11 +119,11 @@ func (p gitHubPresenter) Home() *template.URL {
 	}
 }
 
-func (p gitHubPresenter) Image() template.URL {
+func (p githubPresenter) Image() template.URL {
 	return p.image
 }
 
-func (p gitHubPresenter) Changes() <-chan presenter.Change {
+func (p githubPresenter) Changes() <-chan presenter.Change {
 	if p.cc == nil {
 		return nil
 	}
@@ -146,10 +146,10 @@ func (p gitHubPresenter) Changes() <-chan presenter.Change {
 	return out
 }
 
-func (p gitHubPresenter) Error() error { return p.err }
+func (p githubPresenter) Error() error { return p.err }
 
 // setFirstError sets error if it's the first one. It does nothing otherwise.
-func (p *gitHubPresenter) setFirstError(err error) {
+func (p *githubPresenter) setFirstError(err error) {
 	if p.err != nil {
 		return
 	}

@@ -8,6 +8,6 @@ import "errors"
 // It can be re-enabled once https://github.com/azul3d/website/issues/11 is resolved.
 //
 // It can be enabled by using "enable_azul3d" build tag.
-func azul3dOrgImportPathToGitHub(azul3dOrgImportPath string) (gitHubOwner, gitHubRepo string, err error) {
+func azul3dOrgImportPathToGitHub(azul3dOrgImportPath string) (githubOwner, githubRepo string, err error) {
 	return "", "", errors.New("azul3d presenter disabled until https://github.com/azul3d/website/issues/11 is resolved")
 }

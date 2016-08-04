@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func gopkgInImportPathToGitHub(gopkgInImportPath string) (gitHubOwner, gitHubRepo string, err error) {
+func gopkgInImportPathToGitHub(gopkgInImportPath string) (githubOwner, githubRepo string, err error) {
 	afterPrefix := gopkgInImportPath[len("gopkg.in/"):]
 	importPathElements0 := strings.Split(afterPrefix, ".")
 	if len(importPathElements0) != 2 {
