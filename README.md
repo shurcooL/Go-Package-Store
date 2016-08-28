@@ -1,4 +1,7 @@
-# Go Package Store [![Build Status](https://travis-ci.org/shurcooL/Go-Package-Store.svg?branch=master)](https://travis-ci.org/shurcooL/Go-Package-Store) [![GoDoc](https://godoc.org/github.com/shurcooL/Go-Package-Store?status.svg)](https://godoc.org/github.com/shurcooL/Go-Package-Store)
+Go Package Store
+================
+
+[![Build Status](https://travis-ci.org/shurcooL/Go-Package-Store.svg?branch=master)](https://travis-ci.org/shurcooL/Go-Package-Store) [![GoDoc](https://godoc.org/github.com/shurcooL/Go-Package-Store?status.svg)](https://godoc.org/github.com/shurcooL/Go-Package-Store)
 
 Go Package Store displays updates for the Go packages in your GOPATH.
 
@@ -19,14 +22,7 @@ Screenshot
 Development
 -----------
 
-This package relies on `go generate` directives to process and statically embed assets. For development only, you'll need extra dependencies:
-
-```bash
-go get -u -d -tags=generate github.com/shurcooL/Go-Package-Store/...
-GOARCH=js go get -u -d github.com/shurcooL/Go-Package-Store/...
-```
-
-Afterwards, you can build and run the package in development mode, where all assets are always read and processed from disk:
+This package relies on `go generate` directives to process and statically embed assets. For development only, you may need extra dependencies. You can build and run the package in development mode, where all assets are always read and processed from disk:
 
 ```bash
 go build -tags=dev github.com/shurcooL/Go-Package-Store
