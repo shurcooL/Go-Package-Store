@@ -6,6 +6,7 @@ import (
 	"golang.org/x/tools/go/vcs"
 )
 
+// Repo represents the state of a single repository.
 type Repo struct {
 	// Path is the local filesystem path to the repository.
 	Path string
@@ -38,7 +39,7 @@ type Repo struct {
 }
 
 // ImportPathPattern returns an import path pattern that matches all of the Go packages in this repo.
-// E.g.,
+// E.g.:
 //
 // 	"github.com/owner/repo/..."
 func (r Repo) ImportPathPattern() string {

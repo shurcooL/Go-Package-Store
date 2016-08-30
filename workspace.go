@@ -64,6 +64,38 @@ func NewWorkspace() *workspace {
 		GoPackageList: &GoPackageList{List: make(map[string]*RepoPresenter)},
 	}
 
+	// It is a lot of work to
+	// find all Go packages in one's GOPATH workspace (or vendor.json file),
+	// then group them by VCS repository,
+	// and determine their local state (current revision, etc.),
+	// then determine their remote state (latest remote revision, etc.),
+	// then hit an API like GitHub or Gitiles to fetch descriptions of all commits
+	// between the current local revision and latest remote revision for display purposes.
+	//
+	// That work is heavily blocked on local disk IO and network IO,
+	// and also consists of dependencies. E.g., we can't ask for commit descriptions
+	// until we know both the local and remote revisions, and we can't figure out local
+	// revisions before we know which repository a Go package belongs to.
+	//
+	// Luckily, Go is great at concurrency, ʕ◔ϖ◔ʔ
+	//          which also makes parallelism easy!
+	// (See https://blog.golang.org/concurrency-is-not-parallelism.)
+	//
+	// Let's make gophers do all this work for us in multiple interconnected stages,
+	// and parallelize each stage with many worker goroutines.
+
+	// Stage 1, grouping all inputs into a set of unique repositories.
+	//
+	// We populate the workspace from any of the 3 sources:
+	//
+	// 	- via AddRepository - by directly adding VCS repositories.
+	// 	- via Add           - import paths of Go packages from the GOPATH workspace.
+	// 	- via AddRevision   - import paths of Go packages and their revisions from vendor.json or Godeps.json.
+	//
+	// The goal of processing in stage 1 is to take in diverse possible inputs
+	// and convert them into a unique set of repositories for further processing by next stages.
+	// When finished, all unique repositories are sent to w.unique channel
+	// and the channel is closed.
 	{
 		var wg0 sync.WaitGroup
 		for range iter.N(8) {
@@ -88,6 +120,13 @@ func NewWorkspace() *workspace {
 		}()
 	}
 
+	// Stage 2, figuring out which repositories have updates available.
+	//
+	// We compute repository remote revision (and local if needed)
+	// in order to figure out if repositories should be presented,
+	// or filtered out (for example, because there are no updates available).
+	// When finished, all non-filtered-out repositories are sent to w.processedFiltered channel
+	// and the channel is closed.
 	{
 		var wg sync.WaitGroup
 		for range iter.N(8) {
@@ -100,6 +139,13 @@ func NewWorkspace() *workspace {
 		}()
 	}
 
+	// Stage 3, filling in the update presentation information.
+	//
+	// We talk to remote APIs to fill in the missing presentation details
+	// that are not available from VCS (unless we fetch commits, but we choose not to that).
+	// Primarily, we get the commit messages for all the new commits that are available.
+	// When finished, all repositories complete with full presentation information
+	// are sent to w.presented channel and the channel is closed.
 	{
 		var wg sync.WaitGroup
 		for range iter.N(8) {
@@ -123,6 +169,7 @@ type Repo struct {
 	VCS  *vcs.Cmd
 }
 
+// AddRepository adds the specified repository for processing.
 func (w *workspace) AddRepository(r Repo) {
 	w.repositories <- r
 }
@@ -152,7 +199,17 @@ func (w *workspace) Done() {
 	close(w.importPathRevisions)
 }
 
-func (w *workspace) Presented() <-chan *RepoPresenter {
+// RepoPresenters returns a channel of all repo presenters.
+// Repo presenters that are ready will be sent immediately.
+// The remaining repo presenters will be sent onto the channel
+// as they become available. Once all repo presenters have been
+// sent, the channel will be closed. Therefore, iterating over
+// the channel may block until all processing is done, but it
+// will effectively return all repo presenters as soon as possible.
+//
+// It's safe to call RepoPresenters at any time and concurrently
+// to get multiple such channels.
+func (w *workspace) RepoPresenters() <-chan *RepoPresenter {
 	response := make(chan chan *RepoPresenter)
 	w.newObserver <- observerRequest{Response: response}
 	return <-response

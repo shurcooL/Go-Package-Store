@@ -1,3 +1,4 @@
+// Package gitiles provides a Gitiles API-powered presenter. It supports repositories that are on code.googlesource.com.
 package gitiles
 
 import (

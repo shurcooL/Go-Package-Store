@@ -164,10 +164,10 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 
 	updatesAvailable := 0
 
-	for presented := range pipeline.Presented() {
+	for repoPresenter := range pipeline.RepoPresenters() {
 		updatesAvailable++
 
-		err := t.ExecuteTemplate(w, "repo.html.tmpl", presented)
+		err := t.ExecuteTemplate(w, "repo.html.tmpl", repoPresenter)
 		if err != nil {
 			log.Println("ExecuteTemplate repo.html.tmpl:", err)
 			return
