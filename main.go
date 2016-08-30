@@ -138,11 +138,6 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := loadTemplates(); err != nil {
-		fmt.Fprintln(w, "loadTemplates:", err)
-		return
-	}
-
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
@@ -288,6 +283,10 @@ func main() {
 	}
 
 	switch {
+	case !production:
+		fmt.Println("Using no real packages (hit /mock.html endpoint for mocks).")
+		pipeline.Done()
+		updater = repo.MockUpdater{}
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
@@ -338,9 +337,6 @@ func main() {
 		} else {
 			log.Println("govendor updater is not available:", err)
 		}
-	}
-	if !production {
-		updater = repo.MockUpdater{}
 	}
 
 	err = loadTemplates()
