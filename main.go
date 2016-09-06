@@ -64,8 +64,8 @@ var (
 
 	// updater is set based on the source of Go packages. If nil, it means
 	// we don't have support to update Go packages from the current source.
-	// It's used to update repos in the backend, and to disable the frontend UI
-	// for updating packages.
+	// It's used to update repos in the backend, and if set to nil, to disable
+	// the frontend UI for updating packages.
 	updater repo.Updater
 )
 
@@ -87,19 +87,26 @@ func updateWorker() {
 			updateRequest.resultChan <- fmt.Errorf("root %q not found", updateRequest.root)
 			continue
 		}
+		if repoPresenter.Updated {
+			updateRequest.resultChan <- fmt.Errorf("root %q already updated", updateRequest.root)
+			continue
+		}
 
 		updateResult := updater.Update(repoPresenter.Repo)
 		if updateResult == nil {
-			// Delete repo from list.
+			// Mark repo as updated.
 			pipeline.GoPackageList.Lock()
-			// TODO: Consider marking the repo as "Updated" and display it that way, etc.
-			for i := range pipeline.GoPackageList.OrderedList {
-				if pipeline.GoPackageList.OrderedList[i].Repo.Root == updateRequest.root {
-					pipeline.GoPackageList.OrderedList = append(pipeline.GoPackageList.OrderedList[:i], pipeline.GoPackageList.OrderedList[i+1:]...)
-					break
+			// Move it down the OrderedList towards all other updated.
+			{
+				var i, j int
+				for ; pipeline.GoPackageList.OrderedList[i].Repo.Root != updateRequest.root; i++ { // i is the current package about to be updated.
 				}
+				for j = len(pipeline.GoPackageList.OrderedList) - 1; pipeline.GoPackageList.OrderedList[j].Updated; j-- { // j is the last not-updated package.
+				}
+				pipeline.GoPackageList.OrderedList[i], pipeline.GoPackageList.OrderedList[j] =
+					pipeline.GoPackageList.OrderedList[j], pipeline.GoPackageList.OrderedList[i]
 			}
-			delete(pipeline.GoPackageList.List, updateRequest.root)
+			pipeline.GoPackageList.List[updateRequest.root].Updated = true
 			pipeline.GoPackageList.Unlock()
 		}
 		updateRequest.resultChan <- updateResult
@@ -157,10 +164,20 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	flusher := w.(http.Flusher)
 	flusher.Flush()
 
-	updatesAvailable := 0
+	var updatesAvailable = 0
+	var wroteInstalledUpdatesHeader bool
 
 	for repoPresenter := range pipeline.RepoPresenters() {
-		updatesAvailable++
+		if !repoPresenter.Updated {
+			updatesAvailable++
+		}
+
+		if repoPresenter.Updated && !wroteInstalledUpdatesHeader {
+			// Make 'Installed Updates' header visible now.
+			io.WriteString(w, `<div id="installed_updates"><h3 style="text-align: center;">Installed Updates</h3></div>`)
+
+			wroteInstalledUpdatesHeader = true
+		}
 
 		err := t.ExecuteTemplate(w, "repo.html.tmpl", repoPresenter)
 		if err != nil {
@@ -169,6 +186,12 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		flusher.Flush()
+	}
+
+	if !wroteInstalledUpdatesHeader {
+		// TODO: Make installed_updates available before all packages finish loading, so that it works when you update a package early. This will likely require a fully dynamically rendered frontend.
+		// Append 'Installed Updates' header, but keep it hidden.
+		io.WriteString(w, `<div id="installed_updates" style="display: none;"><h3 style="text-align: center;">Installed Updates</h3></div>`)
 	}
 
 	if updatesAvailable == 0 {

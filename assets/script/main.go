@@ -61,7 +61,12 @@ func UpdateRepository(event dom.Event, repoRoot string) {
 func anyUpdatesRemaining() bool {
 	updates := document.GetElementsByClassName("go-package-update")
 	for _, update := range updates {
-		updateButton := update.GetElementsByClassName("update-button")[0].(*dom.HTMLAnchorElement)
+		els := update.GetElementsByClassName("update-button")
+		if len(els) == 0 {
+			// There may not be any matches if this package was already updated and has no update button.
+			continue
+		}
+		updateButton := els[0].(*dom.HTMLAnchorElement)
 		updateButtonVisible := updateButton.Style().GetPropertyValue("display") != "none"
 		if updateButtonVisible {
 			return true

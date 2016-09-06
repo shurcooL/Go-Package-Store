@@ -115,6 +115,8 @@ var mockRepoPresenters = []RepoPresenter{
 	},
 
 	{
+		Updated: true,
+
 		Repo: &pkg.Repo{
 			Root: (string)("github.com/influxdb/influxdb"),
 		},

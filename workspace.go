@@ -22,6 +22,11 @@ type GoPackageList struct {
 type RepoPresenter struct {
 	Repo *pkg.Repo
 	presenter.Presenter
+
+	// TODO: Next up, use updateState with 3 states (notUpdated, updating, updated).
+	//       Do that to track the intermediate state when a package is in the process
+	//       of being updated.
+	Updated bool
 }
 
 // workspace is a workspace environment, meaning each repo has local and remote components.

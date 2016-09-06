@@ -21,13 +21,13 @@
 		</span>
 	{{end}}
 
-		<div style="float: right;">
+		{{if (not .Updated)}}<div style="float: right;">
 			{{if updateSupported}}
 				<a href="/-/update" onclick="UpdateRepository(event, '{{.Repo.Root | json}}');" class="update-button" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
 			{{else}}
 				<span style="color: gray; cursor: default;" title="Updating repos is not currently supported for this source of repos.">Update</span>
 			{{end}}
-		</div>
+		</div>{{end}}
 	</div>
 	<div class="list-entry-body">
 		<img style="float: left; border-radius: 4px;" src="{{.Image}}" width="36" height="36">
