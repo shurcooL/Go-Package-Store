@@ -314,7 +314,7 @@ func (w *workspace) importPathWorker(wg *sync.WaitGroup) {
 	for importPath := range w.importPaths {
 		// Determine repo root.
 		// This is potentially somewhat slow.
-		bpkg, err := build.Import(importPath, "", build.FindOnly) // THINK: This (build.FindOnly) may find repos even when importPath has no actual package... Is that okay?
+		bpkg, err := build.Import(importPath, wd, build.FindOnly|build.IgnoreVendor) // THINK: This (build.FindOnly) may find repos even when importPath has no actual package... Is that okay?
 		if err != nil {
 			log.Println("build.Import:", err)
 			continue
