@@ -431,6 +431,14 @@ func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
 func (w *workspace) subreposWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for r := range w.subrepos {
+		// Determine repo root.
+		// This is potentially somewhat slow.
+		rr, err := vcs.RepoRootForImportPath(r.Root, false)
+		if err != nil {
+			log.Printf("failed to dynamically determine repo root for %v: %v\n", r.Root, err)
+			continue
+		}
+
 		var repo *pkg.Repo
 		w.reposMu.Lock()
 		if _, ok := w.repos[r.Root]; !ok {
@@ -441,8 +449,9 @@ func (w *workspace) subreposWorker(wg *sync.WaitGroup) {
 				RemoteVCS: r.RemoteVCS,
 				RemoteURL: r.RemoteURL,
 			}
-			repo.Local.RemoteURL = r.RemoteURL
+			repo.Local.RemoteURL = r.RemoteURL // TODO: Consider having r.RemoteURL take precedence over rr.Repo. But need to make that play nicely with the updaters; see TODO at bottom of pkg.Repo struct.
 			repo.Local.Revision = r.Revision
+			repo.Remote.RepoURL = rr.Repo
 			w.repos[r.Root] = repo
 		}
 		w.reposMu.Unlock()

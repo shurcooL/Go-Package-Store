@@ -42,8 +42,9 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 		return false
 	}
 
-	// If this is a local VCS repository, do some sanity checks before presenting updates.
-	if repo.VCS != nil {
+	// Do some sanity checks before presenting updates.
+	switch {
+	case repo.VCS != nil:
 		// Local branch should match remote branch.
 		if localBranch, err := repo.VCS.Branch(repo.Path); err != nil || localBranch != repo.Remote.Branch {
 			return false
@@ -60,6 +61,14 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 		// repository commit is actually ahead of remote, and there's nothing to update (instead, the
 		// user probably needs to push their local work to remote).
 		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch); err != nil || c {
+			return false
+		}
+
+	case repo.RemoteVCS != nil:
+		// TODO: Consider taking care of this difference in remote URLs earlier, inside, e.g., subreposWorker. But need to make that play nicely with the updaters; see TODO at bottom of pkg.Repo struct.
+		//
+		// Local remote URL, if set, should match Repo URL derived from import path.
+		if repo.Local.RemoteURL != "" && !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
 			return false
 		}
 	}
@@ -373,6 +382,7 @@ func main() {
 			}
 			pipeline.Done()
 		}()
+		// TODO: Consider setting a better directory for govendor command than current working directory.
 		if gu, err := repo.NewGovendorUpdater(""); err == nil {
 			updater = gu
 		} else {
@@ -393,7 +403,12 @@ func main() {
 			}
 			pipeline.Done()
 		}()
-		updater = repo.MockUpdater{}
+		// TODO: Consider setting a better directory for git-subrepo command than current working directory.
+		if gsu, err := repo.NewGitSubrepoUpdater(""); err == nil {
+			updater = gsu
+		} else {
+			log.Println("git-subrepo updater is not available:", err)
+		}
 	}
 
 	err = loadTemplates()
