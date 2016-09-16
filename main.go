@@ -41,16 +41,23 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 		return false
 	}
 
+	// If this is a local VCS repository, do some sanity checks before presenting updates.
 	if repo.VCS != nil {
+		// Local branch should match remote branch.
 		if localBranch, err := repo.VCS.Branch(repo.Path); err != nil || localBranch != repo.Remote.Branch {
 			return false
 		}
+		// There shouldn't be a dirty working tree.
 		if status, err := repo.VCS.Status(repo.Path); err != nil || status != "" {
 			return false
 		}
+		// Local remote URL should match Repo URL derived from import path.
 		if !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
 			return false
 		}
+		// The local commit should be contained by remote. Otherwise, it means the local
+		// repository commit is actually ahead of remote, and there's nothing to update (instead, the
+		// user probably needs to push their local work to remote).
 		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch); err != nil || c {
 			return false
 		}

@@ -309,10 +309,13 @@ func (w *workspace) importPathWorker(wg *sync.WaitGroup) {
 		w.reposMu.Lock()
 		if _, ok := w.repos[root]; !ok {
 			repo = &pkg.Repo{
-				Path: bpkg.Dir,
 				Root: root,
-				Cmd:  vcsCmd,
+
+				// This is a local repository inside GOPATH. Set all of its fields.
 				VCS:  vcs,
+				Path: bpkg.Dir,
+				Cmd:  vcsCmd,
+
 				// TODO: Maybe keep track of import paths inside, etc.
 			}
 			w.repos[root] = repo
@@ -349,9 +352,11 @@ func (w *workspace) importPathRevisionWorker(wg *sync.WaitGroup) {
 		w.reposMu.Lock()
 		if _, ok := w.repos[rr.Root]; !ok {
 			repo = &pkg.Repo{
-				Root:      rr.Root,
-				Cmd:       rr.VCS,
+				Root: rr.Root,
+
+				// This is a remote repository only. Set all of its fields.
 				RemoteVCS: remoteVCS,
+				RemoteURL: rr.Repo,
 			}
 			repo.Local.Revision = p.revision
 			repo.Remote.RepoURL = rr.Repo
@@ -381,10 +386,12 @@ func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
 		w.reposMu.Lock()
 		if _, ok := w.repos[root]; !ok {
 			repo = &pkg.Repo{
-				Path: r.Path,
 				Root: root,
-				Cmd:  vcsCmd,
+
+				// This is a local repository inside GOPATH. Set all of its fields.
 				VCS:  vcs,
+				Path: r.Path,
+				Cmd:  vcsCmd,
 			}
 			w.repos[root] = repo
 		}
@@ -426,7 +433,7 @@ func (w *workspace) processFilterWorker(wg *sync.WaitGroup) {
 			}
 		case p.RemoteVCS != nil:
 			var err error
-			p.Remote.Branch, p.Remote.Revision, err = p.RemoteVCS.RemoteBranchAndRevision(p.Remote.RepoURL)
+			p.Remote.Branch, p.Remote.Revision, err = p.RemoteVCS.RemoteBranchAndRevision(p.RemoteURL)
 			if err != nil {
 				log.Printf("skipping %q because of remote error:\n%v\n", p.Root, err)
 				continue
