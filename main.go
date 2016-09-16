@@ -383,6 +383,7 @@ func main() {
 			pipeline.Done()
 		}()
 		// TODO: Consider setting a better directory for govendor command than current working directory.
+		//       Perhaps the parent directory of vendor.json file?
 		if gu, err := repo.NewGovendorUpdater(""); err == nil {
 			updater = gu
 		} else {
@@ -403,6 +404,7 @@ func main() {
 			pipeline.Done()
 		}()
 		// TODO: Consider setting a better directory for git-subrepo command than current working directory.
+		//       Perhaps the parent directory of vendor directory?
 		if gsu, err := repo.NewGitSubrepoUpdater(""); err == nil {
 			updater = gsu
 		} else {
