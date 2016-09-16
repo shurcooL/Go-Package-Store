@@ -11,7 +11,7 @@ import (
 )
 
 // forEachRepository calls found for each repository it finds in all GOPATH workspaces.
-func forEachRepository(found func(Repo)) {
+func forEachRepository(found func(localRepo)) {
 	for _, workspace := range filepath.SplitList(build.Default.GOPATH) {
 		srcRoot := filepath.Join(workspace, "src")
 		if _, err := os.Stat(srcRoot); os.IsNotExist(err) {
@@ -35,7 +35,7 @@ func forEachRepository(found func(Repo)) {
 				// Directory not under VCS.
 				return nil
 			}
-			found(Repo{Path: path, Root: root, VCS: vcsCmd})
+			found(localRepo{Path: path, Root: root, VCS: vcsCmd})
 			return filepath.SkipDir // No need to descend inside repositories.
 		})
 	}

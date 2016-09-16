@@ -31,10 +31,12 @@ type RepoPresenter struct {
 
 // workspace is a workspace environment, meaning each repo has local and remote components.
 type workspace struct {
-	repositories        chan Repo
 	importPaths         chan string
 	importPathRevisions chan importPathRevision
-	unique              chan *pkg.Repo
+	repositories        chan localRepo
+
+	// unique is the output of finding unique repositories from diverse possible inputs.
+	unique chan *pkg.Repo
 	// processedFiltered is the output of processed repos (complete with local and remote revisions),
 	// with just enough information to decide if an update should be displayed.
 	processedFiltered chan *pkg.Repo
@@ -56,8 +58,8 @@ type observerRequest struct {
 func NewWorkspace() *workspace {
 	w := &workspace{
 		importPaths:         make(chan string, 64),
-		repositories:        make(chan Repo, 64),
 		importPathRevisions: make(chan importPathRevision, 64),
+		repositories:        make(chan localRepo, 64),
 		unique:              make(chan *pkg.Repo, 64),
 		processedFiltered:   make(chan *pkg.Repo, 64),
 		presented:           make(chan *RepoPresenter, 64),
@@ -93,9 +95,9 @@ func NewWorkspace() *workspace {
 	//
 	// We populate the workspace from any of the 3 sources:
 	//
-	// 	- via AddRepository - by directly adding VCS repositories.
-	// 	- via Add           - import paths of Go packages from the GOPATH workspace.
+	// 	- via AddImportPath - import paths of Go packages from the GOPATH workspace.
 	// 	- via AddRevision   - import paths of Go packages and their revisions from vendor.json or Godeps.json.
+	// 	- via AddRepository - by directly adding local VCS repositories.
 	//
 	// The goal of processing in stage 1 is to take in diverse possible inputs
 	// and convert them into a unique set of repositories for further processing by next stages.
@@ -110,12 +112,12 @@ func NewWorkspace() *workspace {
 		var wg1 sync.WaitGroup
 		for range iter.N(8) {
 			wg1.Add(1)
-			go w.repositoriesWorker(&wg1)
+			go w.importPathRevisionWorker(&wg1)
 		}
 		var wg2 sync.WaitGroup
 		for range iter.N(8) {
 			wg2.Add(1)
-			go w.importPathRevisionWorker(&wg2)
+			go w.repositoriesWorker(&wg2)
 		}
 		go func() {
 			wg0.Wait()
@@ -168,19 +170,8 @@ func NewWorkspace() *workspace {
 	return w
 }
 
-type Repo struct {
-	Path string
-	Root string
-	VCS  *vcs.Cmd
-}
-
-// AddRepository adds the specified repository for processing.
-func (w *workspace) AddRepository(r Repo) {
-	w.repositories <- r
-}
-
-// Add adds a package with specified import path for processing.
-func (w *workspace) Add(importPath string) {
+// AddImportPath adds a package with specified import path for processing.
+func (w *workspace) AddImportPath(importPath string) {
 	w.importPaths <- importPath
 }
 
@@ -197,11 +188,22 @@ func (w *workspace) AddRevision(importPath string, revision string) {
 	}
 }
 
+type localRepo struct {
+	Path string
+	Root string
+	VCS  *vcs.Cmd
+}
+
+// AddRepository adds the specified repository for processing.
+func (w *workspace) AddRepository(r localRepo) {
+	w.repositories <- r
+}
+
 // Done should be called after the workspace is finished being populated.
 func (w *workspace) Done() {
 	close(w.importPaths)
-	close(w.repositories)
 	close(w.importPathRevisions)
+	close(w.repositories)
 }
 
 // RepoPresenters returns a channel of all repo presenters.
@@ -274,37 +276,6 @@ Outer:
 		close(ch)
 
 		req.Response <- ch
-	}
-}
-
-// repositoriesWorker sends unique repositories to phase 2.
-func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
-	defer wg.Done()
-	for r := range w.repositories {
-		vcsCmd, root := r.VCS, r.Root
-		vcs, err := vcsstate.NewVCS(vcsCmd)
-		if err != nil {
-			log.Printf("repo %v not supported by vcsstate: %v", root, err)
-			continue
-		}
-
-		var repo *pkg.Repo
-		w.reposMu.Lock()
-		if _, ok := w.repos[root]; !ok {
-			repo = &pkg.Repo{
-				Path: r.Path,
-				Root: root,
-				Cmd:  vcsCmd,
-				VCS:  vcs,
-			}
-			w.repos[root] = repo
-		}
-		w.reposMu.Unlock()
-
-		// If new repo, send off to phase 2 channel.
-		if repo != nil {
-			w.unique <- repo
-		}
 	}
 }
 
@@ -385,6 +356,37 @@ func (w *workspace) importPathRevisionWorker(wg *sync.WaitGroup) {
 			repo.Local.Revision = p.revision
 			repo.Remote.RepoURL = rr.Repo
 			w.repos[rr.Root] = repo
+		}
+		w.reposMu.Unlock()
+
+		// If new repo, send off to phase 2 channel.
+		if repo != nil {
+			w.unique <- repo
+		}
+	}
+}
+
+// repositoriesWorker sends unique repositories to phase 2.
+func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
+	defer wg.Done()
+	for r := range w.repositories {
+		vcsCmd, root := r.VCS, r.Root
+		vcs, err := vcsstate.NewVCS(vcsCmd)
+		if err != nil {
+			log.Printf("repo %v not supported by vcsstate: %v", root, err)
+			continue
+		}
+
+		var repo *pkg.Repo
+		w.reposMu.Lock()
+		if _, ok := w.repos[root]; !ok {
+			repo = &pkg.Repo{
+				Path: r.Path,
+				Root: root,
+				Cmd:  vcsCmd,
+				VCS:  vcs,
+			}
+			w.repos[root] = repo
 		}
 		w.reposMu.Unlock()
 

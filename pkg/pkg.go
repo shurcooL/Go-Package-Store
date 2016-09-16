@@ -17,6 +17,8 @@ type Repo struct {
 	// TODO: Consider.
 	Cmd *vcs.Cmd
 
+	// Exactly one of VCS or RemoteVCS should be not nil.
+
 	// VCS allows getting the state of the VCS.
 	VCS vcsstate.VCS
 

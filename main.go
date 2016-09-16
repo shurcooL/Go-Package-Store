@@ -322,7 +322,7 @@ func main() {
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
-			forEachRepository(func(r Repo) {
+			forEachRepository(func(r localRepo) {
 				pipeline.AddRepository(r)
 			})
 			pipeline.Done()
@@ -334,7 +334,7 @@ func main() {
 			br := bufio.NewReader(os.Stdin)
 			for line, err := br.ReadString('\n'); err == nil; line, err = br.ReadString('\n') {
 				importPath := line[:len(line)-1] // Trim last newline.
-				pipeline.Add(importPath)
+				pipeline.AddImportPath(importPath)
 			}
 			pipeline.Done()
 		}()
