@@ -395,7 +395,6 @@ func main() {
 		fmt.Println("Using Go packages vendored using git-subrepo in the specified vendor directory.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			err := forEachGitSubrepo(*gitSubrepoFlag, func(s subrepo) {
-				fmt.Printf("adding subrepo: %+v\n", s) // TODO: Remove this debug line after done testing, before merging into master.
 				pipeline.AddSubrepo(s)
 			})
 			if err != nil {
