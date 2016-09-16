@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/gregjones/httpcache"
@@ -240,10 +241,11 @@ func loadTemplates() error {
 }
 
 var (
-	httpFlag     = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
-	stdinFlag    = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
-	godepsFlag   = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps.json file.")
-	govendorFlag = flag.String("govendor", "", "Read the list of Go packages from the specified vendor.json file.")
+	httpFlag       = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
+	stdinFlag      = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
+	godepsFlag     = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps.json file.")
+	govendorFlag   = flag.String("govendor", "", "Read the list of Go packages from the specified vendor.json file.")
+	gitSubrepoFlag = flag.String("git-subrepo", "", "Look for Go packages vendored using git-subrepo in the specified vendor directory.")
 )
 
 var wd = func() string {
@@ -376,6 +378,22 @@ func main() {
 		} else {
 			log.Println("govendor updater is not available:", err)
 		}
+	case *gitSubrepoFlag != "":
+		if _, err := exec.LookPath("git"); err != nil {
+			log.Fatalln(fmt.Errorf("git binary is required for updating, but not available: %v", err))
+		}
+		fmt.Println("Using Go packages vendored using git-subrepo in the specified vendor directory.")
+		go func() { // This needs to happen in the background because sending input will be blocked on processing.
+			err := forEachGitSubrepo(*gitSubrepoFlag, func(s subrepo) {
+				fmt.Printf("adding subrepo: %+v\n", s)
+				pipeline.AddSubrepo(s)
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+			pipeline.Done()
+		}()
+		updater = repo.MockUpdater{}
 	}
 
 	err = loadTemplates()

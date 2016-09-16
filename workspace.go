@@ -34,6 +34,7 @@ type workspace struct {
 	importPaths         chan string
 	importPathRevisions chan importPathRevision
 	repositories        chan localRepo
+	subrepos            chan subrepo
 
 	// unique is the output of finding unique repositories from diverse possible inputs.
 	unique chan *pkg.Repo
@@ -60,6 +61,7 @@ func NewWorkspace() *workspace {
 		importPaths:         make(chan string, 64),
 		importPathRevisions: make(chan importPathRevision, 64),
 		repositories:        make(chan localRepo, 64),
+		subrepos:            make(chan subrepo, 64),
 		unique:              make(chan *pkg.Repo, 64),
 		processedFiltered:   make(chan *pkg.Repo, 64),
 		presented:           make(chan *RepoPresenter, 64),
@@ -98,6 +100,7 @@ func NewWorkspace() *workspace {
 	// 	- via AddImportPath - import paths of Go packages from the GOPATH workspace.
 	// 	- via AddRevision   - import paths of Go packages and their revisions from vendor.json or Godeps.json.
 	// 	- via AddRepository - by directly adding local VCS repositories.
+	// 	- via AddSubrepo    - by directly adding remote subrepos.
 	//
 	// The goal of processing in stage 1 is to take in diverse possible inputs
 	// and convert them into a unique set of repositories for further processing by next stages.
@@ -119,10 +122,16 @@ func NewWorkspace() *workspace {
 			wg2.Add(1)
 			go w.repositoriesWorker(&wg2)
 		}
+		var wg3 sync.WaitGroup
+		for range iter.N(8) {
+			wg3.Add(1)
+			go w.subreposWorker(&wg3)
+		}
 		go func() {
 			wg0.Wait()
 			wg1.Wait()
 			wg2.Wait()
+			wg3.Wait()
 			close(w.unique)
 		}()
 	}
@@ -199,11 +208,25 @@ func (w *workspace) AddRepository(r localRepo) {
 	w.repositories <- r
 }
 
+// subrepo represents a "virtual" sub-repository inside a larger actual VCS repository.
+type subrepo struct {
+	Root      string
+	RemoteVCS vcsstate.RemoteVCS // RemoteVCS allows getting the remote state of the VCS.
+	RemoteURL string             // RemoteURL is the remote URL, including scheme.
+	Revision  string
+}
+
+// AddSubrepo adds the specified subrepo for processing.
+func (w *workspace) AddSubrepo(s subrepo) {
+	w.subrepos <- s
+}
+
 // Done should be called after the workspace is finished being populated.
 func (w *workspace) Done() {
 	close(w.importPaths)
 	close(w.importPathRevisions)
 	close(w.repositories)
+	close(w.subrepos)
 }
 
 // RepoPresenters returns a channel of all repo presenters.
@@ -394,6 +417,33 @@ func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
 				Cmd:  vcsCmd,
 			}
 			w.repos[root] = repo
+		}
+		w.reposMu.Unlock()
+
+		// If new repo, send off to phase 2 channel.
+		if repo != nil {
+			w.unique <- repo
+		}
+	}
+}
+
+// subreposWorker sends unique subrepos to phase 2.
+func (w *workspace) subreposWorker(wg *sync.WaitGroup) {
+	defer wg.Done()
+	for r := range w.subrepos {
+		var repo *pkg.Repo
+		w.reposMu.Lock()
+		if _, ok := w.repos[r.Root]; !ok {
+			repo = &pkg.Repo{
+				Root: r.Root,
+
+				// This is a remote repository only. Set all of its fields.
+				RemoteVCS: r.RemoteVCS,
+				RemoteURL: r.RemoteURL,
+			}
+			repo.Local.RemoteURL = r.RemoteURL
+			repo.Local.Revision = r.Revision
+			w.repos[r.Root] = repo
 		}
 		w.reposMu.Unlock()
 
