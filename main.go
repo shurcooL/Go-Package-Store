@@ -279,7 +279,11 @@ Examples:
   go list -f '{{join .Deps "\n"}}' . | Go-Package-Store -stdin
 
   # Show updates for all dependencies listed in vendor.json file.
-  Go-Package-Store -govendor /path/to/vendor.json
+  Go-Package-Store -govendor=/path/to/repo/vendor/vendor.json
+
+  # Show updates for all Go packages vendored using git-subrepo
+  # in the specified vendor directory.
+  Go-Package-Store -git-subrepo=/path/to/repo/vendor
 `)
 }
 

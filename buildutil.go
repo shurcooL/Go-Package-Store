@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"go/build"
 	"log"
 	"os"
@@ -46,7 +47,12 @@ func forEachRepository(found func(localRepo)) {
 
 // forEachGitSubrepo calls found for each git subrepo inside vendorDir.
 func forEachGitSubrepo(vendorDir string, found func(subrepo)) error {
-	err := filepath.Walk(vendorDir, func(path string, fi os.FileInfo, err error) error {
+	remoteVCS, err := vcsstate.NewRemoteVCS(vcs.ByCmd("git"))
+	if err != nil {
+		return fmt.Errorf("git repos not supported by vcsstate: %v\n", err)
+	}
+
+	return filepath.Walk(vendorDir, func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			log.Printf("can't stat file %s: %v\n", path, err)
 			return nil
@@ -67,15 +73,9 @@ func forEachGitSubrepo(vendorDir string, found func(subrepo)) error {
 		if err != nil {
 			return err
 		}
-		remoteVCS, err := vcsstate.NewRemoteVCS(vcs.ByCmd("git"))
-		if err != nil {
-			log.Printf("git repo %v not supported by vcsstate: %v\n", root, err)
-			return nil
-		}
 		found(subrepo{Root: root, RemoteVCS: remoteVCS, RemoteURL: remote, Revision: commit})
 		return filepath.SkipDir // No need to descend inside repositories.
 	})
-	return err
 }
 
 // parseGitRepoFile parses a .gitrepo file in directory, returning
