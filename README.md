@@ -5,6 +5,8 @@ Go Package Store
 
 Go Package Store displays updates for the Go packages in your GOPATH.
 
+![](Screenshot.png)
+
 Installation
 ------------
 
@@ -45,11 +47,6 @@ Examples:
   # in the specified vendor directory.
   Go-Package-Store -git-subrepo=/path/to/repo/vendor
 ```
-
-Screenshot
-----------
-
-![](Screenshot.png)
 
 Development
 -----------
