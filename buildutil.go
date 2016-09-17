@@ -49,7 +49,7 @@ func forEachRepository(found func(localRepo)) {
 func forEachGitSubrepo(vendorDir string, found func(subrepo)) error {
 	remoteVCS, err := vcsstate.NewRemoteVCS(vcs.ByCmd("git"))
 	if err != nil {
-		return fmt.Errorf("git repos not supported by vcsstate: %v\n", err)
+		return fmt.Errorf("git repos not supported by vcsstate: %v", err)
 	}
 
 	return filepath.Walk(vendorDir, func(path string, fi os.FileInfo, err error) error {
