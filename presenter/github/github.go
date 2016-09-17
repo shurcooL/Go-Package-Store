@@ -36,14 +36,6 @@ func init() {
 				return nil
 			}
 			return newGitHubPresenter(repo, elems[1], elems[2])
-		// azul3d.org package (an instance of semver-based domain, see https://azul3d.org/semver).
-		// Once there are other semver based Go packages, consider adding more generalized support.
-		case strings.HasPrefix(repo.Root, "azul3d.org/"):
-			githubOwner, githubRepo, err := azul3dOrgImportPathToGitHub(repo.Root)
-			if err != nil {
-				return nil
-			}
-			return newGitHubPresenter(repo, githubOwner, githubRepo)
 		// gopkg.in package.
 		case strings.HasPrefix(repo.Root, "gopkg.in/"):
 			githubOwner, githubRepo, err := gopkgInImportPathToGitHub(repo.Root)
