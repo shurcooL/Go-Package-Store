@@ -35,8 +35,8 @@ Examples:
   # Check for updates for all Go packages in GOPATH.
   Go-Package-Store
 
-  # Show updates for all dependencies (recursive) of package in cur working dir.
-  go list -f '{{join .Deps "\n"}}' . | Go-Package-Store -stdin
+  # Show updates for all golang.org/x/... packages.
+  go list golang.org/x/... | Go-Package-Store -stdin
 
   # Show updates for all dependencies listed in vendor.json file.
   Go-Package-Store -govendor=/path/to/repo/vendor/vendor.json
