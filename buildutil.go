@@ -69,7 +69,7 @@ func forEachGitSubrepo(vendorDir string, found func(subrepo)) error {
 		}
 		remoteVCS, err := vcsstate.NewRemoteVCS(vcs.ByCmd("git"))
 		if err != nil {
-			log.Printf("repo %v not supported by vcsstate: %v\n", root, err)
+			log.Printf("git repo %v not supported by vcsstate: %v\n", root, err)
 			return nil
 		}
 		found(subrepo{Root: root, RemoteVCS: remoteVCS, RemoteURL: remote, Revision: commit})

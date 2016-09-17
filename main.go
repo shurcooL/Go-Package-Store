@@ -391,7 +391,7 @@ func main() {
 		}
 	case *gitSubrepoFlag != "":
 		if _, err := exec.LookPath("git"); err != nil {
-			log.Fatalln(fmt.Errorf("git binary is required for updating, but not available: %v", err))
+			log.Fatalln(fmt.Errorf("git binary is required, but not available: %v", err))
 		}
 		fmt.Println("Using Go packages vendored using git-subrepo in the specified vendor directory.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
@@ -403,13 +403,7 @@ func main() {
 			}
 			pipeline.Done()
 		}()
-		// TODO: Consider setting a better directory for git-subrepo command than current working directory.
-		//       Perhaps the parent directory of vendor directory?
-		if gsu, err := repo.NewGitSubrepoUpdater(""); err == nil {
-			updater = gsu
-		} else {
-			log.Println("git-subrepo updater is not available:", err)
-		}
+		updater = nil // An updater for this can easily be added by anyone who uses this style of vendoring.
 	}
 
 	err = loadTemplates()
