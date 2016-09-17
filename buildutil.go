@@ -53,7 +53,10 @@ func forEachGitSubrepo(vendorDir string, found func(subrepo)) error {
 	}
 
 	err = filepath.Walk(vendorDir, func(path string, fi os.FileInfo, err error) error {
-		if err != nil {
+		switch {
+		case err != nil && path == vendorDir:
+			return err
+		case err != nil && path != vendorDir:
 			log.Printf("can't stat file %s: %v\n", path, err)
 			return nil
 		}

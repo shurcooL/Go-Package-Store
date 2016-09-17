@@ -403,7 +403,7 @@ func main() {
 				pipeline.AddSubrepo(s)
 			})
 			if err != nil {
-				fmt.Println(err)
+				log.Println("warning: there was problem iterating over subrepos:", err)
 			}
 			pipeline.Done()
 		}()
