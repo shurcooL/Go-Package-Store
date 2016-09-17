@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/gregjones/httpcache"
@@ -41,8 +42,9 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 		return false
 	}
 
-	// If this is a local VCS repository, do some sanity checks before presenting updates.
-	if repo.VCS != nil {
+	// Do some sanity checks before presenting updates.
+	switch {
+	case repo.VCS != nil:
 		// Local branch should match remote branch.
 		if localBranch, err := repo.VCS.Branch(repo.Path); err != nil || localBranch != repo.Remote.Branch {
 			return false
@@ -59,6 +61,14 @@ func shouldPresentUpdate(repo *pkg.Repo) bool {
 		// repository commit is actually ahead of remote, and there's nothing to update (instead, the
 		// user probably needs to push their local work to remote).
 		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch); err != nil || c {
+			return false
+		}
+
+	case repo.RemoteVCS != nil:
+		// TODO: Consider taking care of this difference in remote URLs earlier, inside, e.g., subreposWorker. But need to make that play nicely with the updaters; see TODO at bottom of pkg.Repo struct.
+		//
+		// Local remote URL, if set, should match Repo URL derived from import path.
+		if repo.Local.RemoteURL != "" && !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
 			return false
 		}
 	}
@@ -240,10 +250,11 @@ func loadTemplates() error {
 }
 
 var (
-	httpFlag     = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
-	stdinFlag    = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
-	godepsFlag   = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps.json file.")
-	govendorFlag = flag.String("govendor", "", "Read the list of Go packages from the specified vendor.json file.")
+	httpFlag       = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
+	stdinFlag      = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
+	godepsFlag     = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps.json file.")
+	govendorFlag   = flag.String("govendor", "", "Read the list of Go packages from the specified vendor.json file.")
+	gitSubrepoFlag = flag.String("git-subrepo", "", "Look for Go packages vendored using git-subrepo in the specified vendor directory.")
 )
 
 var wd = func() string {
@@ -264,11 +275,15 @@ Examples:
   # Check for updates for all Go packages in GOPATH.
   Go-Package-Store
 
-  # Show updates for all dependencies (recursive) of package in cur working dir.
-  go list -f '{{join .Deps "\n"}}' . | Go-Package-Store -stdin
+  # Show updates for all golang.org/x/... packages.
+  go list golang.org/x/... | Go-Package-Store -stdin
 
   # Show updates for all dependencies listed in vendor.json file.
-  Go-Package-Store -govendor /path/to/vendor.json
+  Go-Package-Store -govendor=/path/to/repo/vendor/vendor.json
+
+  # Show updates for all Go packages vendored using git-subrepo
+  # in the specified vendor directory.
+  Go-Package-Store -git-subrepo=/path/to/repo/vendor
 `)
 }
 
@@ -371,11 +386,28 @@ func main() {
 			}
 			pipeline.Done()
 		}()
+		// TODO: Consider setting a better directory for govendor command than current working directory.
+		//       Perhaps the parent directory of vendor.json file?
 		if gu, err := repo.NewGovendorUpdater(""); err == nil {
 			updater = gu
 		} else {
 			log.Println("govendor updater is not available:", err)
 		}
+	case *gitSubrepoFlag != "":
+		if _, err := exec.LookPath("git"); err != nil {
+			log.Fatalln(fmt.Errorf("git binary is required, but not available: %v", err))
+		}
+		fmt.Println("Using Go packages vendored using git-subrepo in the specified vendor directory.")
+		go func() { // This needs to happen in the background because sending input will be blocked on processing.
+			err := forEachGitSubrepo(*gitSubrepoFlag, func(s subrepo) {
+				pipeline.AddSubrepo(s)
+			})
+			if err != nil {
+				log.Println("warning: there was problem iterating over subrepos:", err)
+			}
+			pipeline.Done()
+		}()
+		updater = nil // An updater for this can easily be added by anyone who uses this style of vendoring.
 	}
 
 	err = loadTemplates()
