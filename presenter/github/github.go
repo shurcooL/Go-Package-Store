@@ -9,8 +9,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/google/go-github/github"
-	"github.com/shurcooL/Go-Package-Store/pkg"
-	"github.com/shurcooL/Go-Package-Store/presenter"
+	"github.com/shurcooL/Go-Package-Store"
 )
 
 // SetClient sets a custom HTTP client for accessing the GitHub API by this presenter.
@@ -28,7 +27,7 @@ var gh *github.Client
 func init() {
 	SetClient(nil)
 
-	presenter.RegisterProvider(func(repo *pkg.Repo) presenter.Presenter {
+	gps.RegisterProvider(func(repo *gps.Repo) gps.Presenter {
 		switch {
 		case strings.HasPrefix(repo.Root, "github.com/"):
 			elems := strings.Split(repo.Root, "/")
@@ -61,7 +60,7 @@ func init() {
 }
 
 type githubPresenter struct {
-	repo    *pkg.Repo
+	repo    *gps.Repo
 	ghOwner string
 	ghRepo  string
 
@@ -70,7 +69,7 @@ type githubPresenter struct {
 	err   error
 }
 
-func newGitHubPresenter(repo *pkg.Repo, ghOwner, ghRepo string) presenter.Presenter {
+func newGitHubPresenter(repo *gps.Repo, ghOwner, ghRepo string) gps.Presenter {
 	p := &githubPresenter{
 		repo:    repo,
 		ghOwner: ghOwner,
@@ -115,16 +114,16 @@ func (p githubPresenter) Image() template.URL {
 	return p.image
 }
 
-func (p githubPresenter) Changes() <-chan presenter.Change {
+func (p githubPresenter) Changes() <-chan gps.Change {
 	if p.cc == nil {
 		return nil
 	}
-	out := make(chan presenter.Change)
+	out := make(chan gps.Change)
 	go func() {
 		for i := range p.cc.Commits {
 			c := p.cc.Commits[len(p.cc.Commits)-1-i] // Reverse order.
-			change := presenter.Change{
-				Message: presenter.FirstParagraph(*c.Commit.Message),
+			change := gps.Change{
+				Message: gps.FirstParagraph(*c.Commit.Message),
 				URL:     template.URL(*c.HTMLURL),
 			}
 			if commentCount := c.Commit.CommentCount; commentCount != nil && *commentCount > 0 {

@@ -11,7 +11,7 @@ Installation
 ------------
 
 ```bash
-go get -u github.com/shurcooL/Go-Package-Store
+go get -u github.com/shurcooL/Go-Package-Store/cmd/Go-Package-Store
 ```
 
 That will create a binary at `$GOPATH/bin/Go-Package-Store`. You should run it from a terminal where your `$GOPATH` is set.
@@ -54,7 +54,7 @@ Development
 This package relies on `go generate` directives to process and statically embed assets. For development only, you may need extra dependencies. You can build and run the package in development mode, where all assets are always read and processed from disk:
 
 ```bash
-go build -tags=dev github.com/shurcooL/Go-Package-Store
+go build -tags=dev github.com/shurcooL/Go-Package-Store/cmd/Go-Package-Store
 ```
 
 When you're done with development, you should run `go generate` before committing:

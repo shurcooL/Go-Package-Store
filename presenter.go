@@ -1,12 +1,8 @@
-// Package presenter defines an interface for a repository presenter,
-// and a means of registering presenter providers.
-package presenter
+package gps
 
 import (
 	"html/template"
 	"strings"
-
-	"github.com/shurcooL/Go-Package-Store/pkg"
 )
 
 // Presenter is for displaying various info about a given Go package repo with an update available.
@@ -31,7 +27,7 @@ type Comments struct {
 }
 
 // Provider returns a Presenter for the given repo, or nil if it can't.
-type Provider func(repo *pkg.Repo) Presenter
+type Provider func(repo *Repo) Presenter
 
 // RegisterProvider registers a presenter provider.
 // Providers are consulted in the same order that they were registered.
@@ -44,7 +40,7 @@ var providers []Provider
 // New takes a repository containing 1 or more Go packages, and returns a Presenter
 // for it. It tries to find the best Presenter for the given repository out of the regsitered ones,
 // but falls back to a generic presenter if there's nothing better.
-func New(repo *pkg.Repo) Presenter {
+func New(repo *Repo) Presenter {
 	for _, provider := range providers {
 		if presenter := provider(repo); presenter != nil {
 			return presenter
@@ -61,3 +57,22 @@ func FirstParagraph(s string) string {
 	}
 	return s[:i]
 }
+
+// genericPresenter is a generic implementation of a presenter,
+// used as fallback when there's no custom presenter available.
+type genericPresenter struct {
+	repo *Repo
+}
+
+func (g genericPresenter) Home() *template.URL {
+	url := template.URL("https://" + g.repo.Root)
+	return &url
+}
+
+func (genericPresenter) Image() template.URL {
+	return "https://github.com/images/gravatars/gravatar-user-420.png"
+}
+
+func (genericPresenter) Changes() <-chan Change { return nil }
+
+func (genericPresenter) Error() error { return nil }

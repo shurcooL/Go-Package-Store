@@ -1,15 +1,15 @@
-package repo
+package updater
 
 import (
 	"fmt"
 
-	"github.com/shurcooL/Go-Package-Store/pkg"
+	"github.com/shurcooL/Go-Package-Store"
 )
 
-// GopathUpdater is an Updater that updates Go packages in local GOPATH workspaces.
-type GopathUpdater struct{}
+// Gopath is an Updater that updates Go packages in local GOPATH workspaces.
+type Gopath struct{}
 
-func (GopathUpdater) Update(repo *pkg.Repo) error {
+func (Gopath) Update(repo *gps.Repo) error {
 	if repo.VCS == nil || repo.Path == "" || repo.Cmd == nil {
 		return fmt.Errorf("missing information needed to update Go package in GOPATH: %#v", repo)
 	}

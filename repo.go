@@ -1,5 +1,4 @@
-// Package pkg provides a definition of a repository.
-package pkg
+package gps
 
 import (
 	"github.com/shurcooL/vcsstate"

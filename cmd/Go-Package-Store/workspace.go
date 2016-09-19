@@ -6,8 +6,7 @@ import (
 	"sync"
 
 	"github.com/bradfitz/iter"
-	"github.com/shurcooL/Go-Package-Store/pkg"
-	"github.com/shurcooL/Go-Package-Store/presenter"
+	"github.com/shurcooL/Go-Package-Store"
 	"github.com/shurcooL/vcsstate"
 	"golang.org/x/tools/go/vcs"
 )
@@ -20,8 +19,8 @@ type GoPackageList struct {
 }
 
 type RepoPresenter struct {
-	Repo *pkg.Repo
-	presenter.Presenter
+	Repo *gps.Repo
+	gps.Presenter
 
 	// TODO: Next up, use updateState with 3 states (notUpdated, updating, updated).
 	//       Do that to track the intermediate state when a package is in the process
@@ -37,15 +36,15 @@ type workspace struct {
 	subrepos            chan subrepo
 
 	// unique is the output of finding unique repositories from diverse possible inputs.
-	unique chan *pkg.Repo
+	unique chan *gps.Repo
 	// processedFiltered is the output of processed repos (complete with local and remote revisions),
 	// with just enough information to decide if an update should be displayed.
-	processedFiltered chan *pkg.Repo
+	processedFiltered chan *gps.Repo
 	// presented is the output of processed and presented repos (complete with repo.Presenter).
 	presented chan *RepoPresenter
 
 	reposMu sync.Mutex
-	repos   map[string]*pkg.Repo // Map key is the import path corresponding to the root of the repository.
+	repos   map[string]*gps.Repo // Map key is the import path corresponding to the root of the repository.
 
 	newObserver   chan observerRequest
 	observers     map[chan *RepoPresenter]struct{}
@@ -62,11 +61,11 @@ func NewWorkspace() *workspace {
 		importPathRevisions: make(chan importPathRevision, 64),
 		repositories:        make(chan localRepo, 64),
 		subrepos:            make(chan subrepo, 64),
-		unique:              make(chan *pkg.Repo, 64),
-		processedFiltered:   make(chan *pkg.Repo, 64),
+		unique:              make(chan *gps.Repo, 64),
+		processedFiltered:   make(chan *gps.Repo, 64),
 		presented:           make(chan *RepoPresenter, 64),
 
-		repos: make(map[string]*pkg.Repo),
+		repos: make(map[string]*gps.Repo),
 
 		newObserver:   make(chan observerRequest),
 		observers:     make(map[chan *RepoPresenter]struct{}),
@@ -328,10 +327,10 @@ func (w *workspace) importPathWorker(wg *sync.WaitGroup) {
 			continue
 		}
 
-		var repo *pkg.Repo
+		var repo *gps.Repo
 		w.reposMu.Lock()
 		if _, ok := w.repos[root]; !ok {
-			repo = &pkg.Repo{
+			repo = &gps.Repo{
 				Root: root,
 
 				// This is a local repository inside GOPATH. Set all of its fields.
@@ -371,10 +370,10 @@ func (w *workspace) importPathRevisionWorker(wg *sync.WaitGroup) {
 			continue
 		}
 
-		var repo *pkg.Repo
+		var repo *gps.Repo
 		w.reposMu.Lock()
 		if _, ok := w.repos[rr.Root]; !ok {
-			repo = &pkg.Repo{
+			repo = &gps.Repo{
 				Root: rr.Root,
 
 				// This is a remote repository only. Set all of its fields.
@@ -405,10 +404,10 @@ func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
 			continue
 		}
 
-		var repo *pkg.Repo
+		var repo *gps.Repo
 		w.reposMu.Lock()
 		if _, ok := w.repos[root]; !ok {
-			repo = &pkg.Repo{
+			repo = &gps.Repo{
 				Root: root,
 
 				// This is a local repository inside GOPATH. Set all of its fields.
@@ -439,17 +438,17 @@ func (w *workspace) subreposWorker(wg *sync.WaitGroup) {
 			continue
 		}
 
-		var repo *pkg.Repo
+		var repo *gps.Repo
 		w.reposMu.Lock()
 		if _, ok := w.repos[r.Root]; !ok {
-			repo = &pkg.Repo{
+			repo = &gps.Repo{
 				Root: r.Root,
 
 				// This is a remote repository only. Set all of its fields.
 				RemoteVCS: r.RemoteVCS,
 				RemoteURL: r.RemoteURL,
 			}
-			repo.Local.RemoteURL = r.RemoteURL // TODO: Consider having r.RemoteURL take precedence over rr.Repo. But need to make that play nicely with the updaters; see TODO at bottom of pkg.Repo struct.
+			repo.Local.RemoteURL = r.RemoteURL // TODO: Consider having r.RemoteURL take precedence over rr.Repo. But need to make that play nicely with the updaters; see TODO at bottom of gps.Repo struct.
 			repo.Local.Revision = r.Revision
 			repo.Remote.RepoURL = rr.Repo
 			w.repos[r.Root] = repo
@@ -514,7 +513,7 @@ func (w *workspace) presenterWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for repo := range w.processedFiltered {
 		// This part might take a while.
-		repoPresenter := presenter.New(repo)
+		repoPresenter := gps.New(repo)
 
 		w.presented <- &RepoPresenter{
 			Repo:      repo,

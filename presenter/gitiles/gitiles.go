@@ -10,8 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/shurcooL/Go-Package-Store/pkg"
-	"github.com/shurcooL/Go-Package-Store/presenter"
+	"github.com/shurcooL/Go-Package-Store"
 )
 
 // SetClient sets a custom HTTP client for accessing the Gitiles API by this presenter.
@@ -26,7 +25,7 @@ func SetClient(httpClient *http.Client) {
 var client = http.DefaultClient
 
 func init() {
-	presenter.RegisterProvider(func(repo *pkg.Repo) presenter.Presenter {
+	gps.RegisterProvider(func(repo *gps.Repo) gps.Presenter {
 		switch {
 		case strings.HasPrefix(repo.Remote.RepoURL, "https://code.googlesource.com/"):
 			return newGitilesPresenter(repo)
@@ -37,12 +36,12 @@ func init() {
 }
 
 type gitilesPresenter struct {
-	repo *pkg.Repo
+	repo *gps.Repo
 	log  log
 	err  error
 }
 
-func newGitilesPresenter(repo *pkg.Repo) presenter.Presenter {
+func newGitilesPresenter(repo *gps.Repo) gps.Presenter {
 	p := &gitilesPresenter{repo: repo}
 
 	// This might take a while.
@@ -97,21 +96,21 @@ func (gitilesPresenter) Image() template.URL {
 	return "https://ssl.gstatic.com/codesite/ph/images/defaultlogo.png"
 }
 
-func (g gitilesPresenter) Changes() <-chan presenter.Change {
+func (g gitilesPresenter) Changes() <-chan gps.Change {
 	// Verify/find Repo.Remote.Revision.
 	log := g.log.Log
 	for len(log) > 0 && log[0].Commit != g.repo.Remote.Revision {
 		log = log[1:]
 	}
 
-	out := make(chan presenter.Change)
+	out := make(chan gps.Change)
 	go func() {
 		for _, commit := range log {
 			if commit.Commit == g.repo.Local.Revision {
 				break
 			}
-			out <- presenter.Change{
-				Message: presenter.FirstParagraph(commit.Message),
+			out <- gps.Change{
+				Message: gps.FirstParagraph(commit.Message),
 				URL:     template.URL(g.repo.Remote.RepoURL + "/+/" + commit.Commit + "%5e%21"),
 			}
 		}

@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/shurcooL/Go-Package-Store/pkg"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 )
 
@@ -47,7 +46,7 @@ func mockHandler(w http.ResponseWriter, req *http.Request) {
 
 var mockRepoPresenters = []RepoPresenter{
 	{
-		Repo: &pkg.Repo{
+		Repo: &gps.Repo{
 			Root: (string)("github.com/gopherjs/gopherjs"),
 		},
 		Presenter: mockPresenter{
@@ -83,7 +82,7 @@ var mockRepoPresenters = []RepoPresenter{
 	},
 
 	{
-		Repo: &pkg.Repo{
+		Repo: &gps.Repo{
 			Root: (string)("golang.org/x/image"),
 		},
 		Presenter: mockPresenter{
@@ -103,7 +102,7 @@ var mockRepoPresenters = []RepoPresenter{
 	},
 
 	{
-		Repo: &pkg.Repo{
+		Repo: &gps.Repo{
 			Root: (string)("golang.org/x/foobar"),
 		},
 		Presenter: mockPresenter{
@@ -117,7 +116,7 @@ var mockRepoPresenters = []RepoPresenter{
 	{
 		Updated: true,
 
-		Repo: &pkg.Repo{
+		Repo: &gps.Repo{
 			Root: (string)("github.com/influxdb/influxdb"),
 		},
 		Presenter: mockPresenter{
