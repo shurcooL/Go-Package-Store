@@ -13,36 +13,28 @@ import (
 	"github.com/shurcooL/Go-Package-Store"
 )
 
-// SetClient sets a custom HTTP client for accessing the Gitiles API by this presenter.
-// By default, http.DefaultClient is used.
-//
-// It should not be called while the presenter is in use.
-func SetClient(httpClient *http.Client) {
-	client = httpClient
-}
-
-// client is the HTTP client used by this presenter.
-var client = http.DefaultClient
-
-func init() {
-	gps.RegisterProvider(func(repo *gps.Repo) gps.Presenter {
+// NewPresenter returns a Gitiles API-powered presenter.
+// httpClient is the HTTP client to be used by the presenter for accessing the Gitiles API.
+// If httpClient is nil, then http.DefaultClient is used.
+func NewPresenter(httpClient *http.Client) gps.Presenter {
+	return func(repo *gps.Repo) gps.Presentation {
 		switch {
 		case strings.HasPrefix(repo.Remote.RepoURL, "https://code.googlesource.com/"):
-			return newGitilesPresenter(repo)
+			return presentGitilesRepo(httpClient, repo)
 		default:
 			return nil
 		}
-	})
+	}
 }
 
-type gitilesPresenter struct {
+type gitilesPresentation struct {
 	repo *gps.Repo
 	log  log
 	err  error
 }
 
-func newGitilesPresenter(repo *gps.Repo) gps.Presenter {
-	p := &gitilesPresenter{repo: repo}
+func presentGitilesRepo(client *http.Client, repo *gps.Repo) gps.Presentation {
+	p := &gitilesPresentation{repo: repo}
 
 	// This might take a while.
 	p.log, p.err = fetchLog(client, repo.Remote.RepoURL+"/+log?format=JSON")
@@ -87,16 +79,16 @@ func fetchLog(client *http.Client, url string) (log, error) {
 // Source: http://www.chromium.org/developers/change-logs
 const header = `)]}'` + "\n"
 
-func (g gitilesPresenter) Home() *template.URL {
+func (g gitilesPresentation) Home() *template.URL {
 	url := template.URL("https://" + g.repo.Root)
 	return &url
 }
 
-func (gitilesPresenter) Image() template.URL {
+func (gitilesPresentation) Image() template.URL {
 	return "https://ssl.gstatic.com/codesite/ph/images/defaultlogo.png"
 }
 
-func (g gitilesPresenter) Changes() <-chan gps.Change {
+func (g gitilesPresentation) Changes() <-chan gps.Change {
 	// Verify/find Repo.Remote.Revision.
 	log := g.log.Log
 	for len(log) > 0 && log[0].Commit != g.repo.Remote.Revision {
@@ -110,7 +102,7 @@ func (g gitilesPresenter) Changes() <-chan gps.Change {
 				break
 			}
 			out <- gps.Change{
-				Message: gps.FirstParagraph(commit.Message),
+				Message: firstParagraph(commit.Message),
 				URL:     template.URL(g.repo.Remote.RepoURL + "/+/" + commit.Commit + "%5e%21"),
 			}
 		}
@@ -119,7 +111,16 @@ func (g gitilesPresenter) Changes() <-chan gps.Change {
 	return out
 }
 
-func (g gitilesPresenter) Error() error { return g.err }
+// firstParagraph returns the first paragraph of text s.
+func firstParagraph(s string) string {
+	i := strings.Index(s, "\n\n")
+	if i == -1 {
+		return s
+	}
+	return s[:i]
+}
+
+func (g gitilesPresentation) Error() error { return g.err }
 
 type log struct {
 	Log  []commit `json:"log"`

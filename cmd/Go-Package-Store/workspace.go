@@ -2,11 +2,13 @@ package main
 
 import (
 	"go/build"
+	"html/template"
 	"log"
 	"sync"
 
 	"github.com/bradfitz/iter"
 	"github.com/shurcooL/Go-Package-Store"
+	"github.com/shurcooL/gostatus/status"
 	"github.com/shurcooL/vcsstate"
 	"golang.org/x/tools/go/vcs"
 )
@@ -14,13 +16,13 @@ import (
 type GoPackageList struct {
 	// TODO: Merge the List and OrderedList into a single struct to better communicate that it's a single data structure.
 	sync.Mutex
-	OrderedList []*RepoPresenter          // OrderedList has the same contents as List, but gives it a stable order.
-	List        map[string]*RepoPresenter // Map key is repoRoot.
+	OrderedList []*RepoPresentation          // OrderedList has the same contents as List, but gives it a stable order.
+	List        map[string]*RepoPresentation // Map key is repoRoot.
 }
 
-type RepoPresenter struct {
+type RepoPresentation struct {
 	Repo *gps.Repo
-	gps.Presenter
+	gps.Presentation
 
 	// TODO: Next up, use updateState with 3 states (notUpdated, updating, updated).
 	//       Do that to track the intermediate state when a package is in the process
@@ -30,6 +32,9 @@ type RepoPresenter struct {
 
 // workspace is a workspace environment, meaning each repo has local and remote components.
 type workspace struct {
+	// presenters are presenters registered with RegisterPresenter.
+	presenters []gps.Presenter
+
 	importPaths         chan string
 	importPathRevisions chan importPathRevision
 	repositories        chan localRepo
@@ -40,19 +45,19 @@ type workspace struct {
 	// processedFiltered is the output of processed repos (complete with local and remote revisions),
 	// with just enough information to decide if an update should be displayed.
 	processedFiltered chan *gps.Repo
-	// presented is the output of processed and presented repos (complete with repo.Presenter).
-	presented chan *RepoPresenter
+	// presented is the output of processed and presented repos (complete with gps.Presentation).
+	presented chan *RepoPresentation
 
 	reposMu sync.Mutex
 	repos   map[string]*gps.Repo // Map key is the import path corresponding to the root of the repository.
 
 	newObserver   chan observerRequest
-	observers     map[chan *RepoPresenter]struct{}
+	observers     map[chan *RepoPresentation]struct{}
 	GoPackageList *GoPackageList
 }
 
 type observerRequest struct {
-	Response chan chan *RepoPresenter
+	Response chan chan *RepoPresentation
 }
 
 func NewWorkspace() *workspace {
@@ -63,13 +68,13 @@ func NewWorkspace() *workspace {
 		subrepos:            make(chan subrepo, 64),
 		unique:              make(chan *gps.Repo, 64),
 		processedFiltered:   make(chan *gps.Repo, 64),
-		presented:           make(chan *RepoPresenter, 64),
+		presented:           make(chan *RepoPresentation, 64),
 
 		repos: make(map[string]*gps.Repo),
 
 		newObserver:   make(chan observerRequest),
-		observers:     make(map[chan *RepoPresenter]struct{}),
-		GoPackageList: &GoPackageList{List: make(map[string]*RepoPresenter)},
+		observers:     make(map[chan *RepoPresentation]struct{}),
+		GoPackageList: &GoPackageList{List: make(map[string]*RepoPresentation)},
 	}
 
 	// It is a lot of work to
@@ -165,7 +170,7 @@ func NewWorkspace() *workspace {
 		var wg sync.WaitGroup
 		for range iter.N(8) {
 			wg.Add(1)
-			go w.presenterWorker(&wg)
+			go w.presentWorker(&wg)
 		}
 		go func() {
 			wg.Wait()
@@ -176,6 +181,12 @@ func NewWorkspace() *workspace {
 	go w.run()
 
 	return w
+}
+
+// RegisterPresenter registers a presenter.
+// Presenters are consulted in the same order that they were registered.
+func (w *workspace) RegisterPresenter(p gps.Presenter) {
+	w.presenters = append(w.presenters, p)
 }
 
 // AddImportPath adds a package with specified import path for processing.
@@ -228,18 +239,18 @@ func (w *workspace) Done() {
 	close(w.subrepos)
 }
 
-// RepoPresenters returns a channel of all repo presenters.
-// Repo presenters that are ready will be sent immediately.
-// The remaining repo presenters will be sent onto the channel
-// as they become available. Once all repo presenters have been
+// RepoPresentations returns a channel of all repo presentations.
+// Repo presentations that are ready will be sent immediately.
+// The remaining repo presentations will be sent onto the channel
+// as they become available. Once all repo presentations have been
 // sent, the channel will be closed. Therefore, iterating over
 // the channel may block until all processing is done, but it
-// will effectively return all repo presenters as soon as possible.
+// will effectively return all repo presentations as soon as possible.
 //
-// It's safe to call RepoPresenters at any time and concurrently
+// It's safe to call RepoPresentations at any time and concurrently
 // to get multiple such channels.
-func (w *workspace) RepoPresenters() <-chan *RepoPresenter {
-	response := make(chan chan *RepoPresenter)
+func (w *workspace) RepoPresentations() <-chan *RepoPresentation {
+	response := make(chan chan *RepoPresentation)
 	w.newObserver <- observerRequest{Response: response}
 	return <-response
 }
@@ -248,29 +259,29 @@ func (w *workspace) run() {
 Outer:
 	for {
 		select {
-		// New repoPresenter available.
-		case repoPresenter, ok := <-w.presented:
+		// New repoPresentation available.
+		case repoPresentation, ok := <-w.presented:
 			// We're done streaming.
 			if !ok {
 				break Outer
 			}
 
-			// Append repoPresenter to current list.
+			// Append repoPresentation to current list.
 			w.GoPackageList.Lock()
-			w.GoPackageList.OrderedList = append(w.GoPackageList.OrderedList, repoPresenter)
-			w.GoPackageList.List[repoPresenter.Repo.Root] = repoPresenter
+			w.GoPackageList.OrderedList = append(w.GoPackageList.OrderedList, repoPresentation)
+			w.GoPackageList.List[repoPresentation.Repo.Root] = repoPresentation
 			w.GoPackageList.Unlock()
 
-			// Send new repoPresenter to all existing observers.
+			// Send new repoPresentation to all existing observers.
 			for ch := range w.observers {
-				ch <- repoPresenter
+				ch <- repoPresentation
 			}
 		// New observer request.
 		case req := <-w.newObserver:
 			w.GoPackageList.Lock()
-			ch := make(chan *RepoPresenter, len(w.GoPackageList.OrderedList))
-			for _, repoPresenter := range w.GoPackageList.OrderedList {
-				ch <- repoPresenter
+			ch := make(chan *RepoPresentation, len(w.GoPackageList.OrderedList))
+			for _, repoPresentation := range w.GoPackageList.OrderedList {
+				ch <- repoPresentation
 			}
 			w.GoPackageList.Unlock()
 
@@ -289,9 +300,9 @@ Outer:
 	// Respond to new observer requests directly.
 	for req := range w.newObserver {
 		w.GoPackageList.Lock()
-		ch := make(chan *RepoPresenter, len(w.GoPackageList.OrderedList))
-		for _, repoPresenter := range w.GoPackageList.OrderedList {
-			ch <- repoPresenter
+		ch := make(chan *RepoPresentation, len(w.GoPackageList.OrderedList))
+		for _, repoPresentation := range w.GoPackageList.OrderedList {
+			ch <- repoPresentation
 		}
 		w.GoPackageList.Unlock()
 
@@ -508,16 +519,88 @@ func (w *workspace) processFilterWorker(wg *sync.WaitGroup) {
 	}
 }
 
-// presenterWorker works with repos that should be displayed, creating a presenter each.
-func (w *workspace) presenterWorker(wg *sync.WaitGroup) {
+// shouldPresentUpdate determines if the given goPackage should be presented as an available update.
+// It checks that the Go package is on default branch, does not have a dirty working tree, and does not have the remote revision.
+func shouldPresentUpdate(repo *gps.Repo) bool {
+	if repo.Remote.RepoURL == "" || repo.Local.Revision == "" || repo.Remote.Revision == "" {
+		return false
+	}
+
+	// Do some sanity checks before presenting updates.
+	switch {
+	case repo.VCS != nil:
+		// Local branch should match remote branch.
+		if localBranch, err := repo.VCS.Branch(repo.Path); err != nil || localBranch != repo.Remote.Branch {
+			return false
+		}
+		// There shouldn't be a dirty working tree.
+		if status, err := repo.VCS.Status(repo.Path); err != nil || status != "" {
+			return false
+		}
+		// Local remote URL should match Repo URL derived from import path.
+		if !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
+			return false
+		}
+		// The local commit should be contained by remote. Otherwise, it means the local
+		// repository commit is actually ahead of remote, and there's nothing to update (instead, the
+		// user probably needs to push their local work to remote).
+		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch); err != nil || c {
+			return false
+		}
+
+	case repo.RemoteVCS != nil:
+		// TODO: Consider taking care of this difference in remote URLs earlier, inside, e.g., subreposWorker. But need to make that play nicely with the updaters; see TODO at bottom of gps.Repo struct.
+		//
+		// Local remote URL, if set, should match Repo URL derived from import path.
+		if repo.Local.RemoteURL != "" && !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
+			return false
+		}
+	}
+
+	return repo.Local.Revision != repo.Remote.Revision
+}
+
+// presentWorker works with repos that should be displayed, creating a presentation for each.
+func (w *workspace) presentWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for repo := range w.processedFiltered {
 		// This part might take a while.
-		repoPresenter := gps.New(repo)
+		presentation := w.present(repo)
 
-		w.presented <- &RepoPresenter{
-			Repo:      repo,
-			Presenter: repoPresenter,
+		w.presented <- &RepoPresentation{
+			Repo:         repo,
+			Presentation: presentation,
 		}
 	}
 }
+
+// present takes a repository containing 1 or more Go packages, and returns a presentation for it.
+// It tries to find the best presenter for the given repository out of the registered ones,
+// but falls back to a generic presenter if there's nothing better.
+func (w *workspace) present(repo *gps.Repo) gps.Presentation {
+	for _, presenter := range w.presenters {
+		if presentation := presenter(repo); presentation != nil {
+			return presentation
+		}
+	}
+	return genericPresentation{repo: repo}
+}
+
+// genericPresentation is a generic implementation of presentation,
+// used as fallback when there's no dedicated presenter available for the repo.
+type genericPresentation struct {
+	repo *gps.Repo
+}
+
+func (g genericPresentation) Home() *template.URL {
+	url := template.URL("https://" + g.repo.Root)
+	return &url
+}
+
+func (genericPresentation) Image() template.URL {
+	return "https://github.com/images/gravatars/gravatar-user-420.png"
+}
+
+func (genericPresentation) Changes() <-chan gps.Change { return nil }
+
+func (genericPresentation) Error() error { return nil }

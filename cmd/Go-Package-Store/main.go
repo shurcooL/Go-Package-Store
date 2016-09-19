@@ -24,57 +24,11 @@ import (
 	"github.com/shurcooL/Go-Package-Store/updater"
 	"github.com/shurcooL/go/open"
 	"github.com/shurcooL/go/ospath"
-	"github.com/shurcooL/gostatus/status"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"github.com/shurcooL/httpgzip"
 	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
-
-	// Register presenters.
-	_ "github.com/shurcooL/Go-Package-Store/presenter/github"
-	_ "github.com/shurcooL/Go-Package-Store/presenter/gitiles"
 )
-
-// shouldPresentUpdate determines if the given goPackage should be presented as an available update.
-// It checks that the Go package is on default branch, does not have a dirty working tree, and does not have the remote revision.
-func shouldPresentUpdate(repo *gps.Repo) bool {
-	if repo.Remote.RepoURL == "" || repo.Local.Revision == "" || repo.Remote.Revision == "" {
-		return false
-	}
-
-	// Do some sanity checks before presenting updates.
-	switch {
-	case repo.VCS != nil:
-		// Local branch should match remote branch.
-		if localBranch, err := repo.VCS.Branch(repo.Path); err != nil || localBranch != repo.Remote.Branch {
-			return false
-		}
-		// There shouldn't be a dirty working tree.
-		if status, err := repo.VCS.Status(repo.Path); err != nil || status != "" {
-			return false
-		}
-		// Local remote URL should match Repo URL derived from import path.
-		if !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
-			return false
-		}
-		// The local commit should be contained by remote. Otherwise, it means the local
-		// repository commit is actually ahead of remote, and there's nothing to update (instead, the
-		// user probably needs to push their local work to remote).
-		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch); err != nil || c {
-			return false
-		}
-
-	case repo.RemoteVCS != nil:
-		// TODO: Consider taking care of this difference in remote URLs earlier, inside, e.g., subreposWorker. But need to make that play nicely with the updaters; see TODO at bottom of gps.Repo struct.
-		//
-		// Local remote URL, if set, should match Repo URL derived from import path.
-		if repo.Local.RemoteURL != "" && !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
-			return false
-		}
-	}
-
-	return repo.Local.Revision != repo.Remote.Revision
-}
 
 var c = struct {
 	pipeline *workspace
@@ -87,30 +41,30 @@ var c = struct {
 }{pipeline: NewWorkspace()}
 
 type updateRequest struct {
-	root       string
-	resultChan chan error
+	root         string
+	responseChan chan error
 }
 
 var updateRequestChan = make(chan updateRequest)
 
 // updateWorker is a sequential updater of Go packages. It does not update them in parallel
-// to avoid race conditions or other problems, since `go get -u` does not seem to protect against that.
+// to avoid race conditions or other problems.
 func updateWorker() {
 	for updateRequest := range updateRequestChan {
 		c.pipeline.GoPackageList.Lock()
-		repoPresenter, ok := c.pipeline.GoPackageList.List[updateRequest.root]
+		repoPresentation, ok := c.pipeline.GoPackageList.List[updateRequest.root]
 		c.pipeline.GoPackageList.Unlock()
 		if !ok {
-			updateRequest.resultChan <- fmt.Errorf("root %q not found", updateRequest.root)
+			updateRequest.responseChan <- fmt.Errorf("root %q not found", updateRequest.root)
 			continue
 		}
-		if repoPresenter.Updated {
-			updateRequest.resultChan <- fmt.Errorf("root %q already updated", updateRequest.root)
+		if repoPresentation.Updated {
+			updateRequest.responseChan <- fmt.Errorf("root %q already updated", updateRequest.root)
 			continue
 		}
 
-		updateResult := c.updater.Update(repoPresenter.Repo)
-		if updateResult == nil {
+		err := c.updater.Update(repoPresentation.Repo)
+		if err == nil {
 			// Mark repo as updated.
 			c.pipeline.GoPackageList.Lock()
 			// Move it down the OrderedList towards all other updated.
@@ -126,7 +80,7 @@ func updateWorker() {
 			c.pipeline.GoPackageList.List[updateRequest.root].Updated = true
 			c.pipeline.GoPackageList.Unlock()
 		}
-		updateRequest.resultChan <- updateResult
+		updateRequest.responseChan <- err
 		fmt.Println("\nDone.")
 	}
 }
@@ -142,12 +96,12 @@ func updateHandler(w http.ResponseWriter, req *http.Request) {
 	root := req.PostFormValue("repo_root")
 
 	updateRequest := updateRequest{
-		root:       root,
-		resultChan: make(chan error),
+		root:         root,
+		responseChan: make(chan error),
 	}
 	updateRequestChan <- updateRequest
 
-	err := <-updateRequest.resultChan
+	err := <-updateRequest.responseChan
 	// TODO: Display error in frontend.
 	if err != nil {
 		log.Println(err)
@@ -184,19 +138,19 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	var updatesAvailable = 0
 	var wroteInstalledUpdatesHeader bool
 
-	for repoPresenter := range c.pipeline.RepoPresenters() {
-		if !repoPresenter.Updated {
+	for repoPresentation := range c.pipeline.RepoPresentations() {
+		if !repoPresentation.Updated {
 			updatesAvailable++
 		}
 
-		if repoPresenter.Updated && !wroteInstalledUpdatesHeader {
+		if repoPresentation.Updated && !wroteInstalledUpdatesHeader {
 			// Make 'Installed Updates' header visible now.
 			io.WriteString(w, `<div id="installed_updates"><h3 style="text-align: center;">Installed Updates</h3></div>`)
 
 			wroteInstalledUpdatesHeader = true
 		}
 
-		err := t.ExecuteTemplate(w, "repo.html.tmpl", repoPresenter)
+		err := t.ExecuteTemplate(w, "repo.html.tmpl", repoPresentation)
 		if err != nil {
 			log.Println("ExecuteTemplate repo.html.tmpl:", err)
 			return
@@ -299,7 +253,7 @@ func main() {
 		cacheDir = ""
 	}
 
-	// Set GitHub presenter client.
+	// Register GitHub presenter.
 	{
 		var transport http.RoundTripper
 
@@ -318,10 +272,10 @@ func main() {
 			}
 		}
 
-		github.SetClient(&http.Client{Transport: transport})
+		c.pipeline.RegisterPresenter(github.NewPresenter(&http.Client{Transport: transport}))
 	}
 
-	// Set Gitiles presenter client.
+	// Register Gitiles presenter.
 	{
 		var transport http.RoundTripper
 
@@ -333,7 +287,7 @@ func main() {
 			}
 		}
 
-		gitiles.SetClient(&http.Client{Transport: transport})
+		c.pipeline.RegisterPresenter(gitiles.NewPresenter(&http.Client{Transport: transport}))
 	}
 
 	switch {

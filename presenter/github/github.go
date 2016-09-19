@@ -12,54 +12,47 @@ import (
 	"github.com/shurcooL/Go-Package-Store"
 )
 
-// SetClient sets a custom HTTP client for accessing the GitHub API by this presenter.
-// By default, http.DefaultClient is used.
-//
-// It should not be called while the presenter is in use.
-func SetClient(httpClient *http.Client) {
-	gh = github.NewClient(httpClient)
+// NewPresenter returns a GitHub API-powered presenter.
+// httpClient is the HTTP client to be used by the presenter for accessing the GitHub API.
+// If httpClient is nil, then http.DefaultClient is used.
+func NewPresenter(httpClient *http.Client) gps.Presenter {
+	gh := github.NewClient(httpClient)
 	gh.UserAgent = "github.com/shurcooL/Go-Package-Store/presenter/github"
-}
 
-// gh is the GitHub API client used by this presenter.
-var gh *github.Client
-
-func init() {
-	SetClient(nil)
-
-	gps.RegisterProvider(func(repo *gps.Repo) gps.Presenter {
+	return func(repo *gps.Repo) gps.Presentation {
 		switch {
+		// Import path begins with "github.com/".
 		case strings.HasPrefix(repo.Root, "github.com/"):
 			elems := strings.Split(repo.Root, "/")
 			if len(elems) != 3 {
 				return nil
 			}
-			return newGitHubPresenter(repo, elems[1], elems[2])
+			return presentGitHubRepo(gh, repo, elems[1], elems[2])
 		// gopkg.in package.
 		case strings.HasPrefix(repo.Root, "gopkg.in/"):
 			githubOwner, githubRepo, err := gopkgInImportPathToGitHub(repo.Root)
 			if err != nil {
 				return nil
 			}
-			return newGitHubPresenter(repo, githubOwner, githubRepo)
+			return presentGitHubRepo(gh, repo, githubOwner, githubRepo)
 		// Underlying GitHub remote.
 		case strings.HasPrefix(repo.Remote.RepoURL, "https://github.com/"):
 			elems := strings.Split(strings.TrimSuffix(repo.Remote.RepoURL[len("https://"):], ".git"), "/")
 			if len(elems) != 3 {
 				return nil
 			}
-			return newGitHubPresenter(repo, elems[1], elems[2])
+			return presentGitHubRepo(gh, repo, elems[1], elems[2])
 		// Go repo remote has a GitHub mirror repo.
 		case strings.HasPrefix(repo.Remote.RepoURL, "https://go.googlesource.com/"):
 			repoName := repo.Remote.RepoURL[len("https://go.googlesource.com/"):]
-			return newGitHubPresenter(repo, "golang", repoName)
+			return presentGitHubRepo(gh, repo, "golang", repoName)
 		default:
 			return nil
 		}
-	})
+	}
 }
 
-type githubPresenter struct {
+type githubPresentation struct {
 	repo    *gps.Repo
 	ghOwner string
 	ghRepo  string
@@ -69,8 +62,8 @@ type githubPresenter struct {
 	err   error
 }
 
-func newGitHubPresenter(repo *gps.Repo, ghOwner, ghRepo string) gps.Presenter {
-	p := &githubPresenter{
+func presentGitHubRepo(gh *github.Client, repo *gps.Repo, ghOwner, ghRepo string) gps.Presentation {
+	p := &githubPresentation{
 		repo:    repo,
 		ghOwner: ghOwner,
 		ghRepo:  ghRepo,
@@ -99,7 +92,7 @@ func newGitHubPresenter(repo *gps.Repo, ghOwner, ghRepo string) gps.Presenter {
 	return p
 }
 
-func (p githubPresenter) Home() *template.URL {
+func (p githubPresentation) Home() *template.URL {
 	switch {
 	case strings.HasPrefix(p.repo.Root, "github.com/"):
 		url := template.URL("https://github.com/" + p.ghOwner + "/" + p.ghRepo)
@@ -110,11 +103,11 @@ func (p githubPresenter) Home() *template.URL {
 	}
 }
 
-func (p githubPresenter) Image() template.URL {
+func (p githubPresentation) Image() template.URL {
 	return p.image
 }
 
-func (p githubPresenter) Changes() <-chan gps.Change {
+func (p githubPresentation) Changes() <-chan gps.Change {
 	if p.cc == nil {
 		return nil
 	}
@@ -123,7 +116,7 @@ func (p githubPresenter) Changes() <-chan gps.Change {
 		for i := range p.cc.Commits {
 			c := p.cc.Commits[len(p.cc.Commits)-1-i] // Reverse order.
 			change := gps.Change{
-				Message: gps.FirstParagraph(*c.Commit.Message),
+				Message: firstParagraph(*c.Commit.Message),
 				URL:     template.URL(*c.HTMLURL),
 			}
 			if commentCount := c.Commit.CommentCount; commentCount != nil && *commentCount > 0 {
@@ -137,10 +130,19 @@ func (p githubPresenter) Changes() <-chan gps.Change {
 	return out
 }
 
-func (p githubPresenter) Error() error { return p.err }
+// firstParagraph returns the first paragraph of text s.
+func firstParagraph(s string) string {
+	i := strings.Index(s, "\n\n")
+	if i == -1 {
+		return s
+	}
+	return s[:i]
+}
+
+func (p githubPresentation) Error() error { return p.err }
 
 // setFirstError sets error if it's the first one. It does nothing otherwise.
-func (p *githubPresenter) setFirstError(err error) {
+func (p *githubPresentation) setFirstError(err error) {
 	if p.err != nil {
 		return
 	}
