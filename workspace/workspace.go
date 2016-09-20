@@ -1,4 +1,5 @@
-package main
+// Package workspace contains a pipeline for processing a Go workspace.
+package workspace
 
 import (
 	"go/build"
@@ -30,15 +31,17 @@ type RepoPresentation struct {
 	Updated bool
 }
 
-// workspace is a workspace environment, meaning each repo has local and remote components.
-type workspace struct {
+// Pipeline for processing a Go workspace, where each repo has local and remote components.
+type Pipeline struct {
+	wd string // Working directory. Used to resolve relative import paths.
+
 	// presenters are presenters registered with RegisterPresenter.
 	presenters []gps.Presenter
 
 	importPaths         chan string
 	importPathRevisions chan importPathRevision
-	repositories        chan localRepo
-	subrepos            chan subrepo
+	repositories        chan LocalRepo
+	subrepos            chan Subrepo
 
 	// unique is the output of finding unique repositories from diverse possible inputs.
 	unique chan *gps.Repo
@@ -60,12 +63,21 @@ type observerRequest struct {
 	Response chan chan *RepoPresentation
 }
 
-func NewWorkspace() *workspace {
-	w := &workspace{
+// NewPipeline creates a Pipeline with working directory wd.
+// Working directory is used to resolve relative import paths.
+//
+// First, available presenters should be registered via RegisterPresenter.
+// Then Go packages can be added via various means. Call Done once done adding.
+// Processing begins as soon as Go packages are added to the pipeline.
+// Results can be accessed via RepoPresentations at any time, as often as needed.
+func NewPipeline(wd string) *Pipeline {
+	p := &Pipeline{
+		wd: wd,
+
 		importPaths:         make(chan string, 64),
 		importPathRevisions: make(chan importPathRevision, 64),
-		repositories:        make(chan localRepo, 64),
-		subrepos:            make(chan subrepo, 64),
+		repositories:        make(chan LocalRepo, 64),
+		subrepos:            make(chan Subrepo, 64),
 		unique:              make(chan *gps.Repo, 64),
 		processedFiltered:   make(chan *gps.Repo, 64),
 		presented:           make(chan *RepoPresentation, 64),
@@ -108,35 +120,35 @@ func NewWorkspace() *workspace {
 	//
 	// The goal of processing in stage 1 is to take in diverse possible inputs
 	// and convert them into a unique set of repositories for further processing by next stages.
-	// When finished, all unique repositories are sent to w.unique channel
+	// When finished, all unique repositories are sent to p.unique channel
 	// and the channel is closed.
 	{
 		var wg0 sync.WaitGroup
 		for range iter.N(8) {
 			wg0.Add(1)
-			go w.importPathWorker(&wg0)
+			go p.importPathWorker(&wg0)
 		}
 		var wg1 sync.WaitGroup
 		for range iter.N(8) {
 			wg1.Add(1)
-			go w.importPathRevisionWorker(&wg1)
+			go p.importPathRevisionWorker(&wg1)
 		}
 		var wg2 sync.WaitGroup
 		for range iter.N(8) {
 			wg2.Add(1)
-			go w.repositoriesWorker(&wg2)
+			go p.repositoriesWorker(&wg2)
 		}
 		var wg3 sync.WaitGroup
 		for range iter.N(8) {
 			wg3.Add(1)
-			go w.subreposWorker(&wg3)
+			go p.subreposWorker(&wg3)
 		}
 		go func() {
 			wg0.Wait()
 			wg1.Wait()
 			wg2.Wait()
 			wg3.Wait()
-			close(w.unique)
+			close(p.unique)
 		}()
 	}
 
@@ -145,17 +157,17 @@ func NewWorkspace() *workspace {
 	// We compute repository remote revision (and local if needed)
 	// in order to figure out if repositories should be presented,
 	// or filtered out (for example, because there are no updates available).
-	// When finished, all non-filtered-out repositories are sent to w.processedFiltered channel
+	// When finished, all non-filtered-out repositories are sent to p.processedFiltered channel
 	// and the channel is closed.
 	{
 		var wg sync.WaitGroup
 		for range iter.N(8) {
 			wg.Add(1)
-			go w.processFilterWorker(&wg)
+			go p.processFilterWorker(&wg)
 		}
 		go func() {
 			wg.Wait()
-			close(w.processedFiltered)
+			close(p.processedFiltered)
 		}()
 	}
 
@@ -165,33 +177,33 @@ func NewWorkspace() *workspace {
 	// that are not available from VCS (unless we fetch commits, but we choose not to that).
 	// Primarily, we get the commit messages for all the new commits that are available.
 	// When finished, all repositories complete with full presentation information
-	// are sent to w.presented channel and the channel is closed.
+	// are sent to p.presented channel and the channel is closed.
 	{
 		var wg sync.WaitGroup
 		for range iter.N(8) {
 			wg.Add(1)
-			go w.presentWorker(&wg)
+			go p.presentWorker(&wg)
 		}
 		go func() {
 			wg.Wait()
-			close(w.presented)
+			close(p.presented)
 		}()
 	}
 
-	go w.run()
+	go p.run()
 
-	return w
+	return p
 }
 
 // RegisterPresenter registers a presenter.
 // Presenters are consulted in the same order that they were registered.
-func (w *workspace) RegisterPresenter(p gps.Presenter) {
-	w.presenters = append(w.presenters, p)
+func (p *Pipeline) RegisterPresenter(pr gps.Presenter) {
+	p.presenters = append(p.presenters, pr)
 }
 
 // AddImportPath adds a package with specified import path for processing.
-func (w *workspace) AddImportPath(importPath string) {
-	w.importPaths <- importPath
+func (p *Pipeline) AddImportPath(importPath string) {
+	p.importPaths <- importPath
 }
 
 type importPathRevision struct {
@@ -200,43 +212,43 @@ type importPathRevision struct {
 }
 
 // AddRevision adds a package with specified import path and revision for processing.
-func (w *workspace) AddRevision(importPath string, revision string) {
-	w.importPathRevisions <- importPathRevision{
+func (p *Pipeline) AddRevision(importPath string, revision string) {
+	p.importPathRevisions <- importPathRevision{
 		importPath: importPath,
 		revision:   revision,
 	}
 }
 
-type localRepo struct {
+type LocalRepo struct {
 	Path string
 	Root string
 	VCS  *vcs.Cmd
 }
 
 // AddRepository adds the specified repository for processing.
-func (w *workspace) AddRepository(r localRepo) {
-	w.repositories <- r
+func (p *Pipeline) AddRepository(r LocalRepo) {
+	p.repositories <- r
 }
 
-// subrepo represents a "virtual" sub-repository inside a larger actual VCS repository.
-type subrepo struct {
+// Subrepo represents a "virtual" sub-repository inside a larger actual VCS repository.
+type Subrepo struct {
 	Root      string
 	RemoteVCS vcsstate.RemoteVCS // RemoteVCS allows getting the remote state of the VCS.
 	RemoteURL string             // RemoteURL is the remote URL, including scheme.
 	Revision  string
 }
 
-// AddSubrepo adds the specified subrepo for processing.
-func (w *workspace) AddSubrepo(s subrepo) {
-	w.subrepos <- s
+// AddSubrepo adds the specified Subrepo for processing.
+func (p *Pipeline) AddSubrepo(s Subrepo) {
+	p.subrepos <- s
 }
 
 // Done should be called after the workspace is finished being populated.
-func (w *workspace) Done() {
-	close(w.importPaths)
-	close(w.importPathRevisions)
-	close(w.repositories)
-	close(w.subrepos)
+func (p *Pipeline) Done() {
+	close(p.importPaths)
+	close(p.importPathRevisions)
+	close(p.repositories)
+	close(p.subrepos)
 }
 
 // RepoPresentations returns a channel of all repo presentations.
@@ -249,62 +261,62 @@ func (w *workspace) Done() {
 //
 // It's safe to call RepoPresentations at any time and concurrently
 // to get multiple such channels.
-func (w *workspace) RepoPresentations() <-chan *RepoPresentation {
+func (p *Pipeline) RepoPresentations() <-chan *RepoPresentation {
 	response := make(chan chan *RepoPresentation)
-	w.newObserver <- observerRequest{Response: response}
+	p.newObserver <- observerRequest{Response: response}
 	return <-response
 }
 
-func (w *workspace) run() {
+func (p *Pipeline) run() {
 Outer:
 	for {
 		select {
 		// New repoPresentation available.
-		case repoPresentation, ok := <-w.presented:
+		case repoPresentation, ok := <-p.presented:
 			// We're done streaming.
 			if !ok {
 				break Outer
 			}
 
 			// Append repoPresentation to current list.
-			w.GoPackageList.Lock()
-			w.GoPackageList.OrderedList = append(w.GoPackageList.OrderedList, repoPresentation)
-			w.GoPackageList.List[repoPresentation.Repo.Root] = repoPresentation
-			w.GoPackageList.Unlock()
+			p.GoPackageList.Lock()
+			p.GoPackageList.OrderedList = append(p.GoPackageList.OrderedList, repoPresentation)
+			p.GoPackageList.List[repoPresentation.Repo.Root] = repoPresentation
+			p.GoPackageList.Unlock()
 
 			// Send new repoPresentation to all existing observers.
-			for ch := range w.observers {
+			for ch := range p.observers {
 				ch <- repoPresentation
 			}
 		// New observer request.
-		case req := <-w.newObserver:
-			w.GoPackageList.Lock()
-			ch := make(chan *RepoPresentation, len(w.GoPackageList.OrderedList))
-			for _, repoPresentation := range w.GoPackageList.OrderedList {
+		case req := <-p.newObserver:
+			p.GoPackageList.Lock()
+			ch := make(chan *RepoPresentation, len(p.GoPackageList.OrderedList))
+			for _, repoPresentation := range p.GoPackageList.OrderedList {
 				ch <- repoPresentation
 			}
-			w.GoPackageList.Unlock()
+			p.GoPackageList.Unlock()
 
-			w.observers[ch] = struct{}{}
+			p.observers[ch] = struct{}{}
 
 			req.Response <- ch
 		}
 	}
 
 	// At this point, streaming has finished, so finish up existing observers.
-	for ch := range w.observers {
+	for ch := range p.observers {
 		close(ch)
 	}
-	w.observers = nil
+	p.observers = nil
 
 	// Respond to new observer requests directly.
-	for req := range w.newObserver {
-		w.GoPackageList.Lock()
-		ch := make(chan *RepoPresentation, len(w.GoPackageList.OrderedList))
-		for _, repoPresentation := range w.GoPackageList.OrderedList {
+	for req := range p.newObserver {
+		p.GoPackageList.Lock()
+		ch := make(chan *RepoPresentation, len(p.GoPackageList.OrderedList))
+		for _, repoPresentation := range p.GoPackageList.OrderedList {
 			ch <- repoPresentation
 		}
-		w.GoPackageList.Unlock()
+		p.GoPackageList.Unlock()
 
 		close(ch)
 
@@ -313,12 +325,12 @@ Outer:
 }
 
 // importPathWorker sends unique repositories to phase 2.
-func (w *workspace) importPathWorker(wg *sync.WaitGroup) {
+func (p *Pipeline) importPathWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
-	for importPath := range w.importPaths {
+	for importPath := range p.importPaths {
 		// Determine repo root.
 		// This is potentially somewhat slow.
-		bpkg, err := build.Import(importPath, wd, build.FindOnly|build.IgnoreVendor) // THINK: This (build.FindOnly) may find repos even when importPath has no actual package... Is that okay?
+		bpkg, err := build.Import(importPath, p.wd, build.FindOnly|build.IgnoreVendor) // THINK: This (build.FindOnly) may find repos even when importPath has no actual package... Is that okay?
 		if err != nil {
 			log.Println("build.Import:", err)
 			continue
@@ -339,8 +351,8 @@ func (w *workspace) importPathWorker(wg *sync.WaitGroup) {
 		}
 
 		var repo *gps.Repo
-		w.reposMu.Lock()
-		if _, ok := w.repos[root]; !ok {
+		p.reposMu.Lock()
+		if _, ok := p.repos[root]; !ok {
 			repo = &gps.Repo{
 				Root: root,
 
@@ -351,28 +363,28 @@ func (w *workspace) importPathWorker(wg *sync.WaitGroup) {
 
 				// TODO: Maybe keep track of import paths inside, etc.
 			}
-			w.repos[root] = repo
+			p.repos[root] = repo
 		} else {
 			// TODO: Maybe keep track of import paths inside, etc.
 		}
-		w.reposMu.Unlock()
+		p.reposMu.Unlock()
 
 		// If new repo, send off to phase 2 channel.
 		if repo != nil {
-			w.unique <- repo
+			p.unique <- repo
 		}
 	}
 }
 
 // importPathRevisionWorker sends unique repositories to phase 2.
-func (w *workspace) importPathRevisionWorker(wg *sync.WaitGroup) {
+func (p *Pipeline) importPathRevisionWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
-	for p := range w.importPathRevisions {
+	for ipr := range p.importPathRevisions {
 		// Determine repo root.
 		// This is potentially somewhat slow.
-		rr, err := vcs.RepoRootForImportPath(p.importPath, false)
+		rr, err := vcs.RepoRootForImportPath(ipr.importPath, false)
 		if err != nil {
-			log.Printf("failed to dynamically determine repo root for %v: %v\n", p.importPath, err)
+			log.Printf("failed to dynamically determine repo root for %v: %v\n", ipr.importPath, err)
 			continue
 		}
 		remoteVCS, err := vcsstate.NewRemoteVCS(rr.VCS)
@@ -382,8 +394,8 @@ func (w *workspace) importPathRevisionWorker(wg *sync.WaitGroup) {
 		}
 
 		var repo *gps.Repo
-		w.reposMu.Lock()
-		if _, ok := w.repos[rr.Root]; !ok {
+		p.reposMu.Lock()
+		if _, ok := p.repos[rr.Root]; !ok {
 			repo = &gps.Repo{
 				Root: rr.Root,
 
@@ -391,23 +403,23 @@ func (w *workspace) importPathRevisionWorker(wg *sync.WaitGroup) {
 				RemoteVCS: remoteVCS,
 				RemoteURL: rr.Repo,
 			}
-			repo.Local.Revision = p.revision
+			repo.Local.Revision = ipr.revision
 			repo.Remote.RepoURL = rr.Repo
-			w.repos[rr.Root] = repo
+			p.repos[rr.Root] = repo
 		}
-		w.reposMu.Unlock()
+		p.reposMu.Unlock()
 
 		// If new repo, send off to phase 2 channel.
 		if repo != nil {
-			w.unique <- repo
+			p.unique <- repo
 		}
 	}
 }
 
 // repositoriesWorker sends unique repositories to phase 2.
-func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
+func (p *Pipeline) repositoriesWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
-	for r := range w.repositories {
+	for r := range p.repositories {
 		vcsCmd, root := r.VCS, r.Root
 		vcs, err := vcsstate.NewVCS(vcsCmd)
 		if err != nil {
@@ -416,8 +428,8 @@ func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
 		}
 
 		var repo *gps.Repo
-		w.reposMu.Lock()
-		if _, ok := w.repos[root]; !ok {
+		p.reposMu.Lock()
+		if _, ok := p.repos[root]; !ok {
 			repo = &gps.Repo{
 				Root: root,
 
@@ -426,21 +438,21 @@ func (w *workspace) repositoriesWorker(wg *sync.WaitGroup) {
 				Path: r.Path,
 				Cmd:  vcsCmd,
 			}
-			w.repos[root] = repo
+			p.repos[root] = repo
 		}
-		w.reposMu.Unlock()
+		p.reposMu.Unlock()
 
 		// If new repo, send off to phase 2 channel.
 		if repo != nil {
-			w.unique <- repo
+			p.unique <- repo
 		}
 	}
 }
 
 // subreposWorker sends unique subrepos to phase 2.
-func (w *workspace) subreposWorker(wg *sync.WaitGroup) {
+func (p *Pipeline) subreposWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
-	for r := range w.subrepos {
+	for r := range p.subrepos {
 		// Determine repo root.
 		// This is potentially somewhat slow.
 		rr, err := vcs.RepoRootForImportPath(r.Root, false)
@@ -450,8 +462,8 @@ func (w *workspace) subreposWorker(wg *sync.WaitGroup) {
 		}
 
 		var repo *gps.Repo
-		w.reposMu.Lock()
-		if _, ok := w.repos[r.Root]; !ok {
+		p.reposMu.Lock()
+		if _, ok := p.repos[r.Root]; !ok {
 			repo = &gps.Repo{
 				Root: r.Root,
 
@@ -462,60 +474,60 @@ func (w *workspace) subreposWorker(wg *sync.WaitGroup) {
 			repo.Local.RemoteURL = r.RemoteURL // TODO: Consider having r.RemoteURL take precedence over rr.Repo. But need to make that play nicely with the updaters; see TODO at bottom of gps.Repo struct.
 			repo.Local.Revision = r.Revision
 			repo.Remote.RepoURL = rr.Repo
-			w.repos[r.Root] = repo
+			p.repos[r.Root] = repo
 		}
-		w.reposMu.Unlock()
+		p.reposMu.Unlock()
 
 		// If new repo, send off to phase 2 channel.
 		if repo != nil {
-			w.unique <- repo
+			p.unique <- repo
 		}
 	}
 }
 
 // processFilterWorker computes repository remote revision (and local if needed)
 // in order to figure out if repositories should be presented.
-func (w *workspace) processFilterWorker(wg *sync.WaitGroup) {
+func (p *Pipeline) processFilterWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
-	for p := range w.unique {
+	for r := range p.unique {
 		// Determine remote revision.
 		// This is slow because it requires a network operation.
 		switch {
-		case p.VCS != nil:
+		case r.VCS != nil:
 			var err error
-			p.Remote.Branch, p.Remote.Revision, err = p.VCS.RemoteBranchAndRevision(p.Path)
+			r.Remote.Branch, r.Remote.Revision, err = r.VCS.RemoteBranchAndRevision(r.Path)
 			if err != nil {
-				log.Printf("skipping %q because of remote error:\n%v\n", p.Root, err)
+				log.Printf("skipping %q because of remote error:\n%v\n", r.Root, err)
 				continue
 			}
 
-			if p.Local.Revision == "" {
-				if r, err := p.VCS.LocalRevision(p.Path, p.Remote.Branch); err == nil {
-					p.Local.Revision = r
+			if r.Local.Revision == "" {
+				if rev, err := r.VCS.LocalRevision(r.Path, r.Remote.Branch); err == nil {
+					r.Local.Revision = rev
 				}
 			}
-			if r, err := p.VCS.RemoteURL(p.Path); err == nil {
-				p.Local.RemoteURL = r
+			if ru, err := r.VCS.RemoteURL(r.Path); err == nil {
+				r.Local.RemoteURL = ru
 			}
-			if rr, err := vcs.RepoRootForImportPath(p.Root, false); err == nil {
-				p.Remote.RepoURL = rr.Repo
+			if rr, err := vcs.RepoRootForImportPath(r.Root, false); err == nil {
+				r.Remote.RepoURL = rr.Repo
 			}
-		case p.RemoteVCS != nil:
+		case r.RemoteVCS != nil:
 			var err error
-			p.Remote.Branch, p.Remote.Revision, err = p.RemoteVCS.RemoteBranchAndRevision(p.RemoteURL)
+			r.Remote.Branch, r.Remote.Revision, err = r.RemoteVCS.RemoteBranchAndRevision(r.RemoteURL)
 			if err != nil {
-				log.Printf("skipping %q because of remote error:\n%v\n", p.Root, err)
+				log.Printf("skipping %q because of remote error:\n%v\n", r.Root, err)
 				continue
 			}
 		default:
-			panic("internal error: precondition failed, expected one of p.VCS or p.RemoteVCS to not be nil")
+			panic("internal error: precondition failed, expected one of r.VCS or r.RemoteVCS to not be nil")
 		}
 
-		if !shouldPresentUpdate(p) {
+		if !shouldPresentUpdate(r) {
 			continue
 		}
 
-		w.processedFiltered <- p
+		p.processedFiltered <- r
 	}
 }
 
@@ -561,13 +573,13 @@ func shouldPresentUpdate(repo *gps.Repo) bool {
 }
 
 // presentWorker works with repos that should be displayed, creating a presentation for each.
-func (w *workspace) presentWorker(wg *sync.WaitGroup) {
+func (p *Pipeline) presentWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
-	for repo := range w.processedFiltered {
+	for repo := range p.processedFiltered {
 		// This part might take a while.
-		presentation := w.present(repo)
+		presentation := p.present(repo)
 
-		w.presented <- &RepoPresentation{
+		p.presented <- &RepoPresentation{
 			Repo:         repo,
 			Presentation: presentation,
 		}
@@ -577,8 +589,8 @@ func (w *workspace) presentWorker(wg *sync.WaitGroup) {
 // present takes a repository containing 1 or more Go packages, and returns a presentation for it.
 // It tries to find the best presenter for the given repository out of the registered ones,
 // but falls back to a generic presenter if there's nothing better.
-func (w *workspace) present(repo *gps.Repo) gps.Presentation {
-	for _, presenter := range w.presenters {
+func (p *Pipeline) present(repo *gps.Repo) gps.Presentation {
+	for _, presenter := range p.presenters {
 		if presentation := presenter(repo); presentation != nil {
 			return presentation
 		}

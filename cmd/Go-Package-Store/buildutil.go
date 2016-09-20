@@ -9,15 +9,16 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/shurcooL/Go-Package-Store/workspace"
 	"github.com/shurcooL/go/trim"
 	"github.com/shurcooL/vcsstate"
 	"golang.org/x/tools/go/vcs"
 )
 
 // forEachRepository calls found for each repository it finds in all GOPATH workspaces.
-func forEachRepository(found func(localRepo)) {
-	for _, workspace := range filepath.SplitList(build.Default.GOPATH) {
-		srcRoot := filepath.Join(workspace, "src")
+func forEachRepository(found func(workspace.LocalRepo)) {
+	for _, w := range filepath.SplitList(build.Default.GOPATH) {
+		srcRoot := filepath.Join(w, "src")
 		if _, err := os.Stat(srcRoot); os.IsNotExist(err) {
 			continue
 		}
@@ -39,14 +40,14 @@ func forEachRepository(found func(localRepo)) {
 				// Directory not under VCS.
 				return nil
 			}
-			found(localRepo{Path: path, Root: root, VCS: vcsCmd})
+			found(workspace.LocalRepo{Path: path, Root: root, VCS: vcsCmd})
 			return filepath.SkipDir // No need to descend inside repositories.
 		})
 	}
 }
 
 // forEachGitSubrepo calls found for each git subrepo inside vendorDir.
-func forEachGitSubrepo(vendorDir string, found func(subrepo)) error {
+func forEachGitSubrepo(vendorDir string, found func(workspace.Subrepo)) error {
 	remoteVCS, err := vcsstate.NewRemoteVCS(vcs.ByCmd("git"))
 	if err != nil {
 		return fmt.Errorf("git repos not supported by vcsstate: %v", err)
@@ -76,7 +77,7 @@ func forEachGitSubrepo(vendorDir string, found func(subrepo)) error {
 		if err != nil {
 			return err
 		}
-		found(subrepo{Root: root, RemoteVCS: remoteVCS, RemoteURL: remote, Revision: commit})
+		found(workspace.Subrepo{Root: root, RemoteVCS: remoteVCS, RemoteURL: remote, Revision: commit})
 		return filepath.SkipDir // No need to descend inside repositories.
 	})
 	return err

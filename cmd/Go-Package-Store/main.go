@@ -22,6 +22,7 @@ import (
 	"github.com/shurcooL/Go-Package-Store/presenter/github"
 	"github.com/shurcooL/Go-Package-Store/presenter/gitiles"
 	"github.com/shurcooL/Go-Package-Store/updater"
+	"github.com/shurcooL/Go-Package-Store/workspace"
 	"github.com/shurcooL/go/open"
 	"github.com/shurcooL/go/ospath"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
@@ -30,15 +31,15 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var c = struct {
-	pipeline *workspace
+var c struct {
+	pipeline *workspace.Pipeline
 
 	// updater is set based on the source of Go packages. If nil, it means
 	// we don't have support to update Go packages from the current source.
 	// It's used to update repos in the backend, and if set to nil, to disable
 	// the frontend UI for updating packages.
 	updater gps.Updater
-}{pipeline: NewWorkspace()}
+}
 
 type updateRequest struct {
 	root         string
@@ -245,6 +246,8 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	c.pipeline = workspace.NewPipeline(wd)
+
 	// If we can have access to a cache directory on this system, use it for
 	// caching HTTP requests of presenters.
 	cacheDir, err := ospath.CacheDir("github.com/shurcooL/Go-Package-Store")
@@ -298,7 +301,7 @@ func main() {
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
-			forEachRepository(func(r localRepo) {
+			forEachRepository(func(r workspace.LocalRepo) {
 				c.pipeline.AddRepository(r)
 			})
 			c.pipeline.Done()
@@ -353,7 +356,7 @@ func main() {
 		}
 		fmt.Println("Using Go packages vendored using git-subrepo in the specified vendor directory.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
-			err := forEachGitSubrepo(*gitSubrepoFlag, func(s subrepo) {
+			err := forEachGitSubrepo(*gitSubrepoFlag, func(s workspace.Subrepo) {
 				c.pipeline.AddSubrepo(s)
 			})
 			if err != nil {
