@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/shurcooL/Go-Package-Store"
+	"github.com/shurcooL/Go-Package-Store/workspace"
 )
 
 func init() {
@@ -25,12 +26,12 @@ func mockHandler(w http.ResponseWriter, req *http.Request) {
 
 	// Reset the pipeline and populate it with mock repo presentations,
 	// complete with artificial delays (to simulate processing time).
-	c.pipeline = NewWorkspace()
+	c.pipeline = workspace.NewPipeline(wd)
 	go func() {
 		for _, repoPresentation := range mockRepoPresentations {
 			repoPresentation := repoPresentation
 			time.Sleep(time.Second)
-			c.pipeline.presented <- &repoPresentation
+			c.pipeline.AddPresented(&repoPresentation)
 		}
 		time.Sleep(time.Second)
 		c.pipeline.Done()
@@ -44,7 +45,7 @@ func mockHandler(w http.ResponseWriter, req *http.Request) {
 	mainHandler(w, req)
 }
 
-var mockRepoPresentations = []RepoPresentation{
+var mockRepoPresentations = []workspace.RepoPresentation{
 	{
 		Repo: &gps.Repo{
 			Root: (string)("github.com/gopherjs/gopherjs"),

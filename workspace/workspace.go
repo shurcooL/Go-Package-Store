@@ -251,6 +251,12 @@ func (p *Pipeline) Done() {
 	close(p.subrepos)
 }
 
+// AddPresented adds a RepoPresentation the pipeline.
+// It enables mocks to directly add presented repos.
+func (p *Pipeline) AddPresented(r *RepoPresentation) {
+	p.presented <- r
+}
+
 // RepoPresentations returns a channel of all repo presentations.
 // Repo presentations that are ready will be sent immediately.
 // The remaining repo presentations will be sent onto the channel
