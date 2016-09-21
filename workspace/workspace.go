@@ -22,8 +22,8 @@ type GoPackageList struct {
 }
 
 type RepoPresentation struct {
-	Repo *gps.Repo
-	gps.Presentation
+	Repo         *gps.Repo
+	Presentation gps.Presentation
 
 	// TODO: Next up, use updateState with 3 states (notUpdated, updating, updated).
 	//       Do that to track the intermediate state when a package is in the process

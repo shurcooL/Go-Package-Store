@@ -4,16 +4,16 @@
 	{{/*if eq (len .Repo.GoPackages) 1*/}}
 	{{if false}}
 		<span title="{{.Repo.ImportPaths}}">
-			{{if .Home}}
-				<a href="{{.Home}}" target="_blank"><strong>{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</strong></a>
+			{{if .Presentation.Home}}
+				<a href="{{.Presentation.Home}}" target="_blank"><strong>{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</strong></a>
 			{{else}}
 				{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}
 			{{end}}
 		</span>
 	{{else}}
 		<span title="{{.Repo.ImportPathPattern}}">
-			{{if .Home}}
-				<a href="{{.Home}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
+			{{if .Presentation.Home}}
+				<a href="{{.Presentation.Home}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
 			{{else}}
 				{{.Repo.ImportPathPattern}}
 			{{end}}
@@ -30,10 +30,10 @@
 		</div>{{end}}
 	</div>
 	<div class="list-entry-body">
-		<img style="float: left; border-radius: 4px;" src="{{.Image}}" width="36" height="36">
+		<img style="float: left; border-radius: 4px;" src="{{.Presentation.Image}}" width="36" height="36">
 
 		<div>
-			{{with .Changes}}
+			{{with .Presentation.Changes}}
 				<ul class="changes-list">
 					{{range .}}<li>{{.Message}}<span class="highlight-on-hover"><a href="{{.URL}}" target="_blank"><span class="octicon octicon-git-commit gray" title="Commit"></span></a></span><span style="float: right; margin-right: 6px;">{{template "comments" .Comments}}</span></li>
 					{{end}}
@@ -45,7 +45,7 @@
 					{{with .Repo.Remote.Revision}}to {{template "commitID" .}}{{end}}
 				</div>
 			{{end}}
-			{{with .Error}}
+			{{with .Presentation.Error}}
 				<p class="presentation-error"><strong>Error:</strong> {{.}}</p>
 			{{end}}
 		</div>
