@@ -53,15 +53,8 @@ func NewPresenter(httpClient *http.Client) gps.Presenter {
 }
 
 func presentGitHubRepo(gh *github.Client, repo *gps.Repo, ghOwner, ghRepo string) *gps.Presentation {
-	var home template.URL
-	switch {
-	case strings.HasPrefix(repo.Root, "github.com/"):
-		home = template.URL("https://github.com/" + ghOwner + "/" + ghRepo)
-	default:
-		home = template.URL("http://" + repo.Root)
-	}
 	p := &gps.Presentation{
-		Home:  &home,
+		Home:  template.URL("https://" + repo.Root),
 		Image: "https://github.com/images/gravatars/gravatar-user-420.png", // Default fallback.
 	}
 

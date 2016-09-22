@@ -34,9 +34,8 @@ func presentGitilesRepo(client *http.Client, repo *gps.Repo) *gps.Presentation {
 		return &gps.Presentation{Error: err}
 	}
 
-	home := template.URL("https://" + repo.Root)
 	return &gps.Presentation{
-		Home:    &home,
+		Home:    template.URL("https://" + repo.Root),
 		Image:   "https://ssl.gstatic.com/codesite/ph/images/defaultlogo.png",
 		Changes: extractChanges(repo, log),
 	}

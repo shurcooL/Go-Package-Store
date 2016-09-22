@@ -594,7 +594,7 @@ func (p *Pipeline) presentWorker(wg *sync.WaitGroup) {
 
 // present takes a repository containing 1 or more Go packages, and returns a presentation for it.
 // It tries to find the best presenter for the given repository out of the registered ones,
-// but falls back to a generic presenter if there's nothing better.
+// but falls back to a generic presentation if there's nothing better.
 func (p *Pipeline) present(repo *gps.Repo) *gps.Presentation {
 	for _, presenter := range p.presenters {
 		if presentation := presenter(repo); presentation != nil {
@@ -602,9 +602,9 @@ func (p *Pipeline) present(repo *gps.Repo) *gps.Presentation {
 		}
 	}
 
-	home := template.URL("https://" + repo.Root)
+	// Generic presentation.
 	return &gps.Presentation{
-		Home:    &home,
+		Home:    template.URL("https://" + repo.Root),
 		Image:   "https://github.com/images/gravatars/gravatar-user-420.png",
 		Changes: nil,
 		Error:   nil,
