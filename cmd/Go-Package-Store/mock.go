@@ -50,10 +50,10 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 		Repo: &gps.Repo{
 			Root: (string)("github.com/gopherjs/gopherjs"),
 		},
-		Presentation: mockPresentation{
-			home:  (*template.URL)(newTemplateURL("https://github.com/gopherjs/gopherjs")),
-			image: (template.URL)("https://avatars.githubusercontent.com/u/6654647?v=3"),
-			changes: ([]gps.Change)([]gps.Change{
+		Presentation: &gps.Presentation{
+			Home:  (*template.URL)(newTemplateURL("https://github.com/gopherjs/gopherjs")),
+			Image: (template.URL)("https://avatars.githubusercontent.com/u/6654647?v=3"),
+			Changes: ([]gps.Change)([]gps.Change{
 				(gps.Change)(gps.Change{
 					Message: (string)("improved reflect support for blocking functions"),
 					URL:     (template.URL)("https://github.com/gopherjs/gopherjs/commit/87bf7e405aa3df6df0dcbb9385713f997408d7b9"),
@@ -86,10 +86,10 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 		Repo: &gps.Repo{
 			Root: (string)("golang.org/x/image"),
 		},
-		Presentation: mockPresentation{
-			home:  (*template.URL)(newTemplateURL("http://golang.org/x/image")),
-			image: (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
-			changes: ([]gps.Change)([]gps.Change{
+		Presentation: &gps.Presentation{
+			Home:  (*template.URL)(newTemplateURL("http://golang.org/x/image")),
+			Image: (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
+			Changes: ([]gps.Change)([]gps.Change{
 				(gps.Change)(gps.Change{
 					Message: (string)("draw: generate code paths for image.Gray sources."),
 					URL:     (template.URL)("https://github.com/golang/image/commit/f510ad81a1256ee96a2870647b74fa144a30c249"),
@@ -106,11 +106,11 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 		Repo: &gps.Repo{
 			Root: (string)("golang.org/x/foobar"),
 		},
-		Presentation: mockPresentation{
-			home:    (*template.URL)(newTemplateURL("http://golang.org/x/foobar")),
-			image:   (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
-			changes: ([]gps.Change)(nil),
-			error:   (error)(errors.New("something went wrong\n\nnew lines are kept -    spaces are too.")),
+		Presentation: &gps.Presentation{
+			Home:    (*template.URL)(newTemplateURL("http://golang.org/x/foobar")),
+			Image:   (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
+			Changes: ([]gps.Change)(nil),
+			Error:   (error)(errors.New("something went wrong\n\nnew lines are kept -    spaces are too.")),
 		},
 	},
 
@@ -120,10 +120,10 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 		Repo: &gps.Repo{
 			Root: (string)("github.com/influxdb/influxdb"),
 		},
-		Presentation: mockPresentation{
-			home:  (*template.URL)(newTemplateURL("https://github.com/influxdb/influxdb")),
-			image: (template.URL)("https://avatars.githubusercontent.com/u/5713248?v=3"),
-			changes: ([]gps.Change)([]gps.Change{
+		Presentation: &gps.Presentation{
+			Home:  (*template.URL)(newTemplateURL("https://github.com/influxdb/influxdb")),
+			Image: (template.URL)("https://avatars.githubusercontent.com/u/5713248?v=3"),
+			Changes: ([]gps.Change)([]gps.Change{
 				(gps.Change)(gps.Change{
 					Message: (string)("Add link to \"How to Report Bugs Effectively\""),
 					URL:     (template.URL)("https://github.com/influxdb/influxdb/commit/6f398c1daf88fe34faede69f4404a334202acae8"),
@@ -296,30 +296,5 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 		},
 	},
 }
-
-// mockPresentation implements gps.Presentation.
-type mockPresentation struct {
-	home    *template.URL
-	image   template.URL
-	changes []gps.Change
-	error   error
-}
-
-func (m mockPresentation) Home() *template.URL { return m.home }
-func (m mockPresentation) Image() template.URL { return m.image }
-func (m mockPresentation) Changes() <-chan gps.Change {
-	if m.changes == nil {
-		return nil
-	}
-	ch := make(chan gps.Change)
-	go func() {
-		for _, c := range m.changes {
-			ch <- c
-		}
-		close(ch)
-	}()
-	return ch
-}
-func (m mockPresentation) Error() error { return m.error }
 
 func newTemplateURL(v template.URL) *template.URL { return &v }

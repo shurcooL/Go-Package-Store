@@ -23,7 +23,7 @@ type GoPackageList struct {
 
 type RepoPresentation struct {
 	Repo         *gps.Repo
-	Presentation gps.Presentation
+	Presentation *gps.Presentation
 
 	// TODO: Next up, use updateState with 3 states (notUpdated, updating, updated).
 	//       Do that to track the intermediate state when a package is in the process
@@ -595,30 +595,18 @@ func (p *Pipeline) presentWorker(wg *sync.WaitGroup) {
 // present takes a repository containing 1 or more Go packages, and returns a presentation for it.
 // It tries to find the best presenter for the given repository out of the registered ones,
 // but falls back to a generic presenter if there's nothing better.
-func (p *Pipeline) present(repo *gps.Repo) gps.Presentation {
+func (p *Pipeline) present(repo *gps.Repo) *gps.Presentation {
 	for _, presenter := range p.presenters {
 		if presentation := presenter(repo); presentation != nil {
 			return presentation
 		}
 	}
-	return genericPresentation{repo: repo}
+
+	home := template.URL("https://" + repo.Root)
+	return &gps.Presentation{
+		Home:    &home,
+		Image:   "https://github.com/images/gravatars/gravatar-user-420.png",
+		Changes: nil,
+		Error:   nil,
+	}
 }
-
-// genericPresentation is a generic implementation of presentation,
-// used as fallback when there's no dedicated presenter available for the repo.
-type genericPresentation struct {
-	repo *gps.Repo
-}
-
-func (g genericPresentation) Home() *template.URL {
-	url := template.URL("https://" + g.repo.Root)
-	return &url
-}
-
-func (genericPresentation) Image() template.URL {
-	return "https://github.com/images/gravatars/gravatar-user-420.png"
-}
-
-func (genericPresentation) Changes() <-chan gps.Change { return nil }
-
-func (genericPresentation) Error() error { return nil }

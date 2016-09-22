@@ -19,7 +19,7 @@ func NewPresenter(httpClient *http.Client) gps.Presenter {
 	gh := github.NewClient(httpClient)
 	gh.UserAgent = "github.com/shurcooL/Go-Package-Store/presenter/github"
 
-	return func(repo *gps.Repo) gps.Presentation {
+	return func(repo *gps.Repo) *gps.Presentation {
 		switch {
 		// Import path begins with "github.com/".
 		case strings.HasPrefix(repo.Root, "github.com/"):
@@ -52,82 +52,55 @@ func NewPresenter(httpClient *http.Client) gps.Presenter {
 	}
 }
 
-type githubPresentation struct {
-	repo    *gps.Repo
-	ghOwner string
-	ghRepo  string
-
-	cc    *github.CommitsComparison
-	image template.URL
-	err   error
-}
-
-func presentGitHubRepo(gh *github.Client, repo *gps.Repo, ghOwner, ghRepo string) gps.Presentation {
-	p := &githubPresentation{
-		repo:    repo,
-		ghOwner: ghOwner,
-		ghRepo:  ghRepo,
-
-		image: "https://github.com/images/gravatars/gravatar-user-420.png", // Default fallback.
+func presentGitHubRepo(gh *github.Client, repo *gps.Repo, ghOwner, ghRepo string) *gps.Presentation {
+	var home template.URL
+	switch {
+	case strings.HasPrefix(repo.Root, "github.com/"):
+		home = template.URL("https://github.com/" + ghOwner + "/" + ghRepo)
+	default:
+		home = template.URL("http://" + repo.Root)
+	}
+	p := &gps.Presentation{
+		Home:  &home,
+		Image: "https://github.com/images/gravatars/gravatar-user-420.png", // Default fallback.
 	}
 
 	// This might take a while.
 	if cc, _, err := gh.Repositories.CompareCommits(ghOwner, ghRepo, repo.Local.Revision, repo.Remote.Revision); err == nil {
-		p.cc = cc
+		p.Changes = extractChanges(cc)
 	} else if rateLimitErr, ok := err.(*github.RateLimitError); ok {
-		p.setFirstError(rateLimitError{rateLimitErr})
+		setFirstError(p, rateLimitError{rateLimitErr})
 	} else {
-		p.setFirstError(fmt.Errorf("gh.Repositories.CompareCommits: %v", err))
+		setFirstError(p, fmt.Errorf("gh.Repositories.CompareCommits: %v", err))
 	}
 
 	// Use the repo owner avatar image.
 	if user, _, err := gh.Users.Get(ghOwner); err == nil && user.AvatarURL != nil {
-		p.image = template.URL(*user.AvatarURL)
+		p.Image = template.URL(*user.AvatarURL)
 	} else if rateLimitErr, ok := err.(*github.RateLimitError); ok {
-		p.setFirstError(rateLimitError{rateLimitErr})
+		setFirstError(p, rateLimitError{rateLimitErr})
 	} else {
-		p.setFirstError(fmt.Errorf("gh.Users.Get: %v", err))
+		setFirstError(p, fmt.Errorf("gh.Users.Get: %v", err))
 	}
 
 	return p
 }
 
-func (p githubPresentation) Home() *template.URL {
-	switch {
-	case strings.HasPrefix(p.repo.Root, "github.com/"):
-		url := template.URL("https://github.com/" + p.ghOwner + "/" + p.ghRepo)
-		return &url
-	default:
-		url := template.URL("http://" + p.repo.Root)
-		return &url
-	}
-}
-
-func (p githubPresentation) Image() template.URL {
-	return p.image
-}
-
-func (p githubPresentation) Changes() <-chan gps.Change {
-	if p.cc == nil {
-		return nil
-	}
-	out := make(chan gps.Change)
-	go func() {
-		for i := range p.cc.Commits {
-			c := p.cc.Commits[len(p.cc.Commits)-1-i] // Reverse order.
-			change := gps.Change{
-				Message: firstParagraph(*c.Commit.Message),
-				URL:     template.URL(*c.HTMLURL),
-			}
-			if commentCount := c.Commit.CommentCount; commentCount != nil && *commentCount > 0 {
-				change.Comments.Count = *commentCount
-				change.Comments.URL = template.URL(*c.HTMLURL + "#comments")
-			}
-			out <- change
+func extractChanges(cc *github.CommitsComparison) []gps.Change {
+	var cs []gps.Change
+	for i := range cc.Commits {
+		c := cc.Commits[len(cc.Commits)-1-i] // Reverse order.
+		change := gps.Change{
+			Message: firstParagraph(*c.Commit.Message),
+			URL:     template.URL(*c.HTMLURL),
 		}
-		close(out)
-	}()
-	return out
+		if commentCount := c.Commit.CommentCount; commentCount != nil && *commentCount > 0 {
+			change.Comments.Count = *commentCount
+			change.Comments.URL = template.URL(*c.HTMLURL + "#comments")
+		}
+		cs = append(cs, change)
+	}
+	return cs
 }
 
 // firstParagraph returns the first paragraph of text s.
@@ -139,16 +112,6 @@ func firstParagraph(s string) string {
 	return s[:i]
 }
 
-func (p githubPresentation) Error() error { return p.err }
-
-// setFirstError sets error if it's the first one. It does nothing otherwise.
-func (p *githubPresentation) setFirstError(err error) {
-	if p.err != nil {
-		return
-	}
-	p.err = err
-}
-
 // rateLimitError is an error presentation wrapper for consistent display of *github.RateLimitError.
 type rateLimitError struct {
 	err *github.RateLimitError
@@ -156,4 +119,12 @@ type rateLimitError struct {
 
 func (r rateLimitError) Error() string {
 	return fmt.Sprintf("GitHub API rate limit exceeded; it will be reset in %v (but you can set GO_PACKAGE_STORE_GITHUB_TOKEN env var for higher rate limit)", humanize.Time(r.err.Rate.Reset.Time))
+}
+
+// setFirstError sets error if it's the first one. It does nothing otherwise.
+func setFirstError(p *gps.Presentation, err error) {
+	if p.Error != nil {
+		return
+	}
+	p.Error = err
 }
