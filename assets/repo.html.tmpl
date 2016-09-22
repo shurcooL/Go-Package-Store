@@ -1,25 +1,12 @@
 <div class="list-entry go-package-update" id="{{.Repo.Root}}" style="position: relative;">
 	<div class="list-entry-header">
-	{{/* TODO: Make this simpler. */}}
-	{{/*if eq (len .Repo.GoPackages) 1*/}}
-	{{if false}}
-		<span title="{{.Repo.ImportPaths}}">
-			{{if .Presentation.Home}}
-				<a href="{{.Presentation.Home}}" target="_blank"><strong>{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}</strong></a>
-			{{else}}
-				{{(index .Repo.GoPackages 0).Bpkg.ImportPath}}
-			{{end}}
-		</span>
-	{{else}}
 		<span title="{{.Repo.ImportPathPattern}}">
 			{{if .Presentation.Home}}
 				<a href="{{.Presentation.Home}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
 			{{else}}
 				{{.Repo.ImportPathPattern}}
 			{{end}}
-			{{/*<span class="smaller">({{len .Repo.GoPackages}} packages)</span>*/}}
 		</span>
-	{{end}}
 
 		{{if (not .Updated)}}<div style="float: right;">
 			{{if updateSupported}}
