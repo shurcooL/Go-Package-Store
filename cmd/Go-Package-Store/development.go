@@ -13,6 +13,8 @@ import (
 	"github.com/shurcooL/Go-Package-Store/workspace"
 )
 
+const production = false
+
 func init() {
 	http.HandleFunc("/mock.html", mockHandler)
 }
@@ -51,7 +53,7 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 			Root: (string)("github.com/gopherjs/gopherjs"),
 		},
 		Presentation: &gps.Presentation{
-			Home:  (*template.URL)(newTemplateURL("https://github.com/gopherjs/gopherjs")),
+			Home:  (template.URL)("https://github.com/gopherjs/gopherjs"),
 			Image: (template.URL)("https://avatars.githubusercontent.com/u/6654647?v=3"),
 			Changes: ([]gps.Change)([]gps.Change{
 				(gps.Change)(gps.Change{
@@ -87,7 +89,7 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 			Root: (string)("golang.org/x/image"),
 		},
 		Presentation: &gps.Presentation{
-			Home:  (*template.URL)(newTemplateURL("http://golang.org/x/image")),
+			Home:  (template.URL)("http://golang.org/x/image"),
 			Image: (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
 			Changes: ([]gps.Change)([]gps.Change{
 				(gps.Change)(gps.Change{
@@ -107,7 +109,7 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 			Root: (string)("golang.org/x/foobar"),
 		},
 		Presentation: &gps.Presentation{
-			Home:    (*template.URL)(newTemplateURL("http://golang.org/x/foobar")),
+			Home:    (template.URL)("http://golang.org/x/foobar"),
 			Image:   (template.URL)("https://avatars.githubusercontent.com/u/4314092?v=3"),
 			Changes: ([]gps.Change)(nil),
 			Error:   (error)(errors.New("something went wrong\n\nnew lines are kept -    spaces are too.")),
@@ -121,7 +123,7 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 			Root: (string)("github.com/influxdb/influxdb"),
 		},
 		Presentation: &gps.Presentation{
-			Home:  (*template.URL)(newTemplateURL("https://github.com/influxdb/influxdb")),
+			Home:  (template.URL)("https://github.com/influxdb/influxdb"),
 			Image: (template.URL)("https://avatars.githubusercontent.com/u/5713248?v=3"),
 			Changes: ([]gps.Change)([]gps.Change{
 				(gps.Change)(gps.Change{
@@ -296,5 +298,3 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 		},
 	},
 }
-
-func newTemplateURL(v template.URL) *template.URL { return &v }

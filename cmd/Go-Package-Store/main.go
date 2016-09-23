@@ -19,6 +19,7 @@ import (
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
 	"github.com/shurcooL/Go-Package-Store"
+	"github.com/shurcooL/Go-Package-Store/assets"
 	"github.com/shurcooL/Go-Package-Store/presenter/github"
 	"github.com/shurcooL/Go-Package-Store/presenter/gitiles"
 	"github.com/shurcooL/Go-Package-Store/updater"
@@ -200,7 +201,7 @@ func loadTemplates() error {
 		"updateSupported": func() bool { return c.updater != nil },
 		"commitID":        func(commitID string) string { return commitID[:8] },
 	})
-	t, err = vfstemplate.ParseGlob(assets, t, "/assets/*.tmpl")
+	t, err = vfstemplate.ParseGlob(assets.Assets, t, "/assets/*.tmpl")
 	return err
 }
 
@@ -374,7 +375,7 @@ func main() {
 
 	http.HandleFunc("/index.html", mainHandler)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
-	fileServer := httpgzip.FileServer(assets, httpgzip.FileServerOptions{ServeError: httpgzip.Detailed})
+	fileServer := httpgzip.FileServer(assets.Assets, httpgzip.FileServerOptions{ServeError: httpgzip.Detailed})
 	http.Handle("/assets/", fileServer)
 	http.Handle("/assets/octicons/", http.StripPrefix("/assets", fileServer))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
