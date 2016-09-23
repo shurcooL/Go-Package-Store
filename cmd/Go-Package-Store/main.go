@@ -18,7 +18,6 @@ import (
 
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
-	"github.com/shurcooL/Go-Package-Store"
 	"github.com/shurcooL/Go-Package-Store/assets"
 	"github.com/shurcooL/Go-Package-Store/presenter/github"
 	"github.com/shurcooL/Go-Package-Store/presenter/gitiles"
@@ -32,83 +31,11 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var c struct {
+var c = struct {
 	pipeline *workspace.Pipeline
 
-	// updater is set based on the source of Go packages. If nil, it means
-	// we don't have support to update Go packages from the current source.
-	// It's used to update repos in the backend, and if set to nil, to disable
-	// the frontend UI for updating packages.
-	updater gps.Updater
-}
-
-type updateRequest struct {
-	root         string
-	responseChan chan error
-}
-
-var updateRequestChan = make(chan updateRequest)
-
-// updateWorker is a sequential updater of Go packages. It does not update them in parallel
-// to avoid race conditions or other problems.
-func updateWorker() {
-	for updateRequest := range updateRequestChan {
-		c.pipeline.GoPackageList.Lock()
-		repoPresentation, ok := c.pipeline.GoPackageList.List[updateRequest.root]
-		c.pipeline.GoPackageList.Unlock()
-		if !ok {
-			updateRequest.responseChan <- fmt.Errorf("root %q not found", updateRequest.root)
-			continue
-		}
-		if repoPresentation.Updated {
-			updateRequest.responseChan <- fmt.Errorf("root %q already updated", updateRequest.root)
-			continue
-		}
-
-		err := c.updater.Update(repoPresentation.Repo)
-		if err == nil {
-			// Mark repo as updated.
-			c.pipeline.GoPackageList.Lock()
-			// Move it down the OrderedList towards all other updated.
-			{
-				var i, j int
-				for ; c.pipeline.GoPackageList.OrderedList[i].Repo.Root != updateRequest.root; i++ { // i is the current package about to be updated.
-				}
-				for j = len(c.pipeline.GoPackageList.OrderedList) - 1; c.pipeline.GoPackageList.OrderedList[j].Updated; j-- { // j is the last not-updated package.
-				}
-				c.pipeline.GoPackageList.OrderedList[i], c.pipeline.GoPackageList.OrderedList[j] =
-					c.pipeline.GoPackageList.OrderedList[j], c.pipeline.GoPackageList.OrderedList[i]
-			}
-			c.pipeline.GoPackageList.List[updateRequest.root].Updated = true
-			c.pipeline.GoPackageList.Unlock()
-		}
-		updateRequest.responseChan <- err
-		fmt.Println("\nDone.")
-	}
-}
-
-// updateHandler is the handler for update requests.
-func updateHandler(w http.ResponseWriter, req *http.Request) {
-	if req.Method != "POST" {
-		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method should be POST.", http.StatusMethodNotAllowed)
-		return
-	}
-
-	root := req.PostFormValue("repo_root")
-
-	updateRequest := updateRequest{
-		root:         root,
-		responseChan: make(chan error),
-	}
-	updateRequestChan <- updateRequest
-
-	err := <-updateRequest.responseChan
-	// TODO: Display error in frontend.
-	if err != nil {
-		log.Println(err)
-	}
-}
+	updateHandler *updateHandler
+}{updateHandler: &updateHandler{updateRequests: make(chan updateRequest)}}
 
 // mainHandler is the handler for the index page.
 func mainHandler(w http.ResponseWriter, req *http.Request) {
@@ -184,7 +111,7 @@ func openedHandler(ws *websocket.Conn) {
 	io.Copy(ioutil.Discard, ws)
 
 	//fmt.Println("Exiting, since the client tab was closed (detected closed WebSocket connection).")
-	//close(updateRequestChan)
+	//close(updateRequests)
 }
 
 // ---
@@ -198,7 +125,7 @@ func loadTemplates() error {
 			b, err := json.Marshal(v)
 			return string(b), err
 		},
-		"updateSupported": func() bool { return c.updater != nil },
+		"updateSupported": func() bool { return c.updateHandler.updater != nil },
 		"commitID":        func(commitID string) string { return commitID[:8] },
 	})
 	t, err = vfstemplate.ParseGlob(assets.Assets, t, "/assets/*.tmpl")
@@ -298,7 +225,7 @@ func main() {
 	case !production:
 		fmt.Println("Using no real packages (hit /mock.html endpoint for mocks).")
 		c.pipeline.Done()
-		c.updater = updater.Mock{}
+		c.updateHandler.updater = updater.Mock{}
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
@@ -307,7 +234,7 @@ func main() {
 			})
 			c.pipeline.Done()
 		}()
-		c.updater = updater.Gopath{}
+		c.updateHandler.updater = updater.Gopath{}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
@@ -318,7 +245,7 @@ func main() {
 			}
 			c.pipeline.Done()
 		}()
-		c.updater = updater.Gopath{}
+		c.updateHandler.updater = updater.Gopath{}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)
@@ -331,7 +258,7 @@ func main() {
 			}
 			c.pipeline.Done()
 		}()
-		c.updater = nil
+		c.updateHandler.updater = nil
 	case *govendorFlag != "":
 		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)
 		v, err := readGovendor(*govendorFlag)
@@ -347,7 +274,7 @@ func main() {
 		// TODO: Consider setting a better directory for govendor command than current working directory.
 		//       Perhaps the parent directory of vendor.json file?
 		if gu, err := updater.NewGovendor(""); err == nil {
-			c.updater = gu
+			c.updateHandler.updater = gu
 		} else {
 			log.Println("govendor updater is not available:", err)
 		}
@@ -365,7 +292,7 @@ func main() {
 			}
 			c.pipeline.Done()
 		}()
-		c.updater = nil // An updater for this can easily be added by anyone who uses this style of vendoring.
+		c.updateHandler.updater = nil // An updater for this can easily be added by anyone who uses this style of vendoring.
 	}
 
 	err = loadTemplates()
@@ -379,9 +306,9 @@ func main() {
 	http.Handle("/assets/", fileServer)
 	http.Handle("/assets/octicons/", http.StripPrefix("/assets", fileServer))
 	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
-	if c.updater != nil {
-		http.HandleFunc("/-/update", updateHandler)
-		go updateWorker()
+	if c.updateHandler.updater != nil {
+		http.Handle("/-/update", c.updateHandler)
+		go c.updateHandler.Worker()
 	}
 
 	// Start listening first.
