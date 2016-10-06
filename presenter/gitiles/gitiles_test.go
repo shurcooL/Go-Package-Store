@@ -14,7 +14,7 @@ func TestFetchLog(t *testing.T) {
 	}
 	// logFile will be closed by defer resp.Body.Close().
 	client := &http.Client{
-		Transport: mockTripper(func(*http.Request) (*http.Response, error) {
+		Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       logFile,
@@ -41,6 +41,6 @@ func TestFetchLog(t *testing.T) {
 	}
 }
 
-type mockTripper func(*http.Request) (*http.Response, error)
+type roundTripperFunc func(req *http.Request) (*http.Response, error)
 
-func (t mockTripper) RoundTrip(req *http.Request) (*http.Response, error) { return t(req) }
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
