@@ -174,6 +174,8 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	log.SetFlags(0)
+
 	c.pipeline = workspace.NewPipeline(wd)
 
 	// If we can have access to a cache directory on this system, use it for

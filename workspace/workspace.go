@@ -2,6 +2,7 @@
 package workspace
 
 import (
+	"fmt"
 	"go/build"
 	"html/template"
 	"log"
@@ -503,7 +504,7 @@ func (p *Pipeline) processFilterWorker(wg *sync.WaitGroup) {
 			var err error
 			r.Remote.Branch, r.Remote.Revision, err = r.VCS.RemoteBranchAndRevision(r.Path)
 			if err != nil {
-				log.Printf("skipping %q because of remote error:\n%v\n", r.Root, err)
+				log.Printf("skipping %q because of remote error:\n\t%v\n", r.Root, err)
 				continue
 			}
 
@@ -522,14 +523,17 @@ func (p *Pipeline) processFilterWorker(wg *sync.WaitGroup) {
 			var err error
 			r.Remote.Branch, r.Remote.Revision, err = r.RemoteVCS.RemoteBranchAndRevision(r.RemoteURL)
 			if err != nil {
-				log.Printf("skipping %q because of remote error:\n%v\n", r.Root, err)
+				log.Printf("skipping %q because of remote error:\n\t%v\n", r.Root, err)
 				continue
 			}
 		default:
 			panic("internal error: precondition failed, expected one of r.VCS or r.RemoteVCS to not be nil")
 		}
 
-		if !shouldPresentUpdate(r) {
+		if ok, reason := shouldPresentUpdate(r); !ok {
+			if reason != "" {
+				log.Printf("skipping %q because:\n\t%v\n", r.Root, reason)
+			}
 			continue
 		}
 
@@ -537,33 +541,61 @@ func (p *Pipeline) processFilterWorker(wg *sync.WaitGroup) {
 	}
 }
 
-// shouldPresentUpdate determines if the given goPackage should be presented as an available update.
+// shouldPresentUpdate reports if the given goPackage should be presented as an available update.
 // It checks that the Go package is on default branch, does not have a dirty working tree, and does not have the remote revision.
-func shouldPresentUpdate(repo *gps.Repo) bool {
-	if repo.Remote.RepoURL == "" || repo.Local.Revision == "" || repo.Remote.Revision == "" {
-		return false
+// It returns a non-empty reason for why an update should be skipped, or empty string if it's not interesting (e.g., repository is up to date).
+func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
+	// Do some sanity checks.
+	if repo.Remote.RepoURL == "" {
+		return false, "repository URL (as determined dynamically from the import path) is empty"
+	}
+	if repo.Local.Revision == "" {
+		return false, "local revision is empty"
+	}
+	if repo.Remote.Revision == "" {
+		return false, "remote revision is empty"
 	}
 
-	// Do some sanity checks before presenting updates.
+	if repo.Local.Revision == repo.Remote.Revision {
+		// Already up to date. No reason provided because it's not worth mentioning.
+		return false, ""
+	}
+
+	// Check repository state before presenting updates.
 	switch {
 	case repo.VCS != nil:
 		// Local branch should match remote branch.
-		if localBranch, err := repo.VCS.Branch(repo.Path); err != nil || localBranch != repo.Remote.Branch {
-			return false
+		localBranch, err := repo.VCS.Branch(repo.Path)
+		if err != nil {
+			return false, "error determining local branch:\n" + err.Error()
 		}
+		if localBranch != repo.Remote.Branch {
+			return false, fmt.Sprintf("local branch %q doesn't match remote branch %q", localBranch, repo.Remote.Branch)
+		}
+
 		// There shouldn't be a dirty working tree.
-		if status, err := repo.VCS.Status(repo.Path); err != nil || status != "" {
-			return false
+		treeStatus, err := repo.VCS.Status(repo.Path)
+		if err != nil {
+			return false, "error determining if working tree is dirty:\n" + err.Error()
 		}
+		if treeStatus != "" {
+			return false, "working tree is dirty:\n" + treeStatus
+		}
+
 		// Local remote URL should match Repo URL derived from import path.
 		if !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
-			return false
+			return false, fmt.Sprintf("remote URL (%s) doesn't match repo URL inferred from import path (%s)", repo.Local.RemoteURL, repo.Remote.RepoURL)
 		}
+
 		// The local commit should be contained by remote. Otherwise, it means the local
 		// repository commit is actually ahead of remote, and there's nothing to update (instead, the
 		// user probably needs to push their local work to remote).
-		if c, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch); err != nil || c {
-			return false
+		localContainsRemoteRevision, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch)
+		if err != nil {
+			return false, "error determining if local commit is contained by remote:\n" + err.Error()
+		}
+		if localContainsRemoteRevision {
+			return false, fmt.Sprintf("local revision %q is ahead of remote revision %q", repo.Local.Revision, repo.Remote.Revision)
 		}
 
 	case repo.RemoteVCS != nil:
@@ -571,11 +603,12 @@ func shouldPresentUpdate(repo *gps.Repo) bool {
 		//
 		// Local remote URL, if set, should match Repo URL derived from import path.
 		if repo.Local.RemoteURL != "" && !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
-			return false
+			return false, fmt.Sprintf("remote URL (%s) doesn't match repo URL inferred from import path (%s)", repo.Local.RemoteURL, repo.Remote.RepoURL)
 		}
 	}
 
-	return repo.Local.Revision != repo.Remote.Revision
+	// If we got this far, there's an update available and everything looks normal. Present it.
+	return true, ""
 }
 
 // presentWorker works with repos that should be displayed, creating a presentation for each.
