@@ -584,7 +584,9 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 
 		// Local remote URL should match Repo URL derived from import path.
 		if !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
-			return false, fmt.Sprintf("remote URL (%s) doesn't match repo URL inferred from import path (%s)", repo.Local.RemoteURL, repo.Remote.RepoURL)
+			return false, "remote URL doesn't match repo URL inferred from import path:" +
+				fmt.Sprintf("\n		  (actual) %s", repo.Local.RemoteURL) +
+				fmt.Sprintf("\n		(expected) %s", status.FormatRepoURL(repo.Local.RemoteURL, repo.Remote.RepoURL))
 		}
 
 		// The local commit should be contained by remote. Otherwise, it means the local
@@ -603,7 +605,9 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 		//
 		// Local remote URL, if set, should match Repo URL derived from import path.
 		if repo.Local.RemoteURL != "" && !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
-			return false, fmt.Sprintf("remote URL (%s) doesn't match repo URL inferred from import path (%s)", repo.Local.RemoteURL, repo.Remote.RepoURL)
+			return false, "remote URL doesn't match repo URL inferred from import path:" +
+				fmt.Sprintf("\n		  (actual) %s", repo.Local.RemoteURL) +
+				fmt.Sprintf("\n		(expected) %s", status.FormatRepoURL(repo.Local.RemoteURL, repo.Remote.RepoURL))
 		}
 	}
 
