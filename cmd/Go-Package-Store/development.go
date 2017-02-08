@@ -11,6 +11,7 @@ import (
 
 	"github.com/shurcooL/Go-Package-Store"
 	"github.com/shurcooL/Go-Package-Store/workspace"
+	"github.com/shurcooL/httperror"
 )
 
 const production = false
@@ -21,8 +22,7 @@ func init() {
 
 func mockHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "method should be GET", http.StatusMethodNotAllowed)
+		httperror.HandleMethod(w, httperror.Method{Allowed: []string{"GET"}})
 		return
 	}
 

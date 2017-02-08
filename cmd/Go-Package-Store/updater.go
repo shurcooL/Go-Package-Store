@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/shurcooL/Go-Package-Store"
+	"github.com/shurcooL/httperror"
 )
 
 // updateHandler is a handler for update requests.
@@ -27,8 +28,7 @@ type updateRequest struct {
 // ServeHTTP handles update requests.
 func (u *updateHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
-		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method should be POST.", http.StatusMethodNotAllowed)
+		httperror.HandleMethod(w, httperror.Method{Allowed: []string{"POST"}})
 		return
 	}
 

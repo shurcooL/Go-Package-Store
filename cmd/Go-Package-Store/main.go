@@ -25,6 +25,7 @@ import (
 	"github.com/shurcooL/Go-Package-Store/workspace"
 	"github.com/shurcooL/go/open"
 	"github.com/shurcooL/go/ospath"
+	"github.com/shurcooL/httperror"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"github.com/shurcooL/httpgzip"
 	"golang.org/x/net/websocket"
@@ -40,8 +41,7 @@ var c = struct {
 // mainHandler is the handler for the index page.
 func mainHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "method should be GET", http.StatusMethodNotAllowed)
+		httperror.HandleMethod(w, httperror.Method{Allowed: []string{"GET"}})
 		return
 	}
 
