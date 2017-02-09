@@ -3,7 +3,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
@@ -69,21 +68,43 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	var updatesAvailable = 0
 	var wroteInstalledUpdatesHeader bool
 
-	for repoPresentation := range c.pipeline.RepoPresentations() {
-		if !repoPresentation.Updated {
+	for rp := range c.pipeline.RepoPresentations() {
+		if !rp.Updated {
 			updatesAvailable++
 		}
 
-		if repoPresentation.Updated && !wroteInstalledUpdatesHeader {
+		if rp.Updated && !wroteInstalledUpdatesHeader {
 			// Make 'Installed Updates' header visible now.
 			io.WriteString(w, `<div id="installed_updates"><h3 style="text-align: center;">Installed Updates</h3></div>`)
 
 			wroteInstalledUpdatesHeader = true
 		}
 
-		err := t.ExecuteTemplate(w, "repo.html.tmpl", repoPresentation)
+		var cs []gpscomponent.Change
+		for _, c := range rp.Presentation.Changes {
+			cs = append(cs, gpscomponent.Change{
+				Message:  c.Message,
+				URL:      string(c.URL),
+				Comments: gpscomponent.Comments{Count: c.Comments.Count, URL: string(c.Comments.URL)},
+			})
+		}
+		repoPresentation := gpscomponent.RepoPresentation{
+			RepoRoot:          rp.Repo.Root,
+			ImportPathPattern: rp.Repo.ImportPathPattern(),
+			LocalRevision:     rp.Repo.Local.Revision,
+			RemoteRevision:    rp.Repo.Remote.Revision,
+			HomeURL:           string(rp.Presentation.Home),
+			ImageURL:          string(rp.Presentation.Image),
+			Changes:           cs,
+			Updated:           rp.Updated,
+			UpdateSupported:   c.updateHandler.updater != nil,
+		}
+		if err := rp.Presentation.Error; err != nil {
+			repoPresentation.Error = err.Error()
+		}
+		err := htmlg.RenderComponents(w, repoPresentation)
 		if err != nil {
-			log.Println("ExecuteTemplate repo.html.tmpl:", err)
+			log.Println("RenderComponents repoPresentation:", err)
 			return
 		}
 
@@ -122,31 +143,7 @@ var t *template.Template
 
 func loadTemplates() error {
 	var err error
-	t = template.New("").Funcs(template.FuncMap{
-		"json": func(v interface{}) (string, error) {
-			b, err := json.Marshal(v)
-			return string(b), err
-		},
-		"updateSupported": func() bool { return c.updateHandler.updater != nil },
-
-		"render": func(c htmlg.Component) template.HTML { return htmlg.Render(c.Render()...) },
-		"presentationchanges": func(rp workspace.RepoPresentation) htmlg.Component {
-			var cs []gpscomponent.Change
-			for _, c := range rp.Presentation.Changes {
-				cs = append(cs, gpscomponent.Change{
-					Message:  c.Message,
-					URL:      string(c.URL),
-					Comments: gpscomponent.Comments{Count: c.Comments.Count, URL: string(c.Comments.URL)},
-				})
-			}
-			return gpscomponent.PresentationChanges{
-				Changes:        cs,
-				LocalRevision:  rp.Repo.Local.Revision,  // TODO: Nil check?
-				RemoteRevision: rp.Repo.Remote.Revision, // TODO: Nil check?
-			}
-		},
-	})
-	t, err = vfstemplate.ParseGlob(assets.Assets, t, "/assets/*.tmpl")
+	t, err = vfstemplate.ParseGlob(assets.Assets, nil, "/assets/*.tmpl")
 	return err
 }
 

@@ -3,12 +3,185 @@ package component
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/shurcooL/htmlg"
 	"github.com/shurcooL/octiconssvg"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
+
+// TODO: Dedup with workspace.RepoPresentation. Maybe.
+type RepoPresentation struct {
+	RepoRoot          string
+	ImportPathPattern string
+	LocalRevision     string
+	RemoteRevision    string
+	HomeURL           string
+	ImageURL          string
+	Changes           []Change
+	Error             string
+
+	Updated bool
+
+	// TODO: Find a place for this.
+	UpdateSupported bool
+}
+
+func (p RepoPresentation) Render() []*html.Node {
+	// TODO: Make this much nicer.
+	/*
+		<div class="list-entry go-package-update" id="{{.Repo.Root}}" style="position: relative;">
+			<div class="list-entry-header">
+				{{.importPathPattern()}}
+
+				{{if (not .Updated)}}{{.updateButton()}}{{end}}
+			</div>
+			<div class="list-entry-body">
+				<img style="float: left; border-radius: 4px;" src="{{.Presentation.Image}}" width="36" height="36">
+
+				<div>
+					{{presentationChangesAndError()}}
+				</div>
+				<div style="clear: both;"></div>
+			</div>
+		</div>
+	*/
+	innerDiv1 := htmlg.DivClass("list-entry-header",
+		&html.Node{
+			Type: html.ElementNode, Data: atom.Span.String(),
+			Attr: []html.Attribute{
+				{Key: atom.Title.String(), Val: p.ImportPathPattern},
+			},
+			FirstChild: p.importPathPattern(),
+		},
+	)
+	if !p.Updated {
+		innerDiv1.AppendChild(&html.Node{
+			Type: html.ElementNode, Data: atom.Div.String(),
+			Attr: []html.Attribute{
+				{Key: atom.Style.String(), Val: "float: right;"},
+			},
+			FirstChild: p.updateButton(),
+		})
+	}
+	innerDiv2 := htmlg.DivClass("list-entry-body",
+		&html.Node{
+			Type: html.ElementNode, Data: atom.Img.String(),
+			Attr: []html.Attribute{
+				{Key: atom.Style.String(), Val: "float: left; border-radius: 4px;"},
+				{Key: atom.Src.String(), Val: p.ImageURL},
+				{Key: atom.Width.String(), Val: "36"},
+				{Key: atom.Height.String(), Val: "36"},
+			},
+		},
+		htmlg.Div(
+			p.presentationChangesAndError()...,
+		),
+		&html.Node{
+			Type: html.ElementNode, Data: atom.Div.String(),
+			Attr: []html.Attribute{{Key: atom.Style.String(), Val: "clear: both;"}},
+		},
+	)
+	div := &html.Node{
+		Type: html.ElementNode, Data: atom.Div.String(),
+		Attr: []html.Attribute{
+			{Key: atom.Class.String(), Val: "list-entry go-package-update"},
+			{Key: atom.Id.String(), Val: p.RepoRoot},
+			{Key: atom.Style.String(), Val: "position: relative;"},
+		},
+	}
+	div.AppendChild(innerDiv1)
+	div.AppendChild(innerDiv2)
+	return []*html.Node{div}
+}
+
+func (p RepoPresentation) presentationChangesAndError() []*html.Node {
+	/*
+		{{render (presentationchanges .)}}
+		{{with .Presentation.Error}}
+			<p class="presentation-error"><strong>Error:</strong> {{.}}</p>
+		{{end}}
+	*/
+	var ns []*html.Node
+	ns = append(ns, PresentationChanges{
+		Changes:        p.Changes,
+		LocalRevision:  p.LocalRevision,
+		RemoteRevision: p.RemoteRevision,
+	}.Render()...)
+	if p.Error != "" {
+		n := &html.Node{
+			Type: html.ElementNode, Data: atom.P.String(),
+			Attr: []html.Attribute{{Key: atom.Class.String(), Val: "presentation-error"}},
+		}
+		n.AppendChild(htmlg.Strong("Error:"))
+		n.AppendChild(htmlg.Text(" "))
+		n.AppendChild(htmlg.Text(p.Error))
+		ns = append(ns, n)
+	}
+	return ns
+}
+
+// TODO: Turn this into a maybeLink, etc.
+func (p RepoPresentation) importPathPattern() *html.Node {
+	/*
+		<span title="{{.Repo.ImportPathPattern}}">
+			{{if .Presentation.Home}}
+				<a href="{{.Presentation.Home}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
+			{{else}}
+				<strong>{{.Repo.ImportPathPattern}}</strong>
+			{{end}}
+		</span>
+	*/
+	var importPathPattern *html.Node
+	if p.HomeURL != "" {
+		importPathPattern = &html.Node{
+			Type: html.ElementNode, Data: atom.A.String(),
+			Attr: []html.Attribute{
+				{Key: atom.Href.String(), Val: p.HomeURL},
+				// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
+				{Key: atom.Target.String(), Val: "_blank"},
+			},
+			FirstChild: htmlg.Strong(p.ImportPathPattern),
+		}
+	} else {
+		importPathPattern = htmlg.Strong(p.ImportPathPattern)
+	}
+	return importPathPattern
+}
+
+func (p RepoPresentation) updateButton() *html.Node {
+	/*
+		<div style="float: right;">
+			{{if updateSupported}}
+				<a href="/-/update" onclick="UpdateRepository(event, '{{.Repo.Root | json}}');" class="update-button" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
+			{{else}}
+				<span style="color: gray; cursor: default;" title="Updating repos is not currently supported for this source of repos.">Update</span>
+			{{end}}
+		</div>
+	*/
+	if p.UpdateSupported {
+		return &html.Node{
+			Type: html.ElementNode, Data: atom.A.String(),
+			Attr: []html.Attribute{
+				{Key: atom.Href.String(), Val: "/-/update"},
+				{Key: atom.Onclick.String(), Val: fmt.Sprintf("UpdateRepository(event, %q);", strconv.Quote(p.RepoRoot))},
+				{Key: atom.Class.String(), Val: "update-button"},
+				{Key: atom.Title.String(), Val: fmt.Sprintf("go get -u -d %s", p.ImportPathPattern)},
+			},
+			FirstChild: htmlg.Text("Update"),
+		}
+	} else {
+		return &html.Node{
+			Type: html.ElementNode, Data: atom.Span.String(),
+			Attr: []html.Attribute{
+				{Key: atom.Style.String(), Val: "color: gray; cursor: default;"},
+				{Key: atom.Title.String(), Val: "Updating repos is not currently supported for this source of repos."},
+			},
+			FirstChild: htmlg.Text("Update"),
+		}
+	}
+}
 
 type PresentationChanges struct {
 	Changes        []Change
