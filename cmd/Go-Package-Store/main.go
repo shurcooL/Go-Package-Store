@@ -19,12 +19,14 @@ import (
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
 	"github.com/shurcooL/Go-Package-Store/assets"
+	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
 	"github.com/shurcooL/Go-Package-Store/presenter/github"
 	"github.com/shurcooL/Go-Package-Store/presenter/gitiles"
 	"github.com/shurcooL/Go-Package-Store/updater"
 	"github.com/shurcooL/Go-Package-Store/workspace"
 	"github.com/shurcooL/go/open"
 	"github.com/shurcooL/go/ospath"
+	"github.com/shurcooL/htmlg"
 	"github.com/shurcooL/httperror"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"github.com/shurcooL/httpgzip"
@@ -126,7 +128,9 @@ func loadTemplates() error {
 			return string(b), err
 		},
 		"updateSupported": func() bool { return c.updateHandler.updater != nil },
-		"commitID":        func(commitID string) string { return commitID[:8] },
+		"commitID":        func(commitID string) htmlg.Component { return gpscomponent.CommitID{ID: commitID} },
+
+		"render": func(c htmlg.Component) template.HTML { return htmlg.Render(c.Render()...) },
 	})
 	t, err = vfstemplate.ParseGlob(assets.Assets, t, "/assets/*.tmpl")
 	return err

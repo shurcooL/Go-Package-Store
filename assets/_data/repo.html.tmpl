@@ -28,8 +28,8 @@
 			{{else}}
 				<div class="changes-list">
 					unknown changes
-					{{with .Repo.Local.Revision}}from {{template "commitID" .}}{{end}}
-					{{with .Repo.Remote.Revision}}to {{template "commitID" .}}{{end}}
+					{{with .Repo.Local.Revision}}from {{render (commitID .)}}{{end}}
+					{{with .Repo.Remote.Revision}}to {{render (commitID .)}}{{end}}
 				</div>
 			{{end}}
 			{{with .Presentation.Error}}
@@ -45,5 +45,3 @@
 		<a href="{{.URL}}" target="_blank"><span class="octicon octicon-comment gray" title="{{.Count}} comments"> {{.Count}}</span></a>
 	{{end}}
 {{end}}
-
-{{define "commitID"}}<abbr title="{{.}}"><code class="commitID">{{commitID .}}</code></abbr>{{end}}

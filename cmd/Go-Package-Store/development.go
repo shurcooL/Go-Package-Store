@@ -106,6 +106,25 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 
 	{
 		Repo: &gps.Repo{
+			Root: (string)("unknown.com/package"),
+			Local: struct {
+				RemoteURL string
+				Revision  string
+			}{Revision: "abcdef0123456789000000000000000000000000"},
+			Remote: struct {
+				RepoURL  string
+				Branch   string
+				Revision string
+			}{Revision: "d34db33f01010101010101010101010101010101"},
+		},
+		Presentation: &gps.Presentation{
+			Home:  (template.URL)("https://unknown.com/package"),
+			Image: (template.URL)("https://github.com/images/gravatars/gravatar-user-420.png"),
+		},
+	},
+
+	{
+		Repo: &gps.Repo{
 			Root: (string)("golang.org/x/foobar"),
 		},
 		Presentation: &gps.Presentation{
