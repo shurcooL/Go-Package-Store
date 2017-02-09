@@ -10,6 +10,51 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
+type PresentationChanges struct {
+	Changes        []Change
+	LocalRevision  string // Only needed if len(Changes) == 0.
+	RemoteRevision string // Only needed if len(Changes) == 0.
+}
+
+func (p PresentationChanges) Render() []*html.Node {
+	// TODO: Make this much nicer.
+	/*
+		{{with .Presentation.Changes}}
+			<ul class="changes-list">
+				{{range .}}{{render (change .)}}{{end}}
+			</ul>
+		{{else}}
+			<div class="changes-list">
+				unknown changes
+				{{with .Repo.Local.Revision}}from {{render (commitID .)}}{{end}}
+				{{with .Repo.Remote.Revision}}to {{render (commitID .)}}{{end}}
+			</div>
+		{{end}}
+	*/
+	switch len(p.Changes) {
+	default:
+		var ns []*html.Node
+		for _, c := range p.Changes {
+			ns = append(ns, c.Render()...)
+		}
+		ul := htmlg.ULClass("changes-list", ns...)
+		return []*html.Node{ul}
+	case 0:
+		var ns []*html.Node
+		ns = append(ns, htmlg.Text("unknown changes"))
+		if p.LocalRevision != "" {
+			ns = append(ns, htmlg.Text(" from "))
+			ns = append(ns, CommitID{ID: p.LocalRevision}.Render()...)
+		}
+		if p.RemoteRevision != "" {
+			ns = append(ns, htmlg.Text(" to "))
+			ns = append(ns, CommitID{ID: p.RemoteRevision}.Render()...)
+		}
+		div := htmlg.DivClass("changes-list", ns...)
+		return []*html.Node{div}
+	}
+}
+
 // Change is a component for a single commit message.
 type Change struct {
 	Message  string   // Commit message of this change.
@@ -61,6 +106,7 @@ func (c Change) Render() []*html.Node {
 }
 
 // Comments is a component for displaying a change discussion.
+// TODO: Consider inlining this into Change component, we'll see.
 type Comments struct {
 	Count int
 	URL   string

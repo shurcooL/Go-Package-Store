@@ -20,17 +20,7 @@
 		<img style="float: left; border-radius: 4px;" src="{{.Presentation.Image}}" width="36" height="36">
 
 		<div>
-			{{with .Presentation.Changes}}
-				<ul class="changes-list">
-					{{range .}}{{render (change .)}}{{end}}
-				</ul>
-			{{else}}
-				<div class="changes-list">
-					unknown changes
-					{{with .Repo.Local.Revision}}from {{render (commitID .)}}{{end}}
-					{{with .Repo.Remote.Revision}}to {{render (commitID .)}}{{end}}
-				</div>
-			{{end}}
+			{{render (presentationchanges .)}}
 			{{with .Presentation.Error}}
 				<p class="presentation-error"><strong>Error:</strong> {{.}}</p>
 			{{end}}

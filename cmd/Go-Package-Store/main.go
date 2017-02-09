@@ -18,7 +18,6 @@ import (
 
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
-	"github.com/shurcooL/Go-Package-Store"
 	"github.com/shurcooL/Go-Package-Store/assets"
 	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
 	"github.com/shurcooL/Go-Package-Store/presenter/github"
@@ -131,15 +130,21 @@ func loadTemplates() error {
 		"updateSupported": func() bool { return c.updateHandler.updater != nil },
 
 		"render": func(c htmlg.Component) template.HTML { return htmlg.Render(c.Render()...) },
-		"change": func(c gps.Change) htmlg.Component {
-			return gpscomponent.Change{
-				Message:  c.Message,
-				URL:      string(c.URL),
-				Comments: gpscomponent.Comments{Count: c.Comments.Count, URL: string(c.Comments.URL)},
+		"presentationchanges": func(rp workspace.RepoPresentation) htmlg.Component {
+			var cs []gpscomponent.Change
+			for _, c := range rp.Presentation.Changes {
+				cs = append(cs, gpscomponent.Change{
+					Message:  c.Message,
+					URL:      string(c.URL),
+					Comments: gpscomponent.Comments{Count: c.Comments.Count, URL: string(c.Comments.URL)},
+				})
+			}
+			return gpscomponent.PresentationChanges{
+				Changes:        cs,
+				LocalRevision:  rp.Repo.Local.Revision,  // TODO: Nil check?
+				RemoteRevision: rp.Repo.Remote.Revision, // TODO: Nil check?
 			}
 		},
-		"comments": func(c gps.Comments) htmlg.Component { return gpscomponent.Comments{Count: c.Count, URL: string(c.URL)} },
-		"commitID": func(commitID string) htmlg.Component { return gpscomponent.CommitID{ID: commitID} },
 	})
 	t, err = vfstemplate.ParseGlob(assets.Assets, t, "/assets/*.tmpl")
 	return err
