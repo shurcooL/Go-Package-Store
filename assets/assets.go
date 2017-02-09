@@ -9,13 +9,11 @@ import (
 
 	"github.com/shurcooL/go/gopherjs_http"
 	"github.com/shurcooL/httpfs/union"
-	"github.com/shurcooL/octicons"
 )
 
 // Assets contains assets for Go Package Store.
 var Assets = union.New(map[string]http.FileSystem{
-	"/assets":   gopherjs_http.NewFS(http.Dir(importPathToDir("github.com/shurcooL/Go-Package-Store/assets/_data"))),
-	"/octicons": octicons.Assets,
+	"/assets": gopherjs_http.NewFS(http.Dir(importPathToDir("github.com/shurcooL/Go-Package-Store/assets/_data"))),
 })
 
 func importPathToDir(importPath string) string {
