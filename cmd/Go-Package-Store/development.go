@@ -4,7 +4,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"html/template"
 	"net/http"
 	"time"
@@ -38,11 +37,6 @@ func mockHandler(w http.ResponseWriter, req *http.Request) {
 		time.Sleep(time.Second)
 		c.pipeline.Done()
 	}()
-
-	if err := loadTemplates(); err != nil {
-		fmt.Fprintln(w, "loadTemplates:", err)
-		return
-	}
 
 	mainHandler(w, req)
 }

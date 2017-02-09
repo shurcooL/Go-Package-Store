@@ -27,7 +27,6 @@ import (
 	"github.com/shurcooL/go/ospath"
 	"github.com/shurcooL/htmlg"
 	"github.com/shurcooL/httperror"
-	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"github.com/shurcooL/httpgzip"
 	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
@@ -38,6 +37,46 @@ var c = struct {
 
 	updateHandler *updateHandler
 }{updateHandler: &updateHandler{updateRequests: make(chan updateRequest)}}
+
+var headHTML = template.Must(template.New("").Parse(`<html>
+	<head>
+		<title>Go Package Store</title>
+		<link href="/assets/style.css" rel="stylesheet" type="text/css" />
+		<script src="/assets/script/script.js" type="text/javascript"></script>
+		{{if .Production}}<script type="text/javascript">
+		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		  })(window,document,'script','http://www.google-analytics.com/analytics.js','ga');
+
+		  ga('create', 'UA-56541369-2', 'auto');
+		  ga('send', 'pageview');
+
+		</script>{{end}}
+	</head>
+	<body>
+		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%);">
+			<span style="background-color: hsl(209, 51%, 88%); padding: 15px; display: inline-block;">Updates</span>
+		</div>
+
+		{{if .Production}}<script type="text/javascript">
+			var sock = new WebSocket("ws://{{.HTTPAddr}}/opened");
+			sock.onopen = function () {
+				sock.onclose = function() { alert('Go Package Store server disconnected.'); };
+			};
+		</script>{{end}}
+
+		<div class="center-max-width">
+			<div class="content">
+				<div id="checking_updates"><h2 style="text-align: center;">Checking for updates...</h2></div>
+				<div id="no_updates" style="display: none;"><h2 style="text-align: center;">No Updates Available</h2></div>`))
+
+var tailHTML = template.Must(template.New("").Parse(`
+				<script type="text/javascript">document.getElementById("checking_updates").style.display = "none";</script>
+			</div>
+		</div>
+	</body>
+</html>`))
 
 // mainHandler is the handler for the index page.
 func mainHandler(w http.ResponseWriter, req *http.Request) {
@@ -56,9 +95,9 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		Production: production,
 		HTTPAddr:   *httpFlag,
 	}
-	err := t.ExecuteTemplate(w, "head.html.tmpl", data)
+	err := headHTML.Execute(w, data)
 	if err != nil {
-		log.Println("ExecuteTemplate head.html.tmpl:", err)
+		log.Println("Execute headHTML:", err)
 		return
 	}
 
@@ -121,9 +160,9 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, `<script>document.getElementById("no_updates").style.display = "";</script>`)
 	}
 
-	err = t.ExecuteTemplate(w, "tail.html.tmpl", nil)
+	err = tailHTML.Execute(w, nil)
 	if err != nil {
-		log.Println("ExecuteTemplate tail.html.tmpl:", err)
+		log.Println("Execute tailHTML:", err)
 		return
 	}
 }
@@ -137,16 +176,6 @@ func openedHandler(ws *websocket.Conn) {
 	//close(updateRequests)
 }
 
-// ---
-
-var t *template.Template
-
-func loadTemplates() error {
-	var err error
-	t, err = vfstemplate.ParseGlob(assets.Assets, nil, "/assets/*.tmpl")
-	return err
-}
-
 var (
 	httpFlag       = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
 	stdinFlag      = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
@@ -154,15 +183,6 @@ var (
 	govendorFlag   = flag.String("govendor", "", "Read the list of Go packages from the specified vendor.json file.")
 	gitSubrepoFlag = flag.String("git-subrepo", "", "Look for Go packages vendored using git-subrepo in the specified vendor directory.")
 )
-
-var wd = func() string {
-	// Get current directory.
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatalln("failed to get current directory:", err)
-	}
-	return wd
-}()
 
 func usage() {
 	fmt.Fprint(os.Stderr, "Usage: Go-Package-Store [flags]\n")
@@ -312,11 +332,6 @@ func main() {
 		c.updateHandler.updater = nil // An updater for this can easily be added by anyone who uses this style of vendoring.
 	}
 
-	err = loadTemplates()
-	if err != nil {
-		log.Fatalln("loadTemplates:", err)
-	}
-
 	http.HandleFunc("/index.html", mainHandler)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	fileServer := httpgzip.FileServer(assets.Assets, httpgzip.FileServerOptions{ServeError: httpgzip.Detailed})
@@ -346,3 +361,12 @@ func main() {
 		log.Fatalln(err)
 	}
 }
+
+// wd is current working directory at process start.
+var wd = func() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalln("os.Getwd:", err)
+	}
+	return wd
+}()
