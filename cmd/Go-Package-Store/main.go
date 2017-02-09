@@ -130,7 +130,14 @@ func loadTemplates() error {
 		},
 		"updateSupported": func() bool { return c.updateHandler.updater != nil },
 
-		"render":   func(c htmlg.Component) template.HTML { return htmlg.Render(c.Render()...) },
+		"render": func(c htmlg.Component) template.HTML { return htmlg.Render(c.Render()...) },
+		"change": func(c gps.Change) htmlg.Component {
+			return gpscomponent.Change{
+				Message:  c.Message,
+				URL:      string(c.URL),
+				Comments: gpscomponent.Comments{Count: c.Comments.Count, URL: string(c.Comments.URL)},
+			}
+		},
 		"comments": func(c gps.Comments) htmlg.Component { return gpscomponent.Comments{Count: c.Count, URL: string(c.URL)} },
 		"commitID": func(commitID string) htmlg.Component { return gpscomponent.CommitID{ID: commitID} },
 	})

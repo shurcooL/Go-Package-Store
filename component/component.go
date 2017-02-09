@@ -10,6 +10,56 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
+// Change is a component for a single commit message.
+type Change struct {
+	Message  string   // Commit message of this change.
+	URL      string   // URL of this change.
+	Comments Comments // Comments on this change.
+}
+
+func (c Change) Render() []*html.Node {
+	// TODO: Make this much nicer.
+	/*
+		<li>
+			{{.Message}}
+			<span class="highlight-on-hover">
+				<a href="{{.URL}}" target="_blank" style="color: gray;" title="Commit">
+					<octiconssvg.GitCommit() />
+				</a>
+			</span>
+			<span style="float: right; margin-right: 6px;">
+				{{render (comments .Comments)}}
+			</span>
+		</li>
+	*/
+	span1 := htmlg.SpanClass("highlight-on-hover",
+		&html.Node{
+			Type: html.ElementNode, Data: atom.A.String(),
+			Attr: []html.Attribute{
+				{Key: atom.Href.String(), Val: c.URL},
+				// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
+				{Key: atom.Target.String(), Val: "_blank"},
+				{Key: atom.Style.String(), Val: "color: gray;"},
+				{Key: atom.Title.String(), Val: "Commit"},
+			},
+			FirstChild: octiconssvg.GitCommit(),
+		},
+	)
+	span2 := &html.Node{
+		Type: html.ElementNode, Data: atom.Span.String(),
+		Attr: []html.Attribute{
+			{Key: atom.Style.String(), Val: "float: right; margin-right: 6px;"},
+		},
+	}
+	appendChildren(span2, c.Comments.Render()...)
+	li := htmlg.LI(
+		htmlg.Text(c.Message),
+		span1,
+		span2,
+	)
+	return []*html.Node{li}
+}
+
 // Comments is a component for displaying a change discussion.
 type Comments struct {
 	Count int
@@ -73,3 +123,10 @@ func (c CommitID) Render() []*html.Node {
 }
 
 func (c CommitID) commitID() string { return c.ID[:8] }
+
+// appendChildren adds nodes cs as children of n.
+func appendChildren(n *html.Node, cs ...*html.Node) {
+	for _, c := range cs {
+		n.AppendChild(c)
+	}
+}

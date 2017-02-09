@@ -22,8 +22,7 @@
 		<div>
 			{{with .Presentation.Changes}}
 				<ul class="changes-list">
-					{{range .}}<li>{{.Message}}<span class="highlight-on-hover"><a href="{{.URL}}" target="_blank"><span class="octicon octicon-git-commit gray" title="Commit"></span></a></span><span style="float: right; margin-right: 6px;">{{render (comments .Comments)}}</span></li>
-					{{end}}
+					{{range .}}{{render (change .)}}{{end}}
 				</ul>
 			{{else}}
 				<div class="changes-list">
