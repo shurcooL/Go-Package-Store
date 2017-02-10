@@ -3,7 +3,6 @@ package github
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 	"strings"
 
@@ -54,8 +53,8 @@ func NewPresenter(httpClient *http.Client) gps.Presenter {
 
 func presentGitHubRepo(gh *github.Client, repo *gps.Repo, ghOwner, ghRepo string) *gps.Presentation {
 	p := &gps.Presentation{
-		Home:  template.URL("https://" + repo.Root),
-		Image: "https://github.com/images/gravatars/gravatar-user-420.png", // Default fallback.
+		HomeURL:  "https://" + repo.Root,
+		ImageURL: "https://github.com/images/gravatars/gravatar-user-420.png", // Default fallback.
 	}
 
 	// This might take a while.
@@ -69,7 +68,7 @@ func presentGitHubRepo(gh *github.Client, repo *gps.Repo, ghOwner, ghRepo string
 
 	// Use the repo owner avatar image.
 	if user, _, err := gh.Users.Get(ghOwner); err == nil && user.AvatarURL != nil {
-		p.Image = template.URL(*user.AvatarURL)
+		p.ImageURL = *user.AvatarURL
 	} else if rateLimitErr, ok := err.(*github.RateLimitError); ok {
 		setFirstError(p, rateLimitError{rateLimitErr})
 	} else {
@@ -85,11 +84,11 @@ func extractChanges(cc *github.CommitsComparison) []gps.Change {
 		c := cc.Commits[len(cc.Commits)-1-i] // Reverse order.
 		change := gps.Change{
 			Message: firstParagraph(*c.Commit.Message),
-			URL:     template.URL(*c.HTMLURL),
+			URL:     *c.HTMLURL,
 		}
 		if commentCount := c.Commit.CommentCount; commentCount != nil && *commentCount > 0 {
 			change.Comments.Count = *commentCount
-			change.Comments.URL = template.URL(*c.HTMLURL + "#comments")
+			change.Comments.URL = *c.HTMLURL + "#comments"
 		}
 		cs = append(cs, change)
 	}

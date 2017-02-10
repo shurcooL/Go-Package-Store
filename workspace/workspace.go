@@ -4,7 +4,6 @@ package workspace
 import (
 	"fmt"
 	"go/build"
-	"html/template"
 	"log"
 	"sync"
 
@@ -643,9 +642,9 @@ func (p *Pipeline) present(repo *gps.Repo) *gps.Presentation {
 
 	// Generic presentation.
 	return &gps.Presentation{
-		Home:    template.URL("https://" + repo.Root),
-		Image:   "https://github.com/images/gravatars/gravatar-user-420.png",
-		Changes: nil,
-		Error:   nil,
+		HomeURL:  "https://" + repo.Root,
+		ImageURL: "https://github.com/images/gravatars/gravatar-user-420.png",
+		Changes:  nil,
+		Error:    nil,
 	}
 }

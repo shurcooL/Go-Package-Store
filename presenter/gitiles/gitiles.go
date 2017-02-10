@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"net/http"
 	"strings"
@@ -35,9 +34,9 @@ func presentGitilesRepo(client *http.Client, repo *gps.Repo) *gps.Presentation {
 	}
 
 	return &gps.Presentation{
-		Home:    template.URL("https://" + repo.Root),
-		Image:   "https://ssl.gstatic.com/codesite/ph/images/defaultlogo.png",
-		Changes: extractChanges(repo, log),
+		HomeURL:  "https://" + repo.Root,
+		ImageURL: "https://ssl.gstatic.com/codesite/ph/images/defaultlogo.png",
+		Changes:  extractChanges(repo, log),
 	}
 }
 
@@ -102,7 +101,7 @@ func extractChanges(repo *gps.Repo, l log) []gps.Change {
 		}
 		cs = append(cs, gps.Change{
 			Message: firstParagraph(commit.Message),
-			URL:     template.URL(repo.Remote.RepoURL + "/+/" + commit.Commit + "%5e%21"),
+			URL:     repo.Remote.RepoURL + "/+/" + commit.Commit + "%5e%21",
 		})
 	}
 	return cs

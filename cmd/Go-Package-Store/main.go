@@ -123,8 +123,8 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 		for _, c := range rp.Presentation.Changes {
 			cs = append(cs, gpscomponent.Change{
 				Message:  c.Message,
-				URL:      string(c.URL),
-				Comments: gpscomponent.Comments{Count: c.Comments.Count, URL: string(c.Comments.URL)},
+				URL:      c.URL,
+				Comments: gpscomponent.Comments{Count: c.Comments.Count, URL: c.Comments.URL},
 			})
 		}
 		repoPresentation := gpscomponent.RepoPresentation{
@@ -132,8 +132,8 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 			ImportPathPattern: rp.Repo.ImportPathPattern(),
 			LocalRevision:     rp.Repo.Local.Revision,
 			RemoteRevision:    rp.Repo.Remote.Revision,
-			HomeURL:           string(rp.Presentation.Home),
-			ImageURL:          string(rp.Presentation.Image),
+			HomeURL:           rp.Presentation.HomeURL,
+			ImageURL:          rp.Presentation.ImageURL,
 			Changes:           cs,
 			Updated:           rp.Updated,
 			UpdateSupported:   c.updateHandler.updater != nil,
