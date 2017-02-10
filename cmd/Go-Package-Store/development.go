@@ -46,8 +46,8 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 			Root: (string)("github.com/gopherjs/gopherjs"),
 		},
 		Presentation: &gps.Presentation{
-			Home:  (string)("https://github.com/gopherjs/gopherjs"),
-			Image: (string)("https://avatars.githubusercontent.com/u/6654647?v=3"),
+			HomeURL:  (string)("https://github.com/gopherjs/gopherjs"),
+			ImageURL: (string)("https://avatars.githubusercontent.com/u/6654647?v=3"),
 			Changes: ([]gps.Change)([]gps.Change{
 				(gps.Change)(gps.Change{
 					Message: (string)("improved reflect support for blocking functions"),
@@ -82,8 +82,8 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 			Root: (string)("golang.org/x/image"),
 		},
 		Presentation: &gps.Presentation{
-			Home:  (string)("http://golang.org/x/image"),
-			Image: (string)("https://avatars.githubusercontent.com/u/4314092?v=3"),
+			HomeURL:  (string)("http://golang.org/x/image"),
+			ImageURL: (string)("https://avatars.githubusercontent.com/u/4314092?v=3"),
 			Changes: ([]gps.Change)([]gps.Change{
 				(gps.Change)(gps.Change{
 					Message: (string)("draw: generate code paths for image.Gray sources."),
@@ -111,8 +111,8 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 			}{Revision: "d34db33f01010101010101010101010101010101"},
 		},
 		Presentation: &gps.Presentation{
-			Home:  (string)("https://unknown.com/package"),
-			Image: (string)("https://github.com/images/gravatars/gravatar-user-420.png"),
+			HomeURL:  (string)("https://unknown.com/package"),
+			ImageURL: (string)("https://github.com/images/gravatars/gravatar-user-420.png"),
 		},
 	},
 
@@ -121,10 +121,10 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 			Root: (string)("golang.org/x/foobar"),
 		},
 		Presentation: &gps.Presentation{
-			Home:    (string)("http://golang.org/x/foobar"),
-			Image:   (string)("https://avatars.githubusercontent.com/u/4314092?v=3"),
-			Changes: ([]gps.Change)(nil),
-			Error:   (error)(errors.New("something went wrong\n\nnew lines are kept -    spaces are too.")),
+			HomeURL:  (string)("http://golang.org/x/foobar"),
+			ImageURL: (string)("https://avatars.githubusercontent.com/u/4314092?v=3"),
+			Changes:  ([]gps.Change)(nil),
+			Error:    (error)(errors.New("something went wrong\n\nnew lines are kept -    spaces are too.")),
 		},
 	},
 
@@ -135,8 +135,8 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 			Root: (string)("github.com/influxdb/influxdb"),
 		},
 		Presentation: &gps.Presentation{
-			Home:  (string)("https://github.com/influxdb/influxdb"),
-			Image: (string)("https://avatars.githubusercontent.com/u/5713248?v=3"),
+			HomeURL:  (string)("https://github.com/influxdb/influxdb"),
+			ImageURL: (string)("https://avatars.githubusercontent.com/u/5713248?v=3"),
 			Changes: ([]gps.Change)([]gps.Change{
 				(gps.Change)(gps.Change{
 					Message: (string)("Add link to \"How to Report Bugs Effectively\""),
