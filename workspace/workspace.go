@@ -518,6 +518,8 @@ func (p *Pipeline) processFilterWorker(wg *sync.WaitGroup) {
 			}
 			if rr, err := vcs.RepoRootForImportPath(r.Root, false); err == nil {
 				r.Remote.RepoURL = rr.Repo
+			} else {
+				log.Printf("failed to dynamically determine repo root for %v: %v\n", r.Root, err)
 			}
 		case r.RemoteVCS != nil:
 			var err error
