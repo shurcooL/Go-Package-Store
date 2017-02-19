@@ -3,6 +3,7 @@ package gitiles
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,19 +17,19 @@ import (
 // httpClient is the HTTP client to be used by the presenter for accessing the Gitiles API.
 // If httpClient is nil, then http.DefaultClient is used.
 func NewPresenter(httpClient *http.Client) gps.Presenter {
-	return func(repo *gps.Repo) *gps.Presentation {
+	return func(ctx context.Context, repo *gps.Repo) *gps.Presentation {
 		switch {
 		case strings.HasPrefix(repo.Remote.RepoURL, "https://code.googlesource.com/"):
-			return presentGitilesRepo(httpClient, repo)
+			return presentGitilesRepo(ctx, httpClient, repo)
 		default:
 			return nil
 		}
 	}
 }
 
-func presentGitilesRepo(client *http.Client, repo *gps.Repo) *gps.Presentation {
+func presentGitilesRepo(ctx context.Context, client *http.Client, repo *gps.Repo) *gps.Presentation {
 	// This might take a while.
-	log, err := fetchLog(client, repo.Remote.RepoURL+"/+log?format=JSON")
+	log, err := fetchLog(ctx, client, repo.Remote.RepoURL+"/+log?format=JSON")
 	if err != nil {
 		return &gps.Presentation{Error: err}
 	}
@@ -41,13 +42,13 @@ func presentGitilesRepo(client *http.Client, repo *gps.Repo) *gps.Presentation {
 }
 
 // fetchLog fetches a Gitiles log at a given url, using client.
-func fetchLog(client *http.Client, url string) (log, error) {
+func fetchLog(ctx context.Context, client *http.Client, url string) (log, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return log{}, err
 	}
 	req.Header.Set("User-Agent", "github.com/shurcooL/Go-Package-Store/presenter/gitiles")
-	resp, err := client.Do(req)
+	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return log{}, err
 	}

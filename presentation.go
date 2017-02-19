@@ -1,5 +1,7 @@
 package gps
 
+import "context"
+
 // Presentation provides infomation about a Go package repo with an available update.
 type Presentation struct {
 	HomeURL  string   // Home URL of the Go package. Optional (empty string means none available).
@@ -22,4 +24,4 @@ type Comments struct {
 }
 
 // Presenter returns a Presentation for r, or nil if it can't.
-type Presenter func(r *Repo) *Presentation
+type Presenter func(ctx context.Context, r *Repo) *Presentation

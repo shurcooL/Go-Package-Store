@@ -1,6 +1,7 @@
 package gitiles
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ func TestFetchLog(t *testing.T) {
 		}),
 	}
 
-	log, err := fetchLog(client, "")
+	log, err := fetchLog(context.Background(), client, "")
 	if err != nil {
 		t.Fatalf("fetchLog: %v", err)
 	}

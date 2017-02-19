@@ -2,6 +2,7 @@
 package github
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -18,7 +19,7 @@ func NewPresenter(httpClient *http.Client) gps.Presenter {
 	gh := github.NewClient(httpClient)
 	gh.UserAgent = "github.com/shurcooL/Go-Package-Store/presenter/github"
 
-	return func(repo *gps.Repo) *gps.Presentation {
+	return func(ctx context.Context, repo *gps.Repo) *gps.Presentation {
 		switch {
 		// Import path begins with "github.com/".
 		case strings.HasPrefix(repo.Root, "github.com/"):
@@ -26,39 +27,39 @@ func NewPresenter(httpClient *http.Client) gps.Presenter {
 			if len(elems) != 3 {
 				return nil
 			}
-			return presentGitHubRepo(gh, repo, elems[1], elems[2])
+			return presentGitHubRepo(ctx, gh, repo, elems[1], elems[2])
 		// gopkg.in package.
 		case strings.HasPrefix(repo.Root, "gopkg.in/"):
 			githubOwner, githubRepo, err := gopkgInImportPathToGitHub(repo.Root)
 			if err != nil {
 				return nil
 			}
-			return presentGitHubRepo(gh, repo, githubOwner, githubRepo)
+			return presentGitHubRepo(ctx, gh, repo, githubOwner, githubRepo)
 		// Underlying GitHub remote.
 		case strings.HasPrefix(repo.Remote.RepoURL, "https://github.com/"):
 			elems := strings.Split(strings.TrimSuffix(repo.Remote.RepoURL[len("https://"):], ".git"), "/")
 			if len(elems) != 3 {
 				return nil
 			}
-			return presentGitHubRepo(gh, repo, elems[1], elems[2])
+			return presentGitHubRepo(ctx, gh, repo, elems[1], elems[2])
 		// Go repo remote has a GitHub mirror repo.
 		case strings.HasPrefix(repo.Remote.RepoURL, "https://go.googlesource.com/"):
 			repoName := repo.Remote.RepoURL[len("https://go.googlesource.com/"):]
-			return presentGitHubRepo(gh, repo, "golang", repoName)
+			return presentGitHubRepo(ctx, gh, repo, "golang", repoName)
 		default:
 			return nil
 		}
 	}
 }
 
-func presentGitHubRepo(gh *github.Client, repo *gps.Repo, ghOwner, ghRepo string) *gps.Presentation {
+func presentGitHubRepo(ctx context.Context, gh *github.Client, repo *gps.Repo, ghOwner, ghRepo string) *gps.Presentation {
 	p := &gps.Presentation{
 		HomeURL:  "https://" + repo.Root,
 		ImageURL: "https://github.com/images/gravatars/gravatar-user-420.png", // Default fallback.
 	}
 
 	// This might take a while.
-	if cc, _, err := gh.Repositories.CompareCommits(ghOwner, ghRepo, repo.Local.Revision, repo.Remote.Revision); err == nil {
+	if cc, _, err := gh.Repositories.CompareCommits(ctx, ghOwner, ghRepo, repo.Local.Revision, repo.Remote.Revision); err == nil {
 		p.Changes = extractChanges(cc)
 	} else if rateLimitErr, ok := err.(*github.RateLimitError); ok {
 		setFirstError(p, rateLimitError{rateLimitErr})
@@ -67,7 +68,7 @@ func presentGitHubRepo(gh *github.Client, repo *gps.Repo, ghOwner, ghRepo string
 	}
 
 	// Use the repo owner avatar image.
-	if user, _, err := gh.Users.Get(ghOwner); err == nil && user.AvatarURL != nil {
+	if user, _, err := gh.Users.Get(ctx, ghOwner); err == nil && user.AvatarURL != nil {
 		p.ImageURL = *user.AvatarURL
 	} else if rateLimitErr, ok := err.(*github.RateLimitError); ok {
 		setFirstError(p, rateLimitError{rateLimitErr})

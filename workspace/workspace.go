@@ -2,6 +2,7 @@
 package workspace
 
 import (
+	"context"
 	"fmt"
 	"go/build"
 	"log"
@@ -635,7 +636,7 @@ func (p *Pipeline) presentWorker(wg *sync.WaitGroup) {
 // but falls back to a generic presentation if there's nothing better.
 func (p *Pipeline) present(repo *gps.Repo) *gps.Presentation {
 	for _, presenter := range p.presenters {
-		if presentation := presenter(repo); presentation != nil {
+		if presentation := presenter(context.Background(), repo); presentation != nil {
 			return presentation
 		}
 	}
