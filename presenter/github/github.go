@@ -68,12 +68,12 @@ func presentGitHubRepo(ctx context.Context, gh *github.Client, repo *gps.Repo, g
 	}
 
 	// Use the repo owner avatar image.
-	if user, _, err := gh.Users.Get(ctx, ghOwner); err == nil && user.AvatarURL != nil {
-		p.ImageURL = *user.AvatarURL
+	if repo, _, err := gh.Repositories.Get(ctx, ghOwner, ghRepo); err == nil && repo.Owner != nil && repo.Owner.AvatarURL != nil {
+		p.ImageURL = *repo.Owner.AvatarURL
 	} else if rateLimitErr, ok := err.(*github.RateLimitError); ok {
 		setFirstError(p, rateLimitError{rateLimitErr})
 	} else {
-		setFirstError(p, fmt.Errorf("gh.Users.Get: %v", err))
+		setFirstError(p, fmt.Errorf("gh.Repositories.Get: %v", err))
 	}
 
 	return p
