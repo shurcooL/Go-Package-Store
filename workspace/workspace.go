@@ -26,11 +26,17 @@ type RepoPresentation struct {
 	Repo         *gps.Repo
 	Presentation *gps.Presentation
 
-	// TODO: Next up, use updateState with 3 states (notUpdated, updating, updated).
-	//       Do that to track the intermediate state when a package is in the process
-	//       of being updated.
-	Updated bool
+	UpdateState UpdateState
 }
+
+// TODO: Dedup.
+type UpdateState uint8
+
+const (
+	Available UpdateState = iota
+	Updating
+	Updated
+)
 
 // Pipeline for processing a Go workspace, where each repo has local and remote components.
 type Pipeline struct {
@@ -289,11 +295,13 @@ Outer:
 			// Append repoPresentation to current list.
 			p.GoPackageList.Lock()
 			p.GoPackageList.OrderedList = append(p.GoPackageList.OrderedList, repoPresentation)
+			moveUp(p.GoPackageList.OrderedList, repoPresentation)
 			p.GoPackageList.List[repoPresentation.Repo.Root] = repoPresentation
 			p.GoPackageList.Unlock()
 
 			// Send new repoPresentation to all existing observers.
 			for ch := range p.observers {
+				// TODO: If an observer isn't listening, this will block. Should we defend against that here?
 				ch <- repoPresentation
 			}
 		// New observer request.
@@ -329,6 +337,16 @@ Outer:
 		close(ch)
 
 		req.Response <- ch
+	}
+}
+
+// moveUp moves last entry up the orderedList above all other updated entries, unless rp is already updated.
+func moveUp(orderedList []*RepoPresentation, rp *RepoPresentation) {
+	if rp.UpdateState == Updated {
+		return
+	}
+	for i := len(orderedList) - 1; i-1 >= 0 && orderedList[i-1].UpdateState == Updated; i-- {
+		orderedList[i], orderedList[i-1] = orderedList[i-1], orderedList[i] // Swap the two.
 	}
 }
 

@@ -26,12 +26,6 @@ h2 {
 	margin-bottom: 40px;
 }
 
-.disabled {
-	pointer-events: none;
-	cursor: default;
-	color: gray;
-	text-decoration: none;
-}
 span.smaller {
 	font-size: 11px;
 	color: gray;

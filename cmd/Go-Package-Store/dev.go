@@ -4,43 +4,213 @@ package main
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/shurcooL/Go-Package-Store"
+	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
 	"github.com/shurcooL/Go-Package-Store/workspace"
+	"github.com/shurcooL/htmlg"
 	"github.com/shurcooL/httperror"
 )
+
+import _ "net/http/pprof"
 
 const production = false
 
 func init() {
-	http.HandleFunc("/mock.html", mockHandler)
+	http.Handle("/mock.html", errorHandler(mockHandler))
+	http.Handle("/component.html", errorHandler(componentHandler))
 }
 
-func mockHandler(w http.ResponseWriter, req *http.Request) {
+func mockHandler(w http.ResponseWriter, req *http.Request) error {
 	if req.Method != "GET" {
-		httperror.HandleMethod(w, httperror.Method{Allowed: []string{"GET"}})
-		return
+		return httperror.Method{Allowed: []string{"GET"}}
 	}
 
 	// Reset the pipeline and populate it with mock repo presentations,
 	// complete with artificial delays (to simulate processing time).
 	c.pipeline = workspace.NewPipeline(wd)
 	go func() {
-		for _, repoPresentation := range mockRepoPresentations {
-			repoPresentation := repoPresentation
-			time.Sleep(time.Second)
-			c.pipeline.AddPresented(&repoPresentation)
+		for _, rp := range mockWorkspaceRPs {
+			time.Sleep(5 * time.Second)
+			rp := rp
+			c.pipeline.AddPresented(&rp)
 		}
-		time.Sleep(time.Second)
+		time.Sleep(5 * time.Second)
 		c.pipeline.Done()
 	}()
 
-	mainHandler(w, req)
+	return indexHandler(w, req)
 }
 
-var mockRepoPresentations = []workspace.RepoPresentation{
+func componentHandler(w http.ResponseWriter, req *http.Request) error {
+	if req.Method != "GET" {
+		return httperror.Method{Allowed: []string{"GET"}}
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	_, err := io.WriteString(w, `<html>
+	<head>
+		<title>Go Package Store</title>
+		<link href="/assets/style.css" rel="stylesheet" type="text/css" />
+	</head>
+	<body>`)
+	if err != nil {
+		return err
+	}
+
+	err = htmlg.RenderComponents(w, gpscomponent.Header{})
+	if err != nil {
+		return err
+	}
+
+	_, err = io.WriteString(w, `<div class="center-max-width"><div class="content">`)
+	if err != nil {
+		return err
+	}
+
+	err = htmlg.RenderComponents(w, gpscomponent.UpdatesHeader{
+		RPs:             nil,
+		CheckingUpdates: false,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = htmlg.RenderComponents(w, gpscomponent.UpdatesHeader{
+		RPs:             mockComponentRPs,
+		CheckingUpdates: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = htmlg.RenderComponents(w,
+		mockComponentRPs[0],
+		mockComponentRPs[1],
+		mockComponentRPs[2],
+	)
+	if err != nil {
+		return err
+	}
+
+	err = htmlg.RenderComponents(w, gpscomponent.InstalledUpdates)
+	if err != nil {
+		return err
+	}
+
+	err = htmlg.RenderComponents(w, mockComponentRPs[3])
+	if err != nil {
+		return err
+	}
+
+	_, err = io.WriteString(w, `</div></div>`)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.WriteString(w, `</body></html>`)
+	return err
+}
+
+var mockComponentRPs = []*gpscomponent.RepoPresentation{
+	{
+		RepoRoot:          "github.com/gopherjs/gopherjs",
+		ImportPathPattern: "github.com/gopherjs/gopherjs/...",
+		LocalRevision:     "",
+		RemoteRevision:    "",
+		HomeURL:           "https://github.com/gopherjs/gopherjs",
+		ImageURL:          "https://avatars.githubusercontent.com/u/6654647?v=3",
+		Changes: []gpscomponent.Change{
+			{
+				Message: "improved reflect support for blocking functions",
+				URL:     "https://github.com/gopherjs/gopherjs/commit/87bf7e405aa3df6df0dcbb9385713f997408d7b9",
+				Comments: gpscomponent.Comments{
+					Count: 0,
+					URL:   "",
+				},
+			},
+			{
+				Message: "small cleanup",
+				URL:     "https://github.com/gopherjs/gopherjs/commit/77a838f965881a888416bae38f790f76bb1f64bd",
+				Comments: gpscomponent.Comments{
+					Count: 1,
+					URL:   "https://www.example.com/",
+				},
+			},
+			{
+				Message: "replaced js.This and js.Arguments by js.MakeFunc",
+				URL:     "https://github.com/gopherjs/gopherjs/commit/29dd054a0753760fe6e826ded0982a1bf69f702a",
+				Comments: gpscomponent.Comments{
+					Count: 0,
+					URL:   "",
+				},
+			},
+		},
+		Error:           "",
+		UpdateState:     gpscomponent.Available,
+		UpdateSupported: true,
+	},
+	{
+		RepoRoot:          "golang.org/x/image",
+		ImportPathPattern: "golang.org/x/image/...",
+		LocalRevision:     "",
+		RemoteRevision:    "",
+		HomeURL:           "http://golang.org/x/image",
+		ImageURL:          "https://avatars.githubusercontent.com/u/4314092?v=3",
+		Changes: []gpscomponent.Change{
+			{
+				Message: "draw: generate code paths for image.Gray sources.",
+				URL:     "https://github.com/golang/image/commit/f510ad81a1256ee96a2870647b74fa144a30c249",
+				Comments: gpscomponent.Comments{
+					Count: 0,
+					URL:   "",
+				},
+			},
+		},
+		Error:           "",
+		UpdateState:     gpscomponent.Updating,
+		UpdateSupported: true,
+	},
+	{
+		RepoRoot:          "unknown.com/package",
+		ImportPathPattern: "unknown.com/package/...",
+		LocalRevision:     "abcdef0123456789000000000000000000000000",
+		RemoteRevision:    "d34db33f01010101010101010101010101010101",
+		HomeURL:           "https://unknown.com/package",
+		ImageURL:          "https://github.com/images/gravatars/gravatar-user-420.png",
+		Changes:           nil,
+		Error:             "",
+		UpdateState:       gpscomponent.Available,
+		UpdateSupported:   true,
+	},
+	{
+		RepoRoot:          "golang.org/x/image",
+		ImportPathPattern: "golang.org/x/image/...",
+		LocalRevision:     "",
+		RemoteRevision:    "",
+		HomeURL:           "http://golang.org/x/image",
+		ImageURL:          "https://avatars.githubusercontent.com/u/4314092?v=3",
+		Changes: []gpscomponent.Change{
+			{
+				Message: "draw: generate code paths for image.Gray sources.",
+				URL:     "https://github.com/golang/image/commit/f510ad81a1256ee96a2870647b74fa144a30c249",
+				Comments: gpscomponent.Comments{
+					Count: 0,
+					URL:   "",
+				},
+			},
+		},
+		Error:           "",
+		UpdateState:     gpscomponent.Updated,
+		UpdateSupported: true,
+	},
+}
+
+var mockWorkspaceRPs = []workspace.RepoPresentation{
 	{
 		Repo: &gps.Repo{
 			Root: (string)("github.com/gopherjs/gopherjs"),
@@ -129,7 +299,7 @@ var mockRepoPresentations = []workspace.RepoPresentation{
 	},
 
 	{
-		Updated: true,
+		UpdateState: workspace.Updated,
 
 		Repo: &gps.Repo{
 			Root: (string)("github.com/influxdb/influxdb"),

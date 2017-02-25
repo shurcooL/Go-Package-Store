@@ -6,81 +6,102 @@ import (
 	"net/http"
 
 	"github.com/shurcooL/Go-Package-Store"
+	"github.com/shurcooL/Go-Package-Store/workspace"
 	"github.com/shurcooL/httperror"
 )
 
-// updateHandler is a handler for update requests.
-type updateHandler struct {
-	updateRequests chan updateRequest
+func NewUpdateWorker(updater gps.Updater) updateWorker {
+	return updateWorker{
+		updater:        updater,
+		updateRequests: make(chan updateRequest),
+	}
+}
 
-	// updater is set based on the source of Go packages. If nil, it means
-	// we don't have support to update Go packages from the current source.
-	// It's used to update repos in the backend, and if set to nil, to disable
-	// the frontend UI for updating packages.
-	updater gps.Updater
+type updateWorker struct {
+	updater        gps.Updater
+	updateRequests chan updateRequest
 }
 
 type updateRequest struct {
-	root         string
-	responseChan chan error
+	Root         string
+	ResponseChan chan error
 }
 
-// ServeHTTP handles update requests.
-func (u *updateHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+// Handler for update endpoint.
+func (u updateWorker) Handler(w http.ResponseWriter, req *http.Request) error {
 	if req.Method != "POST" {
-		httperror.HandleMethod(w, httperror.Method{Allowed: []string{"POST"}})
-		return
+		return httperror.Method{Allowed: []string{"POST"}}
 	}
 
-	root := req.PostFormValue("repo_root")
-
-	updateRequest := updateRequest{
-		root:         root,
-		responseChan: make(chan error),
+	ur := updateRequest{
+		Root:         req.PostFormValue("RepoRoot"),
+		ResponseChan: make(chan error),
 	}
-	u.updateRequests <- updateRequest
+	u.updateRequests <- ur
 
-	err := <-updateRequest.responseChan
+	err := <-ur.ResponseChan
 	// TODO: Display error in frontend.
 	if err != nil {
-		log.Println(err)
+		log.Println("update error:", err)
+	}
+
+	return nil
+}
+
+// Start performing sequential updates of Go packages. It does not update
+// in parallel to avoid race conditions.
+func (u updateWorker) Start() {
+	go u.run()
+}
+
+func (u updateWorker) run() {
+	for ur := range u.updateRequests {
+		c.pipeline.GoPackageList.Lock()
+		rp, ok := c.pipeline.GoPackageList.List[ur.Root]
+		c.pipeline.GoPackageList.Unlock()
+		if !ok {
+			ur.ResponseChan <- fmt.Errorf("root %q not found", ur.Root)
+			continue
+		}
+		if rp.UpdateState != workspace.Available {
+			ur.ResponseChan <- fmt.Errorf("root %q not available for update: %v", ur.Root, rp.UpdateState)
+			continue
+		}
+
+		// Mark repo as updating.
+		c.pipeline.GoPackageList.Lock()
+		c.pipeline.GoPackageList.List[ur.Root].UpdateState = workspace.Updating
+		c.pipeline.GoPackageList.Unlock()
+
+		updateError := u.updater.Update(rp.Repo)
+
+		if updateError == nil {
+			// Move down and mark repo as updated.
+			c.pipeline.GoPackageList.Lock()
+			moveDown(c.pipeline.GoPackageList.OrderedList, ur.Root)
+			c.pipeline.GoPackageList.List[ur.Root].UpdateState = workspace.Updated
+			c.pipeline.GoPackageList.Unlock()
+		}
+
+		ur.ResponseChan <- updateError
+		fmt.Println("\nDone.")
 	}
 }
 
-// Worker is a sequential updater of Go packages. It does not update them in parallel
-// to avoid race conditions or other problems.
-func (u *updateHandler) Worker() {
-	for updateRequest := range u.updateRequests {
-		c.pipeline.GoPackageList.Lock()
-		repoPresentation, ok := c.pipeline.GoPackageList.List[updateRequest.root]
-		c.pipeline.GoPackageList.Unlock()
-		if !ok {
-			updateRequest.responseChan <- fmt.Errorf("root %q not found", updateRequest.root)
-			continue
-		}
-		if repoPresentation.Updated {
-			updateRequest.responseChan <- fmt.Errorf("root %q already updated", updateRequest.root)
-			continue
-		}
+// TODO: Currently lots of logic (for manipulating repo presentations as they
+//       get updated, etc.) haphazardly present both in backend and frontend,
+//       need to think about that. Probably want to unify workspace.RepoPresentation
+//       and component.RepoPresentation types, maybe. Try it.
+//       Also probably want to try separating available updates from completed updates.
+//       That should simplify some logic, and will make it easier to maintain history
+//       of updates in the future.
 
-		err := u.updater.Update(repoPresentation.Repo)
-		if err == nil {
-			// Mark repo as updated.
-			c.pipeline.GoPackageList.Lock()
-			// Move it down the OrderedList towards all other updated.
-			{
-				var i, j int
-				for ; c.pipeline.GoPackageList.OrderedList[i].Repo.Root != updateRequest.root; i++ { // i is the current package about to be updated.
-				}
-				for j = len(c.pipeline.GoPackageList.OrderedList) - 1; c.pipeline.GoPackageList.OrderedList[j].Updated; j-- { // j is the last not-updated package.
-				}
-				c.pipeline.GoPackageList.OrderedList[i], c.pipeline.GoPackageList.OrderedList[j] =
-					c.pipeline.GoPackageList.OrderedList[j], c.pipeline.GoPackageList.OrderedList[i]
-			}
-			c.pipeline.GoPackageList.List[updateRequest.root].Updated = true
-			c.pipeline.GoPackageList.Unlock()
-		}
-		updateRequest.responseChan <- err
-		fmt.Println("\nDone.")
+// moveDown moves root down the orderedList towards all other updated.
+func moveDown(orderedList []*workspace.RepoPresentation, root string) {
+	var i int
+	for ; orderedList[i].Repo.Root != root; i++ { // i is the current package about to be updated.
+	}
+	for ; i+1 < len(orderedList) && orderedList[i+1].UpdateState != workspace.Updated; i++ {
+		orderedList[i], orderedList[i+1] = orderedList[i+1], orderedList[i] // Swap the two.
 	}
 }
