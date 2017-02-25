@@ -5,9 +5,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"html/template"
-	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -17,164 +14,28 @@ import (
 
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
+	"github.com/shurcooL/Go-Package-Store"
 	"github.com/shurcooL/Go-Package-Store/assets"
-	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
 	"github.com/shurcooL/Go-Package-Store/presenter/github"
 	"github.com/shurcooL/Go-Package-Store/presenter/gitiles"
 	"github.com/shurcooL/Go-Package-Store/updater"
 	"github.com/shurcooL/Go-Package-Store/workspace"
 	"github.com/shurcooL/go/open"
 	"github.com/shurcooL/go/ospath"
-	"github.com/shurcooL/htmlg"
-	"github.com/shurcooL/httperror"
 	"github.com/shurcooL/httpgzip"
-	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
 )
 
+// c is a global context.
 var c = struct {
 	pipeline *workspace.Pipeline
 
-	updateHandler *updateHandler
-}{updateHandler: &updateHandler{updateRequests: make(chan updateRequest)}}
-
-var headHTML = template.Must(template.New("").Parse(`<html>
-	<head>
-		<title>Go Package Store</title>
-		<link href="/assets/style.css" rel="stylesheet" type="text/css" />
-		<script src="/assets/script/script.js" type="text/javascript"></script>
-		{{if .Production}}<script type="text/javascript">
-		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-		  })(window,document,'script','http://www.google-analytics.com/analytics.js','ga');
-
-		  ga('create', 'UA-56541369-2', 'auto');
-		  ga('send', 'pageview');
-
-		</script>{{end}}
-	</head>
-	<body>
-		<div style="width: 100%; text-align: center; background-color: hsl(209, 51%, 92%);">
-			<span style="background-color: hsl(209, 51%, 88%); padding: 15px; display: inline-block;">Updates</span>
-		</div>
-
-		{{if .Production}}<script type="text/javascript">
-			var sock = new WebSocket("ws://{{.HTTPAddr}}/opened");
-			sock.onopen = function () {
-				sock.onclose = function() { alert('Go Package Store server disconnected.'); };
-			};
-		</script>{{end}}
-
-		<div class="center-max-width">
-			<div class="content">
-				<div id="checking_updates"><h2 style="text-align: center;">Checking for updates...</h2></div>
-				<div id="no_updates" style="display: none;"><h2 style="text-align: center;">No Updates Available</h2></div>`))
-
-var tailHTML = template.Must(template.New("").Parse(`
-				<script type="text/javascript">document.getElementById("checking_updates").style.display = "none";</script>
-			</div>
-		</div>
-	</body>
-</html>`))
-
-// mainHandler is the handler for the index page.
-func mainHandler(w http.ResponseWriter, req *http.Request) {
-	if req.Method != "GET" {
-		httperror.HandleMethod(w, httperror.Method{Allowed: []string{"GET"}})
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-
-	data := struct {
-		Production bool
-		HTTPAddr   string
-	}{
-		Production: production,
-		HTTPAddr:   *httpFlag,
-	}
-	err := headHTML.Execute(w, data)
-	if err != nil {
-		log.Println("Execute headHTML:", err)
-		return
-	}
-
-	flusher := w.(http.Flusher)
-	flusher.Flush()
-
-	var updatesAvailable = 0
-	var wroteInstalledUpdatesHeader bool
-
-	for rp := range c.pipeline.RepoPresentations() {
-		if !rp.Updated {
-			updatesAvailable++
-		}
-
-		if rp.Updated && !wroteInstalledUpdatesHeader {
-			// Make 'Installed Updates' header visible now.
-			io.WriteString(w, `<div id="installed_updates"><h3 style="text-align: center;">Installed Updates</h3></div>`)
-
-			wroteInstalledUpdatesHeader = true
-		}
-
-		var cs []gpscomponent.Change
-		for _, c := range rp.Presentation.Changes {
-			cs = append(cs, gpscomponent.Change{
-				Message:  c.Message,
-				URL:      c.URL,
-				Comments: gpscomponent.Comments{Count: c.Comments.Count, URL: c.Comments.URL},
-			})
-		}
-		repoPresentation := gpscomponent.RepoPresentation{
-			RepoRoot:          rp.Repo.Root,
-			ImportPathPattern: rp.Repo.ImportPathPattern(),
-			LocalRevision:     rp.Repo.Local.Revision,
-			RemoteRevision:    rp.Repo.Remote.Revision,
-			HomeURL:           rp.Presentation.HomeURL,
-			ImageURL:          rp.Presentation.ImageURL,
-			Changes:           cs,
-			Updated:           rp.Updated,
-			UpdateSupported:   c.updateHandler.updater != nil,
-		}
-		if err := rp.Presentation.Error; err != nil {
-			repoPresentation.Error = err.Error()
-		}
-		err := htmlg.RenderComponents(w, repoPresentation)
-		if err != nil {
-			log.Println("RenderComponents repoPresentation:", err)
-			return
-		}
-
-		flusher.Flush()
-	}
-
-	if !wroteInstalledUpdatesHeader {
-		// TODO: Make installed_updates available before all packages finish loading, so that it works when you update a package early. This will likely require a fully dynamically rendered frontend.
-		// Append 'Installed Updates' header, but keep it hidden.
-		io.WriteString(w, `<div id="installed_updates" style="display: none;"><h3 style="text-align: center;">Installed Updates</h3></div>`)
-	}
-
-	if updatesAvailable == 0 {
-		io.WriteString(w, `<script>document.getElementById("no_updates").style.display = "";</script>`)
-	}
-
-	err = tailHTML.Execute(w, nil)
-	if err != nil {
-		log.Println("Execute tailHTML:", err)
-		return
-	}
-}
-
-// WebSocket handler, to exit when client tab is closed.
-func openedHandler(ws *websocket.Conn) {
-	// Wait until connection is closed.
-	io.Copy(ioutil.Discard, ws)
-
-	//fmt.Println("Exiting, since the client tab was closed (detected closed WebSocket connection).")
-	//close(updateRequests)
-}
+	// updater is set based on the source of Go packages. If nil, it means
+	// we don't have support to update Go packages from the current source.
+	// It's used to update repos in the backend, and if set to nil, to disable
+	// the frontend UI for updating packages.
+	updater gps.Updater
+}{}
 
 var (
 	httpFlag       = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
@@ -212,7 +73,39 @@ func main() {
 	log.SetFlags(0)
 
 	c.pipeline = workspace.NewPipeline(wd)
+	registerPresenters(c.pipeline)
+	c.updater = populatePipelineAndCreateUpdater(c.pipeline)
+	if c.updater != nil {
+		updateWorker := NewUpdateWorker(c.updater)
+		updateWorker.Start()
+		http.Handle("/api/update", errorHandler(updateWorker.Handler))
+	}
+	http.Handle("/api/updates", errorHandler(updatesHandler))
+	http.Handle("/updates", errorHandler(indexHandler))
+	fileServer := httpgzip.FileServer(assets.Assets, httpgzip.FileServerOptions{ServeError: httpgzip.Detailed})
+	http.Handle("/assets/", fileServer)
+	http.Handle("/frontend.js", fileServer)
 
+	// Start listening first.
+	listener, err := net.Listen("tcp", *httpFlag)
+	if err != nil {
+		log.Fatalln(fmt.Errorf("failed to listen on %q: %v", *httpFlag, err))
+	}
+
+	if production {
+		// Open a browser tab and navigate to the main page.
+		go open.Open("http://" + *httpFlag + "/updates")
+	}
+
+	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/updates.")
+
+	err = http.Serve(listener, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func registerPresenters(pipeline *workspace.Pipeline) {
 	// If we can have access to a cache directory on this system, use it for
 	// caching HTTP requests of presenters.
 	cacheDir, err := ospath.CacheDir("github.com/shurcooL/Go-Package-Store")
@@ -240,7 +133,7 @@ func main() {
 			}
 		}
 
-		c.pipeline.RegisterPresenter(github.NewPresenter(&http.Client{Transport: transport}))
+		pipeline.RegisterPresenter(github.NewPresenter(&http.Client{Transport: transport}))
 	}
 
 	// Register Gitiles presenter.
@@ -255,34 +148,36 @@ func main() {
 			}
 		}
 
-		c.pipeline.RegisterPresenter(gitiles.NewPresenter(&http.Client{Transport: transport}))
+		pipeline.RegisterPresenter(gitiles.NewPresenter(&http.Client{Transport: transport}))
 	}
+}
 
+func populatePipelineAndCreateUpdater(pipeline *workspace.Pipeline) gps.Updater {
 	switch {
 	case !production:
 		fmt.Println("Using no real packages (hit /mock.html endpoint for mocks).")
-		c.pipeline.Done()
-		c.updateHandler.updater = updater.Mock{}
+		pipeline.Done()
+		return updater.Mock{}
 	default:
 		fmt.Println("Using all Go packages in GOPATH.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			forEachRepository(func(r workspace.LocalRepo) {
-				c.pipeline.AddRepository(r)
+				pipeline.AddRepository(r)
 			})
-			c.pipeline.Done()
+			pipeline.Done()
 		}()
-		c.updateHandler.updater = updater.Gopath{}
+		return updater.Gopath{}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			br := bufio.NewReader(os.Stdin)
 			for line, err := br.ReadString('\n'); err == nil; line, err = br.ReadString('\n') {
 				importPath := line[:len(line)-1] // Trim last newline.
-				c.pipeline.AddImportPath(importPath)
+				pipeline.AddImportPath(importPath)
 			}
-			c.pipeline.Done()
+			pipeline.Done()
 		}()
-		c.updateHandler.updater = updater.Gopath{}
+		return updater.Gopath{}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)
@@ -291,11 +186,11 @@ func main() {
 		}
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range g.Deps {
-				c.pipeline.AddRevision(dependency.ImportPath, dependency.Rev)
+				pipeline.AddRevision(dependency.ImportPath, dependency.Rev)
 			}
-			c.pipeline.Done()
+			pipeline.Done()
 		}()
-		c.updateHandler.updater = nil
+		return nil
 	case *govendorFlag != "":
 		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)
 		v, err := readGovendor(*govendorFlag)
@@ -304,17 +199,18 @@ func main() {
 		}
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range v.Package {
-				c.pipeline.AddRevision(dependency.Path, dependency.Revision)
+				pipeline.AddRevision(dependency.Path, dependency.Revision)
 			}
-			c.pipeline.Done()
+			pipeline.Done()
 		}()
 		// TODO: Consider setting a better directory for govendor command than current working directory.
 		//       Perhaps the parent directory of vendor.json file?
-		if gu, err := updater.NewGovendor(""); err == nil {
-			c.updateHandler.updater = gu
-		} else {
+		gu, err := updater.NewGovendor("")
+		if err != nil {
 			log.Println("govendor updater is not available:", err)
+			gu = nil
 		}
+		return gu
 	case *gitSubrepoFlag != "":
 		if _, err := exec.LookPath("git"); err != nil {
 			log.Fatalln(fmt.Errorf("git binary is required, but not available: %v", err))
@@ -322,43 +218,14 @@ func main() {
 		fmt.Println("Using Go packages vendored using git-subrepo in the specified vendor directory.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			err := forEachGitSubrepo(*gitSubrepoFlag, func(s workspace.Subrepo) {
-				c.pipeline.AddSubrepo(s)
+				pipeline.AddSubrepo(s)
 			})
 			if err != nil {
 				log.Println("warning: there was problem iterating over subrepos:", err)
 			}
-			c.pipeline.Done()
+			pipeline.Done()
 		}()
-		c.updateHandler.updater = nil // An updater for this can easily be added by anyone who uses this style of vendoring.
-	}
-
-	http.HandleFunc("/index.html", mainHandler)
-	http.Handle("/favicon.ico", http.NotFoundHandler())
-	fileServer := httpgzip.FileServer(assets.Assets, httpgzip.FileServerOptions{ServeError: httpgzip.Detailed})
-	http.Handle("/assets/", fileServer)
-	http.Handle("/assets/octicons/", http.StripPrefix("/assets", fileServer))
-	http.Handle("/opened", websocket.Handler(openedHandler)) // Exit server when client tab is closed.
-	if c.updateHandler.updater != nil {
-		http.Handle("/-/update", c.updateHandler)
-		go c.updateHandler.Worker()
-	}
-
-	// Start listening first.
-	listener, err := net.Listen("tcp", *httpFlag)
-	if err != nil {
-		log.Fatalf("failed to listen on %q: %v\n", *httpFlag, err)
-	}
-
-	if production {
-		// Open a browser tab and navigate to the main page.
-		go open.Open("http://" + *httpFlag + "/index.html")
-	}
-
-	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/index.html.")
-
-	err = http.Serve(listener, nil)
-	if err != nil {
-		log.Fatalln(err)
+		return nil // An updater for this can easily be added by anyone who uses this style of vendoring.
 	}
 }
 

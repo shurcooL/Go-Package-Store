@@ -21,11 +21,19 @@ type RepoPresentation struct {
 	Changes           []Change
 	Error             string
 
-	Updated bool
+	UpdateState UpdateState
 
 	// TODO: Find a place for this.
 	UpdateSupported bool
 }
+
+type UpdateState uint8
+
+const (
+	Available UpdateState = iota
+	Updating
+	Updated
+)
 
 func (p RepoPresentation) Render() []*html.Node {
 	// TODO: Make this much nicer.
@@ -34,7 +42,7 @@ func (p RepoPresentation) Render() []*html.Node {
 			<div class="list-entry-header">
 				{{.importPathPattern()}}
 
-				{{if (not .Updated)}}{{.updateButton()}}{{end}}
+				<div style="float: right;">{{.updateState()}}</div>
 			</div>
 			<div class="list-entry-body">
 				<img style="float: left; border-radius: 4px;" src="{{.Presentation.Image}}" width="36" height="36">
@@ -55,13 +63,13 @@ func (p RepoPresentation) Render() []*html.Node {
 			FirstChild: p.importPathPattern(),
 		},
 	)
-	if !p.Updated {
+	if n := p.updateState(); n != nil {
 		innerDiv1.AppendChild(&html.Node{
 			Type: html.ElementNode, Data: atom.Div.String(),
 			Attr: []html.Attribute{
 				{Key: atom.Style.String(), Val: "float: right;"},
 			},
-			FirstChild: p.updateButton(),
+			FirstChild: n,
 		})
 	}
 	innerDiv2 := htmlg.DivClass("list-entry-body",
@@ -95,32 +103,6 @@ func (p RepoPresentation) Render() []*html.Node {
 	return []*html.Node{div}
 }
 
-func (p RepoPresentation) presentationChangesAndError() []*html.Node {
-	/*
-		{{render (presentationchanges .)}}
-		{{with .Presentation.Error}}
-			<p class="presentation-error"><strong>Error:</strong> {{.}}</p>
-		{{end}}
-	*/
-	var ns []*html.Node
-	ns = append(ns, PresentationChanges{
-		Changes:        p.Changes,
-		LocalRevision:  p.LocalRevision,
-		RemoteRevision: p.RemoteRevision,
-	}.Render()...)
-	if p.Error != "" {
-		n := &html.Node{
-			Type: html.ElementNode, Data: atom.P.String(),
-			Attr: []html.Attribute{{Key: atom.Class.String(), Val: "presentation-error"}},
-		}
-		n.AppendChild(htmlg.Strong("Error:"))
-		n.AppendChild(htmlg.Text(" "))
-		n.AppendChild(htmlg.Text(p.Error))
-		ns = append(ns, n)
-	}
-	return ns
-}
-
 // TODO: Turn this into a maybeLink, etc.
 func (p RepoPresentation) importPathPattern() *html.Node {
 	/*
@@ -149,28 +131,19 @@ func (p RepoPresentation) importPathPattern() *html.Node {
 	return importPathPattern
 }
 
-func (p RepoPresentation) updateButton() *html.Node {
+func (p RepoPresentation) updateState() *html.Node {
 	/*
-		<div style="float: right;">
-			{{if updateSupported}}
-				<a href="/-/update" onclick="UpdateRepository(event, '{{.Repo.Root | json}}');" class="update-button" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
-			{{else}}
-				<span style="color: gray; cursor: default;" title="Updating repos is not currently supported for this source of repos.">Update</span>
-			{{end}}
-		</div>
+		{{if not updateSupported}}
+			<span style="color: gray; cursor: default;" title="Updating repos is not currently supported for this source of repos.">Update</span>
+		{{else if eq p.UpdateState Available}}
+			<a href="/api/update" onclick="UpdateRepository(event, '{{.Repo.Root | json}}');" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
+		{{else if eq p.UpdateState Updating}}
+			<span style="color: gray; cursor: default;">Updating...</span>
+		{{else if eq p.UpdateState Updated}}
+			{{/* Nothing. * /}}
+		{{end}}
 	*/
-	if p.UpdateSupported {
-		return &html.Node{
-			Type: html.ElementNode, Data: atom.A.String(),
-			Attr: []html.Attribute{
-				{Key: atom.Href.String(), Val: "/-/update"},
-				{Key: atom.Onclick.String(), Val: fmt.Sprintf("UpdateRepository(event, %q);", strconv.Quote(p.RepoRoot))},
-				{Key: atom.Class.String(), Val: "update-button"},
-				{Key: atom.Title.String(), Val: fmt.Sprintf("go get -u -d %s", p.ImportPathPattern)},
-			},
-			FirstChild: htmlg.Text("Update"),
-		}
-	} else {
+	if !p.UpdateSupported {
 		return &html.Node{
 			Type: html.ElementNode, Data: atom.Span.String(),
 			Attr: []html.Attribute{
@@ -180,6 +153,56 @@ func (p RepoPresentation) updateButton() *html.Node {
 			FirstChild: htmlg.Text("Update"),
 		}
 	}
+	switch p.UpdateState {
+	case Available:
+		return &html.Node{
+			Type: html.ElementNode, Data: atom.A.String(),
+			Attr: []html.Attribute{
+				{Key: atom.Href.String(), Val: "/api/update"},
+				{Key: atom.Onclick.String(), Val: fmt.Sprintf("UpdateRepository(event, %q);", strconv.Quote(p.RepoRoot))},
+				//{Key: atom.Title.String(), Val: fmt.Sprintf("go get -u -d %s", p.ImportPathPattern)},
+			},
+			FirstChild: htmlg.Text("Update"),
+		}
+	case Updating:
+		return &html.Node{
+			Type: html.ElementNode, Data: atom.Span.String(),
+			Attr: []html.Attribute{
+				{Key: atom.Style.String(), Val: "color: gray; cursor: default;"},
+			},
+			FirstChild: htmlg.Text("Updating..."),
+		}
+	case Updated:
+		return nil
+	default:
+		panic("unreachable")
+	}
+}
+
+func (p RepoPresentation) presentationChangesAndError() []*html.Node {
+	/*
+		{{render (presentationchanges .)}}
+		{{with .Presentation.Error}}
+			<p class="presentation-error"><strong>Error:</strong> {{.}}</p>
+		{{end}}
+	*/
+	var ns []*html.Node
+	ns = append(ns, PresentationChanges{
+		Changes:        p.Changes,
+		LocalRevision:  p.LocalRevision,
+		RemoteRevision: p.RemoteRevision,
+	}.Render()...)
+	if p.Error != "" {
+		n := &html.Node{
+			Type: html.ElementNode, Data: atom.P.String(),
+			Attr: []html.Attribute{{Key: atom.Class.String(), Val: "presentation-error"}},
+		}
+		n.AppendChild(htmlg.Strong("Error:"))
+		n.AppendChild(htmlg.Text(" "))
+		n.AppendChild(htmlg.Text(p.Error))
+		ns = append(ns, n)
+	}
+	return ns
 }
 
 type PresentationChanges struct {
