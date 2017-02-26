@@ -1,13 +1,18 @@
 package updates
 
 import (
+	"fmt"
 	"io"
+	"time"
 
 	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
 	"github.com/shurcooL/htmlg"
 )
 
 func RenderBodyInnerHTML(w io.Writer, rps []*gpscomponent.RepoPresentation, checkingUpdates bool) error {
+	started := time.Now()
+	defer func() { fmt.Println("RenderBodyInnerHTML:", time.Since(started), len(rps)) }()
+
 	err := htmlg.RenderComponents(w, gpscomponent.Header{})
 	if err != nil {
 		return err

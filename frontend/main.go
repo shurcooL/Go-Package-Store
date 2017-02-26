@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/gopherjs/gopherjs/js"
 	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
@@ -90,6 +91,9 @@ var (
 )
 
 func renderBody() error {
+	started := time.Now()
+	defer func() { fmt.Println("renderBody:", time.Since(started)) }()
+
 	rpsMu.Lock()
 	defer rpsMu.Unlock()
 
