@@ -14,8 +14,8 @@ import (
 
 	"github.com/gopherjs/gopherjs/js"
 	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
+	"github.com/shurcooL/Go-Package-Store/page/updates"
 	"github.com/shurcooL/go/gopherjs_http/jsutil"
-	"github.com/shurcooL/htmlg"
 	"honnef.co/go/js/dom"
 )
 
@@ -94,42 +94,7 @@ func renderBody() error {
 	defer rpsMu.Unlock()
 
 	var buf bytes.Buffer
-
-	err := htmlg.RenderComponents(&buf, gpscomponent.Header{})
-	if err != nil {
-		return err
-	}
-
-	_, err = io.WriteString(&buf, `<div class="center-max-width"><div class="content">`)
-	if err != nil {
-		return err
-	}
-
-	err = htmlg.RenderComponents(&buf, gpscomponent.UpdatesHeader{
-		RPs:             rps,
-		CheckingUpdates: checkingUpdates,
-	})
-	if err != nil {
-		return err
-	}
-
-	wroteInstalledUpdates := false
-	for _, rp := range rps {
-		if rp.UpdateState == gpscomponent.Updated && !wroteInstalledUpdates {
-			err = htmlg.RenderComponents(&buf, gpscomponent.InstalledUpdates)
-			if err != nil {
-				return err
-			}
-			wroteInstalledUpdates = true
-		}
-
-		err := htmlg.RenderComponents(&buf, rp)
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = io.WriteString(&buf, `</div></div>`)
+	err := updates.RenderBodyInnerHTML(&buf, rps, checkingUpdates)
 	if err != nil {
 		return err
 	}
