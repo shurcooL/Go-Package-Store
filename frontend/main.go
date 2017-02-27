@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,8 +13,10 @@ import (
 	"time"
 
 	"github.com/gopherjs/gopherjs/js"
-	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
-	"github.com/shurcooL/Go-Package-Store/page/updates"
+	"github.com/gopherjs/vecty"
+	"github.com/gopherjs/vecty/elem"
+	"github.com/gopherjs/vecty/prop"
+	gpscomponent "github.com/shurcooL/Go-Package-Store/vcomponent"
 	"github.com/shurcooL/go/gopherjs_http/jsutil"
 	"honnef.co/go/js/dom"
 )
@@ -47,10 +48,11 @@ func run() {
 
 func stream() error {
 	// TODO: Initial render might not be needed if the server prerenders initial state.
-	err := renderBody()
-	if err != nil {
-		return err
-	}
+	//err := renderBody()
+	//if err != nil {
+	//	return err
+	//}
+	vecty.RenderBody(body)
 
 	resp, err := http.Get("/api/updates")
 	if err != nil {
@@ -76,6 +78,9 @@ func stream() error {
 		if err != nil {
 			return err
 		}
+		if len(rps) >= 10 {
+			break
+		}
 	}
 	checkingUpdates = false
 
@@ -97,14 +102,62 @@ func renderBody() error {
 	rpsMu.Lock()
 	defer rpsMu.Unlock()
 
-	var buf bytes.Buffer
-	err := updates.RenderBodyInnerHTML(&buf, rps, checkingUpdates)
-	if err != nil {
-		return err
+	//var buf bytes.Buffer
+	//err := updates.RenderBodyInnerHTML(&buf, rps, checkingUpdates)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//document.Body().SetInnerHTML(buf.String())
+	//return nil
+
+	vecty.Rerender(body)
+	return nil
+}
+
+var body = &UpdatesBody{}
+
+type UpdatesBody struct {
+	vecty.Core
+
+	//RPs             []*gpscomponent.RepoPresentation
+	//CheckingUpdates bool
+}
+
+func (b *UpdatesBody) Render() *vecty.HTML {
+	var ns = vecty.List{
+		prop.Class("content"),
+
+		&gpscomponent.UpdatesHeader{
+			RPs:             rps,
+			CheckingUpdates: checkingUpdates,
+		},
+	}
+	for _, rp := range rps {
+		ns = append(ns, &gpscomponent.RepoPresentation{
+			RepoRoot:          rp.RepoRoot,
+			ImportPathPattern: rp.ImportPathPattern,
+			LocalRevision:     rp.LocalRevision,
+			RemoteRevision:    rp.RemoteRevision,
+			HomeURL:           rp.HomeURL,
+			ImageURL:          rp.ImageURL,
+			Changes:           rp.Changes,
+			Error:             rp.Error,
+
+			UpdateState: rp.UpdateState,
+
+			// TODO: Find a place for this.
+			UpdateSupported: rp.UpdateSupported,
+		})
 	}
 
-	document.Body().SetInnerHTML(buf.String())
-	return nil
+	return elem.Body(
+		&gpscomponent.Header{},
+		elem.Div(
+			prop.Class("center-max-width"),
+			elem.Div(ns...),
+		),
+	)
 }
 
 // UpdateAll marks all available updates as updating, and performs updates in background in sequence.
