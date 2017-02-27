@@ -22,6 +22,7 @@ const production = false
 func init() {
 	http.Handle("/mock.html", errorHandler(mockHandler))
 	http.Handle("/component.html", errorHandler(componentHandler))
+	http.Handle("/vcomponent.html", errorHandler(vComponentHandler))
 }
 
 func mockHandler(w http.ResponseWriter, req *http.Request) error {
@@ -43,6 +44,23 @@ func mockHandler(w http.ResponseWriter, req *http.Request) error {
 	}()
 
 	return indexHandler(w, req)
+}
+
+func vComponentHandler(w http.ResponseWriter, req *http.Request) error {
+	if req.Method != "GET" {
+		return httperror.Method{Allowed: []string{"GET"}}
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	_, err := io.WriteString(w, `<html>
+	<head>
+		<title>Go Package Store</title>
+		<link href="/assets/style.css" rel="stylesheet" type="text/css" />
+		<script async src="/assets/vcomponent/vcomponent.js" type="text/javascript"></script>
+	</head>
+	<body></body></html>`)
+	return err
 }
 
 func componentHandler(w http.ResponseWriter, req *http.Request) error {
