@@ -40,7 +40,9 @@ func (p RepoPresentation) Render() []*html.Node {
 	/*
 		<div class="list-entry go-package-update" id="{{.Repo.Root}}" style="position: relative;">
 			<div class="list-entry-header">
-				{{.importPathPattern()}}
+				<span title="{{.Repo.ImportPathPattern}}">
+					{{.importPathPattern()}}
+				</span>
 
 				<div style="float: right;">{{.updateState()}}</div>
 			</div>
@@ -106,13 +108,11 @@ func (p RepoPresentation) Render() []*html.Node {
 // TODO: Turn this into a maybeLink, etc.
 func (p RepoPresentation) importPathPattern() *html.Node {
 	/*
-		<span title="{{.Repo.ImportPathPattern}}">
-			{{if .Presentation.Home}}
-				<a href="{{.Presentation.Home}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
-			{{else}}
-				<strong>{{.Repo.ImportPathPattern}}</strong>
-			{{end}}
-		</span>
+		{{if .Presentation.Home}}
+			<a href="{{.Presentation.Home}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
+		{{else}}
+			<strong>{{.Repo.ImportPathPattern}}</strong>
+		{{end}}
 	*/
 	var importPathPattern *html.Node
 	if p.HomeURL != "" {
