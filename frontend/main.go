@@ -26,6 +26,8 @@ var document = dom.GetWindow().Document().(dom.HTMLDocument)
 func main() {
 	js.Global.Set("UpdateRepository", jsutil.Wrap(UpdateRepository))
 	js.Global.Set("UpdateAll", jsutil.Wrap(UpdateAll))
+	js.Global.Set("UpdateRepositoryV", UpdateRepositoryV)
+	js.Global.Set("UpdateAllV", UpdateAllV)
 
 	switch readyState := document.ReadyState(); readyState {
 	case "loading":
@@ -133,7 +135,14 @@ func (b *UpdatesBody) Render() *vecty.HTML {
 			CheckingUpdates: checkingUpdates,
 		},
 	}
+
+	wroteInstalledUpdates := false
 	for _, rp := range rps {
+		if rp.UpdateState == gpscomponent.Updated && !wroteInstalledUpdates {
+			ns = append(ns, gpscomponent.InstalledUpdates())
+			wroteInstalledUpdates = true
+		}
+
 		ns = append(ns, &gpscomponent.RepoPresentation{
 			RepoRoot:          rp.RepoRoot,
 			ImportPathPattern: rp.ImportPathPattern,
@@ -191,6 +200,32 @@ func UpdateAll(event dom.Event) {
 	}()
 }
 
+// UpdateAllV marks all available updates as updating, and performs updates in background in sequence.
+func UpdateAllV() {
+	var updates []string // Repo roots to update.
+
+	rpsMu.Lock()
+	for _, rp := range rps {
+		if rp.UpdateState == gpscomponent.Available {
+			updates = append(updates, rp.RepoRoot)
+			rp.UpdateState = gpscomponent.Updating
+		}
+	}
+	rpsMu.Unlock()
+
+	err := renderBody()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	go func() {
+		for _, root := range updates {
+			update(root)
+		}
+	}()
+}
+
 // UpdateRepository updates specified repository.
 // root is the import path corresponding to the root of the repository.
 func UpdateRepository(event dom.Event, root string) {
@@ -213,6 +248,21 @@ func UpdateRepository(event dom.Event, root string) {
 		log.Println(err)
 		return
 	}
+
+	go update(root)
+}
+
+// UpdateRepositoryV updates specified repository.
+// root is the import path corresponding to the root of the repository.
+func UpdateRepositoryV(root string) {
+	rpsMu.Lock()
+	for _, rp := range rps {
+		if rp.RepoRoot == root {
+			rp.UpdateState = gpscomponent.Updating
+			break
+		}
+	}
+	rpsMu.Unlock()
 
 	go update(root)
 }

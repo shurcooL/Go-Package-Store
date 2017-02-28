@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/gopherjs/gopherjs/js"
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
 	"github.com/gopherjs/vecty/event"
@@ -106,6 +107,7 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 				fmt.Printf("UpdateRepository(%q)\n", p.RepoRoot)
 				p.UpdateState = Updating
 				vecty.Rerender(p)
+				js.Global.Get("UpdateRepositoryV").Invoke(p.RepoRoot)
 
 			}).PreventDefault(),
 			vecty.Text("Update"),
