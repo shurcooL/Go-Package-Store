@@ -3,6 +3,7 @@ package vcomponent
 import (
 	"fmt"
 
+	"github.com/gopherjs/gopherjs/js"
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
 	"github.com/gopherjs/vecty/event"
@@ -108,6 +109,7 @@ func (u *updatesHeading) updateAllButton() *vecty.HTML {
 			event.Click(func(e *vecty.Event) {
 				// TODO.
 				fmt.Println("UpdateAll()")
+				js.Global.Get("UpdateAllV").Invoke()
 			}).PreventDefault(),
 			vecty.Text("Update All"),
 		)
