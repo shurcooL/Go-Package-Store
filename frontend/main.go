@@ -9,23 +9,21 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
 	"github.com/gopherjs/vecty/prop"
+	"github.com/shurcooL/Go-Package-Store/frontend/action"
+	"github.com/shurcooL/Go-Package-Store/frontend/store"
 	gpscomponent "github.com/shurcooL/Go-Package-Store/vcomponent"
-	"github.com/shurcooL/go/gopherjs_http/jsutil"
 	"honnef.co/go/js/dom"
 )
 
 var document = dom.GetWindow().Document().(dom.HTMLDocument)
 
 func main() {
-	js.Global.Set("UpdateRepository", jsutil.Wrap(UpdateRepository))
-	js.Global.Set("UpdateAll", jsutil.Wrap(UpdateAll))
 	js.Global.Set("UpdateRepositoryV", UpdateRepositoryV)
 	js.Global.Set("UpdateAllV", UpdateAllV)
 
@@ -42,6 +40,11 @@ func main() {
 }
 
 func run() {
+	// Initial frontend render.
+	vecty.RenderBody(body)
+
+	go scheduler()
+
 	err := stream()
 	if err != nil {
 		log.Println(err)
@@ -49,12 +52,8 @@ func run() {
 }
 
 func stream() error {
-	// TODO: Initial render might not be needed if the server prerenders initial state.
-	//err := renderBody()
-	//if err != nil {
-	//	return err
-	//}
-	vecty.RenderBody(body)
+	started := time.Now()
+	defer func() { fmt.Println("stream:", time.Since(started)) }()
 
 	resp, err := http.Get("/api/updates")
 	if err != nil {
@@ -62,7 +61,7 @@ func stream() error {
 	}
 	defer resp.Body.Close()
 	dec := json.NewDecoder(resp.Body)
-	for {
+	for len(store.RPs()) < 10 {
 		var rp gpscomponent.RepoPresentation
 		err := dec.Decode(&rp)
 		if err == io.EOF {
@@ -71,50 +70,72 @@ func stream() error {
 			return err
 		}
 
-		rpsMu.Lock()
-		rps = append(rps, &rp)
-		moveUp(rps, &rp)
-		rpsMu.Unlock()
-
-		err = renderBody()
-		if err != nil {
-			return err
-		}
-		if len(rps) >= 10 {
-			break
-		}
+		apply(&action.AppendRP{RP: &rp})
+		//renderBody()
 	}
-	checkingUpdates = false
 
-	err = renderBody()
-	return err
+	apply(&action.DoneCheckingUpdates{})
+	//renderBody()
+	return nil
+}
+
+type actionAndResponse struct {
+	Action action.Action
+	RespCh chan<- action.Response
 }
 
 var (
-	rpsMu sync.Mutex // TODO: Move towards a channel-based unified state manipulator.
-	rps   []*gpscomponent.RepoPresentation
-
-	checkingUpdates = true
+	actionCh = make(chan actionAndResponse) // TODO: Consider/try buffered channel of size 10.
+	renderCh <-chan time.Time
 )
 
-func renderBody() error {
+func apply(a action.Action) action.Response {
+	respCh := make(chan action.Response)
+	actionCh <- actionAndResponse{Action: a, RespCh: respCh}
+	resp := <-respCh
+	return resp
+}
+
+func scheduler() {
+	//var renderOn = make(chan struct{})
+	//close(renderOn)
+
+	//forceRenderCh := time.Tick(5000 * time.Millisecond)
+
+	for {
+		select {
+		case a := <-actionCh:
+			resp := store.Apply(a.Action)
+			a.RespCh <- resp
+
+			// TODO: Don't render (needlessly) after *action.SetUpdating, etc.
+			renderCh = time.After(10 * time.Millisecond)
+		case <-renderCh:
+			renderBody()
+			renderCh = nil
+			//runtime.Gosched()
+
+			// TODO: Add another case that forces a re-render to happen at least once every
+			//       500 milliseconds or so (in case there are never-ending actions that
+			//       take a while to get through; we still want to display some progress).
+			//case <-forceRenderCh:
+			//	if renderCh == nil {
+			//		break
+			//	}
+			//	renderBody()
+			//	renderCh = nil
+		}
+
+		//time.Sleep(time.Second)
+		//runtime.Gosched()
+	}
+}
+
+func renderBody() {
 	started := time.Now()
 	defer func() { fmt.Println("renderBody:", time.Since(started)) }()
 
-	rpsMu.Lock()
-	defer rpsMu.Unlock()
-
-	//var buf bytes.Buffer
-	//err := updates.RenderBodyInnerHTML(&buf, rps, checkingUpdates)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//document.Body().SetInnerHTML(buf.String())
-	//return nil
-
 	vecty.Rerender(body)
-	return nil
 }
 
 var body = &UpdatesBody{}
@@ -131,13 +152,13 @@ func (b *UpdatesBody) Render() *vecty.HTML {
 		prop.Class("content"),
 
 		&gpscomponent.UpdatesHeader{
-			RPs:             rps,
-			CheckingUpdates: checkingUpdates,
+			RPs:             store.RPs(),
+			CheckingUpdates: store.CheckingUpdates(),
 		},
 	}
 
 	wroteInstalledUpdates := false
-	for _, rp := range rps {
+	for _, rp := range store.RPs() {
 		if rp.UpdateState == gpscomponent.Updated && !wroteInstalledUpdates {
 			ns = append(ns, gpscomponent.InstalledUpdates())
 			wroteInstalledUpdates = true
@@ -169,102 +190,31 @@ func (b *UpdatesBody) Render() *vecty.HTML {
 	)
 }
 
-// UpdateAll marks all available updates as updating, and performs updates in background in sequence.
-func UpdateAll(event dom.Event) {
-	event.PreventDefault()
-	if event.(*dom.MouseEvent).Button != 0 {
-		return
-	}
-
-	var updates []string // Repo roots to update.
-
-	rpsMu.Lock()
-	for _, rp := range rps {
-		if rp.UpdateState == gpscomponent.Available {
-			updates = append(updates, rp.RepoRoot)
-			rp.UpdateState = gpscomponent.Updating
-		}
-	}
-	rpsMu.Unlock()
-
-	err := renderBody()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	go func() {
-		for _, root := range updates {
-			update(root)
-		}
-	}()
-}
-
 // UpdateAllV marks all available updates as updating, and performs updates in background in sequence.
 func UpdateAllV() {
-	var updates []string // Repo roots to update.
-
-	rpsMu.Lock()
-	for _, rp := range rps {
-		if rp.UpdateState == gpscomponent.Available {
-			updates = append(updates, rp.RepoRoot)
-			rp.UpdateState = gpscomponent.Updating
-		}
-	}
-	rpsMu.Unlock()
-
-	err := renderBody()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
 	go func() {
-		for _, root := range updates {
+		started := time.Now()
+		defer func() { fmt.Println("update all:", time.Since(started)) }()
+
+		resp := apply(&action.SetUpdatingAll{}).(*action.SetUpdatingAllResponse)
+		//renderBody()
+
+		for _, root := range resp.RepoRoots {
 			update(root)
 		}
 	}()
-}
-
-// UpdateRepository updates specified repository.
-// root is the import path corresponding to the root of the repository.
-func UpdateRepository(event dom.Event, root string) {
-	event.PreventDefault()
-	if event.(*dom.MouseEvent).Button != 0 {
-		return
-	}
-
-	rpsMu.Lock()
-	for _, rp := range rps {
-		if rp.RepoRoot == root {
-			rp.UpdateState = gpscomponent.Updating
-			break
-		}
-	}
-	rpsMu.Unlock()
-
-	err := renderBody()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	go update(root)
 }
 
 // UpdateRepositoryV updates specified repository.
 // root is the import path corresponding to the root of the repository.
 func UpdateRepositoryV(root string) {
-	rpsMu.Lock()
-	for _, rp := range rps {
-		if rp.RepoRoot == root {
-			rp.UpdateState = gpscomponent.Updating
-			break
-		}
-	}
-	rpsMu.Unlock()
+	go func() {
+		apply(&action.SetUpdating{RepoRoot: root})
+		// No need to render body because the component updated itself internally.
+		// TODO: Improve and centralize this when-and-what-to-rerender logic, maybe?
 
-	go update(root)
+		update(root)
+	}()
 }
 
 // update updates specified repository.
@@ -285,39 +235,6 @@ func update(root string) {
 		return
 	}
 
-	rpsMu.Lock()
-	moveDown(rps, root)
-	for _, rp := range rps {
-		if rp.RepoRoot == root {
-			rp.UpdateState = gpscomponent.Updated
-			break
-		}
-	}
-	rpsMu.Unlock()
-
-	err = renderBody()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-}
-
-// moveDown moves root down the rps towards all other updated.
-func moveDown(rps []*gpscomponent.RepoPresentation, root string) {
-	var i int
-	for ; rps[i].RepoRoot != root; i++ { // i is the current package about to be updated.
-	}
-	for ; i+1 < len(rps) && rps[i+1].UpdateState != gpscomponent.Updated; i++ {
-		rps[i], rps[i+1] = rps[i+1], rps[i] // Swap the two.
-	}
-}
-
-// moveUp moves last entry up the rps above all other updated entries, unless rp is already updated.
-func moveUp(rps []*gpscomponent.RepoPresentation, rp *gpscomponent.RepoPresentation) {
-	if rp.UpdateState == gpscomponent.Updated {
-		return
-	}
-	for i := len(rps) - 1; i-1 >= 0 && rps[i-1].UpdateState == gpscomponent.Updated; i-- {
-		rps[i], rps[i-1] = rps[i-1], rps[i] // Swap the two.
-	}
+	apply(&action.SetUpdated{RepoRoot: root})
+	//renderBody()
 }

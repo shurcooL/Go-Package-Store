@@ -108,7 +108,7 @@ func (u *updatesHeading) updateAllButton() *vecty.HTML {
 			prop.Href("/api/update-all"), // TODO: Should it be a separate endpoint or what?
 			event.Click(func(e *vecty.Event) {
 				// TODO.
-				fmt.Println("UpdateAll()")
+				fmt.Println("UpdateAllV()")
 				js.Global.Get("UpdateAllV").Invoke()
 			}).PreventDefault(),
 			vecty.Text("Update All"),
