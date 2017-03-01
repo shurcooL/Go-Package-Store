@@ -104,7 +104,7 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 			prop.Href("/api/update"),
 			event.Click(func(e *vecty.Event) {
 				// TODO.
-				fmt.Printf("UpdateRepository(%q)\n", p.RepoRoot)
+				fmt.Printf("UpdateRepositoryV(%q)\n", p.RepoRoot)
 				p.UpdateState = Updating
 				vecty.Rerender(p)
 				js.Global.Get("UpdateRepositoryV").Invoke(p.RepoRoot)
