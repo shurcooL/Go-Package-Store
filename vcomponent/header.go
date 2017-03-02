@@ -25,15 +25,14 @@ func (*Header) Render() *vecty.HTML {
 	)
 }
 
-// UpdatesHeader combines checkingForUpdates, noUpdates and updatesHeading
+// updatesHeader combines checkingForUpdates, noUpdates and updatesHeading
 // into one high level component.
-type UpdatesHeader struct {
-	vecty.Core
+type updatesHeader struct {
 	RPs             []*RepoPresentation
 	CheckingUpdates bool
 }
 
-func (u *UpdatesHeader) Render() *vecty.HTML {
+func (u updatesHeader) Render() vecty.List {
 	var ns vecty.List
 	// Show "Checking for updates..." while still checking.
 	if u.CheckingUpdates {
@@ -50,12 +49,11 @@ func (u *UpdatesHeader) Render() *vecty.HTML {
 		Updating:        updating,
 		UpdateSupported: supported, // TODO: Fetch this value from backend once.
 	})
-	// TODO: Get rid of extraneous div.
-	return elem.Div(ns...)
+	return ns
 }
 
 // status returns available, updating, supported updates in u.RPs.
-func (u *UpdatesHeader) status() (available uint, updating bool, supported bool) {
+func (u updatesHeader) status() (available uint, updating bool, supported bool) {
 	for _, rp := range u.RPs {
 		switch rp.UpdateState {
 		case Available:
