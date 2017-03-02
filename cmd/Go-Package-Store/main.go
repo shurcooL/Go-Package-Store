@@ -26,17 +26,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// c is a global context.
-var c = struct {
-	pipeline *workspace.Pipeline
-
-	// updater is set based on the source of Go packages. If nil, it means
-	// we don't have support to update Go packages from the current source.
-	// It's used to update repos in the backend, and if set to nil, to disable
-	// the frontend UI for updating packages.
-	updater gps.Updater
-}{}
-
 var (
 	httpFlag       = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
 	stdinFlag      = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
@@ -65,6 +54,17 @@ Examples:
   Go-Package-Store -git-subrepo=/path/to/repo/vendor
 `)
 }
+
+// c is a global context.
+var c = struct {
+	pipeline *workspace.Pipeline
+
+	// updater is set based on the source of Go packages. If nil, it means
+	// we don't have support to update Go packages from the current source.
+	// It's used to update repos in the backend, and if set to nil, to disable
+	// the frontend UI for updating packages.
+	updater gps.Updater
+}{}
 
 func main() {
 	flag.Usage = usage

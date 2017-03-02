@@ -14,7 +14,6 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
-	"github.com/gopherjs/vecty/prop"
 	"github.com/shurcooL/Go-Package-Store/frontend/action"
 	"github.com/shurcooL/Go-Package-Store/frontend/store"
 	gpscomponent "github.com/shurcooL/Go-Package-Store/vcomponent"
@@ -148,45 +147,11 @@ type UpdatesBody struct {
 }
 
 func (b *UpdatesBody) Render() *vecty.HTML {
-	var ns = vecty.List{
-		prop.Class("content"),
-
-		&gpscomponent.UpdatesHeader{
-			RPs:             store.RPs(),
-			CheckingUpdates: store.CheckingUpdates(),
-		},
-	}
-
-	wroteInstalledUpdates := false
-	for _, rp := range store.RPs() {
-		if rp.UpdateState == gpscomponent.Updated && !wroteInstalledUpdates {
-			ns = append(ns, gpscomponent.InstalledUpdates())
-			wroteInstalledUpdates = true
-		}
-
-		ns = append(ns, &gpscomponent.RepoPresentation{
-			RepoRoot:          rp.RepoRoot,
-			ImportPathPattern: rp.ImportPathPattern,
-			LocalRevision:     rp.LocalRevision,
-			RemoteRevision:    rp.RemoteRevision,
-			HomeURL:           rp.HomeURL,
-			ImageURL:          rp.ImageURL,
-			Changes:           rp.Changes,
-			Error:             rp.Error,
-
-			UpdateState: rp.UpdateState,
-
-			// TODO: Find a place for this.
-			UpdateSupported: rp.UpdateSupported,
-		})
-	}
-
 	return elem.Body(
-		&gpscomponent.Header{},
-		elem.Div(
-			prop.Class("center-max-width"),
-			elem.Div(ns...),
-		),
+		gpscomponent.UpdatesContent(
+			store.RPs(),
+			store.CheckingUpdates(),
+		)...,
 	)
 }
 
