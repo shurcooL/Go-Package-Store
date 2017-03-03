@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
+	"github.com/shurcooL/Go-Package-Store/frontend/model"
 	"github.com/shurcooL/httperror"
 )
 
@@ -26,15 +26,15 @@ func updatesHandler(w http.ResponseWriter, req *http.Request) error {
 		return fmt.Errorf("ResponseWriter %v is not a Flusher", w)
 	}
 	for rp := range c.pipeline.RepoPresentations() {
-		var cs []gpscomponent.Change
+		var cs []model.Change
 		for _, c := range rp.Presentation.Changes {
-			cs = append(cs, gpscomponent.Change{
+			cs = append(cs, model.Change{
 				Message:  c.Message,
 				URL:      c.URL,
-				Comments: gpscomponent.Comments{Count: c.Comments.Count, URL: c.Comments.URL},
+				Comments: model.Comments{Count: c.Comments.Count, URL: c.Comments.URL},
 			})
 		}
-		repoPresentation := gpscomponent.RepoPresentation{
+		repoPresentation := model.RepoPresentation{
 			RepoRoot:          rp.Repo.Root,
 			ImportPathPattern: rp.Repo.ImportPathPattern(),
 			LocalRevision:     rp.Repo.Local.Revision,
@@ -42,7 +42,7 @@ func updatesHandler(w http.ResponseWriter, req *http.Request) error {
 			HomeURL:           rp.Presentation.HomeURL,
 			ImageURL:          rp.Presentation.ImageURL,
 			Changes:           cs,
-			UpdateState:       gpscomponent.UpdateState(rp.UpdateState),
+			UpdateState:       model.UpdateState(rp.UpdateState),
 			UpdateSupported:   c.updater != nil,
 		}
 		if err := rp.Presentation.Error; err != nil {

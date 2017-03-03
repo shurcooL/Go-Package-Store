@@ -9,6 +9,7 @@ import (
 	"github.com/gopherjs/vecty/elem"
 	"github.com/gopherjs/vecty/event"
 	"github.com/gopherjs/vecty/prop"
+	"github.com/shurcooL/Go-Package-Store/frontend/model"
 	"github.com/shurcooL/octiconssvg"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
@@ -17,29 +18,8 @@ import (
 // TODO: Dedup with workspace.RepoPresentation. Maybe.
 type RepoPresentation struct {
 	vecty.Core
-
-	RepoRoot          string
-	ImportPathPattern string
-	LocalRevision     string
-	RemoteRevision    string
-	HomeURL           string
-	ImageURL          string
-	Changes           []*Change
-	Error             string
-
-	UpdateState UpdateState
-
-	// TODO: Find a place for this.
-	UpdateSupported bool
+	*model.RepoPresentation
 }
-
-type UpdateState uint8
-
-const (
-	Available UpdateState = iota
-	Updating
-	Updated
-)
 
 func (p *RepoPresentation) Render() *vecty.HTML {
 	return elem.Div(
@@ -99,25 +79,26 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 		)
 	}
 	switch p.UpdateState {
-	case Available:
+	case model.Available:
 		return elem.Anchor(
 			prop.Href("/api/update"),
 			event.Click(func(e *vecty.Event) {
 				// TODO.
 				fmt.Printf("UpdateRepositoryV(%q)\n", p.RepoRoot)
-				p.UpdateState = Updating
+				// TODO: Modifying underlying model is bad because Restore can't tell if something changed...
+				p.UpdateState = model.Updating // TODO: Do this via action.
 				vecty.Rerender(p)
 				js.Global.Get("UpdateRepositoryV").Invoke(p.RepoRoot)
 
 			}).PreventDefault(),
 			vecty.Text("Update"),
 		)
-	case Updating:
+	case model.Updating:
 		return elem.Span(
 			vecty.Property(atom.Style.String(), "color: gray; cursor: default;"),
 			vecty.Text("Updating..."),
 		)
-	case Updated:
+	case model.Updated:
 		// TODO.
 		return nil
 	default:
@@ -125,20 +106,10 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 	}
 }
 
-func (p *RepoPresentation) presentationChangesAndError() []vecty.MarkupOrComponentOrHTML {
-	var changes []*Change
-	for _, c := range p.Changes {
-		changes = append(changes, &Change{
-			Message:  c.Message,
-			URL:      c.URL,
-			Comments: c.Comments,
-		})
-	}
+func (p *RepoPresentation) presentationChangesAndError() vecty.List {
 	return vecty.List{
 		&PresentationChanges{
-			Changes:        changes,
-			LocalRevision:  p.LocalRevision,
-			RemoteRevision: p.RemoteRevision,
+			RepoPresentation: p.RepoPresentation,
 		},
 		vecty.If(p.Error != "",
 			elem.Paragraph(
@@ -153,22 +124,49 @@ func (p *RepoPresentation) presentationChangesAndError() []vecty.MarkupOrCompone
 
 type PresentationChanges struct {
 	vecty.Core
-	Changes        []*Change
-	LocalRevision  string // Only needed if len(Changes) == 0.
-	RemoteRevision string // Only needed if len(Changes) == 0.
+	//Changes        []*Change
+	//LocalRevision  string // Only needed if len(Changes) == 0.
+	//RemoteRevision string // Only needed if len(Changes) == 0.
+	*model.RepoPresentation // Only uses Changes, and if len(Changes) == 0, then LocalRevision and RemoteRevision.
+}
+
+// Restore is called when the component should restore itself against a
+// previous instance of a component. The previous component may be nil or
+// of a different type than this Restorer itself, thus a type assertion
+// should be used.
+//
+// If skip = true is returned, restoration of this component's body is
+// skipped. That is, the component is not rerendered. If the component can
+// prove when Restore is called that the HTML rendered by Component.Render
+// would not change, true should be returned.
+func (p *PresentationChanges) Restore(prev vecty.Component) (skip bool) {
+	fmt.Print("Restore: ")
+	old, ok := prev.(*PresentationChanges)
+	if !ok {
+		fmt.Println("not *PresentationChanges")
+		return false
+	}
+	fmt.Println("old.RepoPresentation == p.RepoPresentation:", old.RepoPresentation == p.RepoPresentation)
+	//return false
+	return old.RepoPresentation == p.RepoPresentation
 }
 
 func (p *PresentationChanges) Render() *vecty.HTML {
+	fmt.Println("PresentationChanges.Render()")
 	switch len(p.Changes) {
 	default:
 		ns := vecty.List{
 			prop.Class("changes-list"),
 		}
-		//for i := range p.Changes { // TODO: Consider changing Changes type to []*Change to simplify this.
-		//	ns = append(ns, &p.Changes[i])
+		//for _, c := range p.Changes {
+		//	ns = append(ns, &Change{
+		//		Change: c,
+		//	})
 		//}
-		for _, c := range p.Changes {
-			ns = append(ns, c)
+		for i := range p.Changes { // TODO: Consider changing model.RepoPresentation.Changes type to []*Change to simplify this.
+			ns = append(ns, &Change{
+				Change: &p.Changes[i],
+			})
 		}
 		return elem.UnorderedList(ns...)
 	case 0:
@@ -190,9 +188,7 @@ func (p *PresentationChanges) Render() *vecty.HTML {
 // Change is a component for a single commit message.
 type Change struct {
 	vecty.Core
-	Message  string   // Commit message of this change.
-	URL      string   // URL of this change.
-	Comments Comments // Comments on this change.
+	*model.Change
 }
 
 func (c *Change) Render() *vecty.HTML {
@@ -211,7 +207,7 @@ func (c *Change) Render() *vecty.HTML {
 		),
 		elem.Span(
 			vecty.Property(atom.Style.String(), "float: right; margin-right: 6px;"),
-			&c.Comments,
+			&Comments{Comments: &c.Comments},
 		),
 	)
 }
@@ -220,8 +216,7 @@ func (c *Change) Render() *vecty.HTML {
 // TODO: Consider inlining this into Change component, we'll see.
 type Comments struct {
 	vecty.Core
-	Count int
-	URL   string
+	*model.Comments
 }
 
 func (c *Comments) Render() *vecty.HTML {

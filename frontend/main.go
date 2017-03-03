@@ -15,6 +15,7 @@ import (
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
 	"github.com/shurcooL/Go-Package-Store/frontend/action"
+	"github.com/shurcooL/Go-Package-Store/frontend/model"
 	"github.com/shurcooL/Go-Package-Store/frontend/store"
 	gpscomponent "github.com/shurcooL/Go-Package-Store/vcomponent"
 	"honnef.co/go/js/dom"
@@ -61,7 +62,7 @@ func stream() error {
 	defer resp.Body.Close()
 	dec := json.NewDecoder(resp.Body)
 	for len(store.RPs()) < 10 {
-		var rp gpscomponent.RepoPresentation
+		var rp model.RepoPresentation
 		err := dec.Decode(&rp)
 		if err == io.EOF {
 			break
@@ -141,9 +142,6 @@ var body = &UpdatesBody{}
 
 type UpdatesBody struct {
 	vecty.Core
-
-	//RPs             []*gpscomponent.RepoPresentation
-	//CheckingUpdates bool
 }
 
 func (b *UpdatesBody) Render() *vecty.HTML {

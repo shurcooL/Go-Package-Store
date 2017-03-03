@@ -4,25 +4,25 @@ import (
 	"fmt"
 
 	"github.com/shurcooL/Go-Package-Store/frontend/action"
-	gpscomponent "github.com/shurcooL/Go-Package-Store/vcomponent"
+	"github.com/shurcooL/Go-Package-Store/frontend/model"
 )
 
 //var Store = struct {
 //	//rpsMu sync.Mutex // TODO: Move towards a channel-based unified state manipulator.
-//	RPs   []*gpscomponent.RepoPresentation
+//	RPs   []*model.RepoPresentation
 //
 //	CheckingUpdates bool
 //}{CheckingUpdates: true}
 
 var (
 	//rpsMu sync.Mutex // TODO: Move towards a channel-based unified state manipulator.
-	rps []*gpscomponent.RepoPresentation
+	rps []*model.RepoPresentation
 
 	checkingUpdates = true
 )
 
-func RPs() []*gpscomponent.RepoPresentation { return rps }
-func CheckingUpdates() bool                 { return checkingUpdates }
+func RPs() []*model.RepoPresentation { return rps }
+func CheckingUpdates() bool          { return checkingUpdates }
 
 // Apply applies action a to the store.
 func Apply(a action.Action) action.Response {
@@ -35,7 +35,7 @@ func Apply(a action.Action) action.Response {
 	case *action.SetUpdating:
 		for _, rp := range rps {
 			if rp.RepoRoot == a.RepoRoot {
-				rp.UpdateState = gpscomponent.Updating
+				rp.UpdateState = model.Updating
 				return nil
 			}
 		}
@@ -44,9 +44,9 @@ func Apply(a action.Action) action.Response {
 	case *action.SetUpdatingAll:
 		var repoRoots []string
 		for _, rp := range rps {
-			if rp.UpdateState == gpscomponent.Available {
+			if rp.UpdateState == model.Available {
 				repoRoots = append(repoRoots, rp.RepoRoot)
-				rp.UpdateState = gpscomponent.Updating
+				rp.UpdateState = model.Updating
 			}
 		}
 		// TODO: Instead of response, look into async-action-creators:
@@ -58,7 +58,7 @@ func Apply(a action.Action) action.Response {
 		moveDown(rps, a.RepoRoot)
 		for _, rp := range rps {
 			if rp.RepoRoot == a.RepoRoot {
-				rp.UpdateState = gpscomponent.Updated
+				rp.UpdateState = model.Updated
 				return nil
 			}
 		}
@@ -76,22 +76,22 @@ func Apply(a action.Action) action.Response {
 // TODO: Both moveDown and moveUp can be inlined and simplified.
 
 // moveDown moves root down the rps towards all other updated.
-func moveDown(rps []*gpscomponent.RepoPresentation, root string) {
+func moveDown(rps []*model.RepoPresentation, root string) {
 	var i int
 	for ; rps[i].RepoRoot != root; i++ { // i is the current package about to be updated.
 	}
-	for ; i+1 < len(rps) && rps[i+1].UpdateState != gpscomponent.Updated; i++ {
+	for ; i+1 < len(rps) && rps[i+1].UpdateState != model.Updated; i++ {
 		rps[i], rps[i+1] = rps[i+1], rps[i] // Swap the two.
 	}
 }
 
 // moveUp moves last entry up the rps above all other updated entries, unless rp is already updated.
-func moveUp(rps []*gpscomponent.RepoPresentation, rp *gpscomponent.RepoPresentation) {
+func moveUp(rps []*model.RepoPresentation, rp *model.RepoPresentation) {
 	// TODO: The "unless rp is already updated" part might not be needed if more strict about possible cases.
-	if rp.UpdateState == gpscomponent.Updated {
+	if rp.UpdateState == model.Updated {
 		return
 	}
-	for i := len(rps) - 1; i-1 >= 0 && rps[i-1].UpdateState == gpscomponent.Updated; i-- {
+	for i := len(rps) - 1; i-1 >= 0 && rps[i-1].UpdateState == model.Updated; i-- {
 		rps[i], rps[i-1] = rps[i-1], rps[i] // Swap the two.
 	}
 }
