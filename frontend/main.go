@@ -24,8 +24,8 @@ import (
 var document = dom.GetWindow().Document().(dom.HTMLDocument)
 
 func main() {
-	js.Global.Set("UpdateRepositoryV", UpdateRepositoryV)
-	js.Global.Set("UpdateAllV", UpdateAllV)
+	js.Global.Set("UpdateRepository", UpdateRepository)
+	js.Global.Set("UpdateAll", UpdateAll)
 
 	switch readyState := document.ReadyState(); readyState {
 	case "loading":
@@ -71,11 +71,9 @@ func stream() error {
 		}
 
 		apply(&action.AppendRP{RP: &rp})
-		//renderBody()
 	}
 
 	apply(&action.DoneCheckingUpdates{})
-	//renderBody()
 	return nil
 }
 
@@ -108,7 +106,13 @@ func scheduler() {
 			resp := store.Apply(a.Action)
 			a.RespCh <- resp
 
-			// TODO: Don't render (needlessly) after *action.SetUpdating, etc.
+			// Don't render (needlessly) after *action.SetUpdating, etc.
+			// TODO: Move this elsewhere (into store.Apply somehow?).
+			// THINK: Can't do this, need to update heading after all.
+			//if _, ok := a.Action.(*action.SetUpdating); ok {
+			//	break
+			//}
+
 			renderCh = time.After(10 * time.Millisecond)
 		case <-renderCh:
 			renderBody()
@@ -153,14 +157,13 @@ func (b *UpdatesBody) Render() *vecty.HTML {
 	)
 }
 
-// UpdateAllV marks all available updates as updating, and performs updates in background in sequence.
-func UpdateAllV() {
+// UpdateAll marks all available updates as updating, and performs updates in background in sequence.
+func UpdateAll() {
 	go func() {
 		started := time.Now()
 		defer func() { fmt.Println("update all:", time.Since(started)) }()
 
 		resp := apply(&action.SetUpdatingAll{}).(*action.SetUpdatingAllResponse)
-		//renderBody()
 
 		for _, root := range resp.RepoRoots {
 			update(root)
@@ -168,9 +171,9 @@ func UpdateAllV() {
 	}()
 }
 
-// UpdateRepositoryV updates specified repository.
+// UpdateRepository updates specified repository.
 // root is the import path corresponding to the root of the repository.
-func UpdateRepositoryV(root string) {
+func UpdateRepository(root string) {
 	go func() {
 		apply(&action.SetUpdating{RepoRoot: root})
 		// No need to render body because the component updated itself internally.
@@ -183,6 +186,9 @@ func UpdateRepositoryV(root string) {
 // update updates specified repository.
 // root is the import path corresponding to the root of the repository.
 func update(root string) {
+	started := time.Now()
+	defer func() { fmt.Println("update:", time.Since(started)) }()
+
 	resp, err := http.PostForm("/api/update", url.Values{"RepoRoot": {root}})
 	if err != nil {
 		log.Println(err)
@@ -199,5 +205,4 @@ func update(root string) {
 	}
 
 	apply(&action.SetUpdated{RepoRoot: root})
-	//renderBody()
 }

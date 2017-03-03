@@ -3,6 +3,7 @@ package vcomponent
 import (
 	"bytes"
 	"fmt"
+	"time"
 
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/gopherjs/vecty"
@@ -84,11 +85,13 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 			prop.Href("/api/update"),
 			event.Click(func(e *vecty.Event) {
 				// TODO.
-				fmt.Printf("UpdateRepositoryV(%q)\n", p.RepoRoot)
+				fmt.Printf("UpdateRepository(%q)\n", p.RepoRoot)
 				// TODO: Modifying underlying model is bad because Restore can't tell if something changed...
 				p.UpdateState = model.Updating // TODO: Do this via action.
+				started := time.Now()
 				vecty.Rerender(p)
-				js.Global.Get("UpdateRepositoryV").Invoke(p.RepoRoot)
+				fmt.Println("render RepoPresentation:", time.Since(started))
+				js.Global.Get("UpdateRepository").Invoke(p.RepoRoot)
 
 			}).PreventDefault(),
 			vecty.Text("Update"),
@@ -139,20 +142,20 @@ type PresentationChanges struct {
 // skipped. That is, the component is not rerendered. If the component can
 // prove when Restore is called that the HTML rendered by Component.Render
 // would not change, true should be returned.
-func (p *PresentationChanges) Restore(prev vecty.Component) (skip bool) {
-	fmt.Print("Restore: ")
-	old, ok := prev.(*PresentationChanges)
-	if !ok {
-		fmt.Println("not *PresentationChanges")
-		return false
-	}
-	fmt.Println("old.RepoPresentation == p.RepoPresentation:", old.RepoPresentation == p.RepoPresentation)
-	//return false
-	return old.RepoPresentation == p.RepoPresentation
-}
+//func (p *PresentationChanges) Restore(prev vecty.Component) (skip bool) {
+//	//fmt.Print("Restore: ")
+//	old, ok := prev.(*PresentationChanges)
+//	if !ok {
+//		//fmt.Println("not *PresentationChanges")
+//		return false
+//	}
+//	_ = old //fmt.Println("old.RepoPresentation == p.RepoPresentation:", old.RepoPresentation == p.RepoPresentation)
+//	return false
+//	//return old.RepoPresentation == p.RepoPresentation
+//}
 
 func (p *PresentationChanges) Render() *vecty.HTML {
-	fmt.Println("PresentationChanges.Render()")
+	//fmt.Println("PresentationChanges.Render()")
 	switch len(p.Changes) {
 	default:
 		ns := vecty.List{
@@ -202,7 +205,7 @@ func (c *Change) Render() *vecty.HTML {
 				vecty.Property(atom.Target.String(), "_blank"),
 				vecty.Style("color", "gray"),
 				vecty.Property(atom.Title.String(), "Commit"),
-				octicon(octiconssvg.GitCommit),
+				vecty.UnsafeHTML(octiconGitCommit),
 			),
 		),
 		elem.Span(
@@ -231,7 +234,7 @@ func (c *Comments) Render() *vecty.HTML {
 		vecty.Property(atom.Title.String(), fmt.Sprintf("%d comments", c.Count)),
 		elem.Span(
 			vecty.Property(atom.Style.String(), "color: currentColor; margin-right: 4px;"),
-			octicon(octiconssvg.Comment),
+			vecty.UnsafeHTML(octiconComment),
 		),
 		vecty.Text(fmt.Sprint(c.Count)),
 	)
@@ -255,11 +258,16 @@ func (c *CommitID) Render() *vecty.HTML {
 
 func (c *CommitID) commitID() string { return c.ID[:8] }
 
-func octicon(icon func() *html.Node) vecty.Markup {
+var (
+	octiconGitCommit = render(octiconssvg.GitCommit)
+	octiconComment   = render(octiconssvg.Comment)
+)
+
+func render(icon func() *html.Node) string {
 	var buf bytes.Buffer
 	err := html.Render(&buf, icon())
 	if err != nil {
 		panic(err)
 	}
-	return vecty.UnsafeHTML(buf.String())
+	return buf.String()
 }
