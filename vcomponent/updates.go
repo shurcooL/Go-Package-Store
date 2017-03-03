@@ -4,9 +4,10 @@ import (
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
 	"github.com/gopherjs/vecty/prop"
+	"github.com/shurcooL/Go-Package-Store/frontend/model"
 )
 
-func UpdatesContent(rps []*RepoPresentation, checkingUpdates bool) vecty.List {
+func UpdatesContent(rps []*model.RepoPresentation, checkingUpdates bool) vecty.List {
 	return vecty.List{
 		&Header{},
 		elem.Div(
@@ -18,7 +19,7 @@ func UpdatesContent(rps []*RepoPresentation, checkingUpdates bool) vecty.List {
 	}
 }
 
-func updatesContent(rps []*RepoPresentation, checkingUpdates bool) vecty.List {
+func updatesContent(rps []*model.RepoPresentation, checkingUpdates bool) vecty.List {
 	var content = vecty.List{prop.Class("content")}
 
 	content = append(content,
@@ -30,25 +31,13 @@ func updatesContent(rps []*RepoPresentation, checkingUpdates bool) vecty.List {
 
 	wroteInstalledUpdates := false
 	for _, rp := range rps {
-		if rp.UpdateState == Updated && !wroteInstalledUpdates {
+		if rp.UpdateState == model.Updated && !wroteInstalledUpdates {
 			content = append(content, InstalledUpdates())
 			wroteInstalledUpdates = true
 		}
 
 		content = append(content, &RepoPresentation{
-			RepoRoot:          rp.RepoRoot,
-			ImportPathPattern: rp.ImportPathPattern,
-			LocalRevision:     rp.LocalRevision,
-			RemoteRevision:    rp.RemoteRevision,
-			HomeURL:           rp.HomeURL,
-			ImageURL:          rp.ImageURL,
-			Changes:           rp.Changes,
-			Error:             rp.Error,
-
-			UpdateState: rp.UpdateState,
-
-			// TODO: Find a place for this.
-			UpdateSupported: rp.UpdateSupported,
+			RepoPresentation: rp,
 		})
 	}
 

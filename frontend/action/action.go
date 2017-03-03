@@ -1,6 +1,6 @@
 package action
 
-import gpscomponent "github.com/shurcooL/Go-Package-Store/vcomponent"
+import "github.com/shurcooL/Go-Package-Store/frontend/model"
 
 // Action represents any of the supported actions.
 type Action interface{}
@@ -9,7 +9,7 @@ type Action interface{}
 type Response interface{}
 
 type AppendRP struct {
-	RP *gpscomponent.RepoPresentation
+	RP *model.RepoPresentation
 }
 
 type SetUpdating struct {

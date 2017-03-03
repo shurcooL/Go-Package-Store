@@ -8,6 +8,7 @@ import (
 	"github.com/gopherjs/vecty/elem"
 	"github.com/gopherjs/vecty/event"
 	"github.com/gopherjs/vecty/prop"
+	"github.com/shurcooL/Go-Package-Store/frontend/model"
 	"golang.org/x/net/html/atom"
 )
 
@@ -28,7 +29,7 @@ func (*Header) Render() *vecty.HTML {
 // updatesHeader combines checkingForUpdates, noUpdates and updatesHeading
 // into one high level component.
 type updatesHeader struct {
-	RPs             []*RepoPresentation
+	RPs             []*model.RepoPresentation
 	CheckingUpdates bool
 }
 
@@ -56,10 +57,10 @@ func (u updatesHeader) Render() vecty.List {
 func (u updatesHeader) status() (available uint, updating bool, supported bool) {
 	for _, rp := range u.RPs {
 		switch rp.UpdateState {
-		case Available:
+		case model.Available:
 			available++
 			supported = rp.UpdateSupported
-		case Updating:
+		case model.Updating:
 			updating = true
 		}
 	}
@@ -107,7 +108,7 @@ func (u *updatesHeading) updateAllButton() *vecty.HTML {
 			event.Click(func(e *vecty.Event) {
 				// TODO.
 				fmt.Println("UpdateAllV()")
-				js.Global.Get("UpdateAllV").Invoke()
+				js.Global.Get("UpdateAllV").Invoke() // TODO: Do this via action?
 			}).PreventDefault(),
 			vecty.Text("Update All"),
 		)
