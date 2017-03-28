@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
-	"github.com/gopherjs/vecty/prop"
+	"github.com/shurcooL/Go-Package-Store/frontend/model"
 	gpscomponent "github.com/shurcooL/Go-Package-Store/vcomponent"
 )
 
@@ -17,31 +17,14 @@ type UpdatesBody struct {
 
 func (*UpdatesBody) Render() *vecty.HTML {
 	return elem.Body(
-		&gpscomponent.Header{},
-		elem.Div(
-			prop.Class("center-max-width"),
-			elem.Div(
-				prop.Class("content"),
-
-				&gpscomponent.UpdatesHeader{
-					RPs:             nil,
-					CheckingUpdates: false,
-				},
-				&gpscomponent.UpdatesHeader{
-					RPs:             mockComponentRPs,
-					CheckingUpdates: true,
-				},
-				mockComponentRPs[0],
-				mockComponentRPs[1],
-				mockComponentRPs[2],
-				gpscomponent.InstalledUpdates(),
-				mockComponentRPs[3],
-			),
-		),
+		gpscomponent.UpdatesContent(
+			mockComponentRPs,
+			true,
+		)...,
 	)
 }
 
-var mockComponentRPs = []*gpscomponent.RepoPresentation{
+var mockComponentRPs = []*model.RepoPresentation{
 	{
 		RepoRoot:          "github.com/gopherjs/gopherjs",
 		ImportPathPattern: "github.com/gopherjs/gopherjs/...",
@@ -49,11 +32,11 @@ var mockComponentRPs = []*gpscomponent.RepoPresentation{
 		RemoteRevision:    "",
 		HomeURL:           "https://github.com/gopherjs/gopherjs",
 		ImageURL:          "https://avatars.githubusercontent.com/u/6654647?v=3",
-		Changes: []*gpscomponent.Change{
+		Changes: []model.Change{
 			{
 				Message: "improved reflect support for blocking functions",
 				URL:     "https://github.com/gopherjs/gopherjs/commit/87bf7e405aa3df6df0dcbb9385713f997408d7b9",
-				Comments: gpscomponent.Comments{
+				Comments: model.Comments{
 					Count: 0,
 					URL:   "",
 				},
@@ -61,7 +44,7 @@ var mockComponentRPs = []*gpscomponent.RepoPresentation{
 			{
 				Message: "small cleanup",
 				URL:     "https://github.com/gopherjs/gopherjs/commit/77a838f965881a888416bae38f790f76bb1f64bd",
-				Comments: gpscomponent.Comments{
+				Comments: model.Comments{
 					Count: 1,
 					URL:   "https://www.example.com/",
 				},
@@ -69,14 +52,14 @@ var mockComponentRPs = []*gpscomponent.RepoPresentation{
 			{
 				Message: "replaced js.This and js.Arguments by js.MakeFunc",
 				URL:     "https://github.com/gopherjs/gopherjs/commit/29dd054a0753760fe6e826ded0982a1bf69f702a",
-				Comments: gpscomponent.Comments{
+				Comments: model.Comments{
 					Count: 0,
 					URL:   "",
 				},
 			},
 		},
 		Error:           "",
-		UpdateState:     gpscomponent.Available,
+		UpdateState:     model.Available,
 		UpdateSupported: true,
 	},
 	{
@@ -86,18 +69,18 @@ var mockComponentRPs = []*gpscomponent.RepoPresentation{
 		RemoteRevision:    "",
 		HomeURL:           "http://golang.org/x/image",
 		ImageURL:          "https://avatars.githubusercontent.com/u/4314092?v=3",
-		Changes: []*gpscomponent.Change{
+		Changes: []model.Change{
 			{
 				Message: "draw: generate code paths for image.Gray sources.",
 				URL:     "https://github.com/golang/image/commit/f510ad81a1256ee96a2870647b74fa144a30c249",
-				Comments: gpscomponent.Comments{
+				Comments: model.Comments{
 					Count: 0,
 					URL:   "",
 				},
 			},
 		},
 		Error:           "",
-		UpdateState:     gpscomponent.Updating,
+		UpdateState:     model.Updating,
 		UpdateSupported: true,
 	},
 	{
@@ -109,7 +92,7 @@ var mockComponentRPs = []*gpscomponent.RepoPresentation{
 		ImageURL:          "https://github.com/images/gravatars/gravatar-user-420.png",
 		Changes:           nil,
 		Error:             "",
-		UpdateState:       gpscomponent.Available,
+		UpdateState:       model.Available,
 		UpdateSupported:   true,
 	},
 	{
@@ -119,18 +102,18 @@ var mockComponentRPs = []*gpscomponent.RepoPresentation{
 		RemoteRevision:    "",
 		HomeURL:           "http://golang.org/x/image",
 		ImageURL:          "https://avatars.githubusercontent.com/u/4314092?v=3",
-		Changes: []*gpscomponent.Change{
+		Changes: []model.Change{
 			{
 				Message: "draw: generate code paths for image.Gray sources.",
 				URL:     "https://github.com/golang/image/commit/f510ad81a1256ee96a2870647b74fa144a30c249",
-				Comments: gpscomponent.Comments{
+				Comments: model.Comments{
 					Count: 0,
 					URL:   "",
 				},
 			},
 		},
 		Error:           "",
-		UpdateState:     gpscomponent.Updated,
+		UpdateState:     model.Updated,
 		UpdateSupported: true,
 	},
 }
