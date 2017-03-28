@@ -10,6 +10,7 @@ import (
 	"github.com/gopherjs/vecty/elem"
 	"github.com/gopherjs/vecty/event"
 	"github.com/gopherjs/vecty/prop"
+	"github.com/gopherjs/vecty/style"
 	"github.com/shurcooL/Go-Package-Store/frontend/model"
 	"github.com/shurcooL/octiconssvg"
 	"golang.org/x/net/html"
@@ -26,7 +27,7 @@ func (p *RepoPresentation) Render() *vecty.HTML {
 	return elem.Div(
 		prop.Class("list-entry go-package-update"),
 		vecty.Property(atom.Id.String(), p.RepoRoot),
-		vecty.Property(atom.Style.String(), "position: relative;"),
+		vecty.Style("position", "relative"),
 		elem.Div(
 			prop.Class("list-entry-header"),
 			elem.Span(
@@ -34,14 +35,14 @@ func (p *RepoPresentation) Render() *vecty.HTML {
 				p.importPathPattern(),
 			),
 			elem.Div(
-				vecty.Property(atom.Style.String(), "float: right;"),
+				vecty.Style("float", "right"),
 				p.updateState(),
 			),
 		),
 		elem.Div(
 			prop.Class("list-entry-body"),
 			elem.Image(
-				vecty.Property(atom.Style.String(), "float: left; border-radius: 4px;"),
+				vecty.Style("float", "left"), vecty.Style("border-radius", string(style.Px(4))),
 				vecty.Property(atom.Src.String(), p.ImageURL),
 				vecty.Property(atom.Width.String(), "36"),
 				vecty.Property(atom.Height.String(), "36"),
@@ -50,7 +51,7 @@ func (p *RepoPresentation) Render() *vecty.HTML {
 				p.presentationChangesAndError()...,
 			),
 			elem.Div(
-				vecty.Property(atom.Style.String(), "clear: both;"),
+				vecty.Style("clear", "both"),
 			),
 		),
 	)
@@ -74,7 +75,7 @@ func (p *RepoPresentation) importPathPattern() *vecty.HTML {
 func (p *RepoPresentation) updateState() *vecty.HTML {
 	if !p.UpdateSupported {
 		return elem.Span(
-			vecty.Property(atom.Style.String(), "color: gray; cursor: default;"),
+			style.Color("gray"), vecty.Style("cursor", "default"),
 			vecty.Property(atom.Title.String(), "Updating repos is not currently supported for this source of repos."),
 			vecty.Text("Update"),
 		)
@@ -98,7 +99,7 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 		)
 	case model.Updating:
 		return elem.Span(
-			vecty.Property(atom.Style.String(), "color: gray; cursor: default;"),
+			style.Color("gray"), vecty.Style("cursor", "default"),
 			vecty.Text("Updating..."),
 		)
 	case model.Updated:
@@ -209,7 +210,7 @@ func (c *Change) Render() *vecty.HTML {
 			),
 		),
 		elem.Span(
-			vecty.Property(atom.Style.String(), "float: right; margin-right: 6px;"),
+			vecty.Style("float", "right"), vecty.Style("margin-right", string(style.Px(6))),
 			&Comments{Comments: &c.Comments},
 		),
 	)
@@ -233,7 +234,7 @@ func (c *Comments) Render() *vecty.HTML {
 		vecty.Style("color", "gray"),
 		vecty.Property(atom.Title.String(), fmt.Sprintf("%d comments", c.Count)),
 		elem.Span(
-			vecty.Property(atom.Style.String(), "color: currentColor; margin-right: 4px;"),
+			style.Color("currentColor"), vecty.Style("margin-right", string(style.Px(4))),
 			vecty.UnsafeHTML(octiconComment),
 		),
 		vecty.Text(fmt.Sprint(c.Count)),

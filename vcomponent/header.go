@@ -8,6 +8,7 @@ import (
 	"github.com/gopherjs/vecty/elem"
 	"github.com/gopherjs/vecty/event"
 	"github.com/gopherjs/vecty/prop"
+	"github.com/gopherjs/vecty/style"
 	"github.com/shurcooL/Go-Package-Store/frontend/model"
 	"golang.org/x/net/html/atom"
 )
@@ -18,9 +19,9 @@ type Header struct {
 
 func (*Header) Render() *vecty.HTML {
 	return elem.Div(
-		vecty.Property(atom.Style.String(), "width: 100%; text-align: center; background-color: hsl(209, 51%, 92%);"),
+		style.Width("100%"), vecty.Style("text-align", "center"), vecty.Style("background-color", "hsl(209, 51%, 92%)"),
 		elem.Span(
-			vecty.Property(atom.Style.String(), "background-color: hsl(209, 51%, 88%); padding: 15px; display: inline-block;"),
+			vecty.Style("background-color", "hsl(209, 51%, 88%)"), vecty.Style("padding", string(style.Px(15))), vecty.Style("display", "inline-block"),
 			vecty.Text("Updates"),
 		),
 	)
@@ -83,11 +84,11 @@ func (u *updatesHeading) Render() *vecty.HTML {
 		return nil
 	}
 	return elem.Heading4(
-		vecty.Property(atom.Style.String(), "text-align: left;"),
+		vecty.Style("text-align", "left"),
 		vecty.If(u.Updating, vecty.Text("Updates Installing...")),
 		vecty.If(!u.Updating, vecty.Text(fmt.Sprintf("%d Updates Available", u.Available))),
 		elem.Span(
-			vecty.Property(atom.Style.String(), "float: right;"),
+			vecty.Style("float", "right"),
 			u.updateAllButton(),
 		),
 	)
@@ -96,7 +97,7 @@ func (u *updatesHeading) Render() *vecty.HTML {
 func (u *updatesHeading) updateAllButton() *vecty.HTML {
 	if !u.UpdateSupported {
 		return elem.Span(
-			vecty.Property(atom.Style.String(), "color: gray; cursor: default;"),
+			style.Color("gray"), vecty.Style("cursor", "default"),
 			vecty.Property(atom.Title.String(), "Updating repos is not currently supported for this source of repos."),
 			vecty.Text("Update All"),
 		)
@@ -114,7 +115,7 @@ func (u *updatesHeading) updateAllButton() *vecty.HTML {
 		)
 	case u.Available == 0:
 		return elem.Span(
-			vecty.Property(atom.Style.String(), "color: gray; cursor: default;"),
+			style.Color("gray"), vecty.Style("cursor", "default"),
 			vecty.Text("Update All"),
 		)
 	default:
@@ -131,7 +132,7 @@ func noUpdates() *vecty.HTML { return heading(elem.Heading2, "No Updates Availab
 
 func heading(heading func(markup ...vecty.MarkupOrComponentOrHTML) *vecty.HTML, text string) *vecty.HTML {
 	return heading(
-		vecty.Property(atom.Style.String(), "text-align: center;"),
+		vecty.Style("text-align", "center"),
 		vecty.Text(text),
 	)
 }
