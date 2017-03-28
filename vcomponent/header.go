@@ -83,10 +83,19 @@ func (u *updatesHeading) Render() *vecty.HTML {
 	if u.Available == 0 && !u.Updating {
 		return nil
 	}
+	var status string
+	if u.Available > 0 {
+		status = fmt.Sprintf("%d Updates Available", u.Available)
+	}
+	if u.Updating {
+		if status != "" {
+			status += ", "
+		}
+		status += "Installing Updates..."
+	}
 	return elem.Heading4(
 		vecty.Style("text-align", "left"),
-		vecty.If(u.Updating, vecty.Text("Updates Installing...")),
-		vecty.If(!u.Updating, vecty.Text(fmt.Sprintf("%d Updates Available", u.Available))),
+		vecty.Text(status),
 		elem.Span(
 			vecty.Style("float", "right"),
 			u.updateAllButton(),
