@@ -14,10 +14,10 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
+	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
 	"github.com/shurcooL/Go-Package-Store/frontend/action"
 	"github.com/shurcooL/Go-Package-Store/frontend/model"
 	"github.com/shurcooL/Go-Package-Store/frontend/store"
-	gpscomponent "github.com/shurcooL/Go-Package-Store/vcomponent"
 	"honnef.co/go/js/dom"
 )
 
@@ -61,7 +61,7 @@ func stream() error {
 	}
 	defer resp.Body.Close()
 	dec := json.NewDecoder(resp.Body)
-	for len(store.RPs()) < 10 {
+	for /*len(store.RPs()) < 10*/ {
 		var rp model.RepoPresentation
 		err := dec.Decode(&rp)
 		if err == io.EOF {

@@ -1,4 +1,4 @@
-package vcomponent
+package component
 
 import (
 	"github.com/gopherjs/vecty"

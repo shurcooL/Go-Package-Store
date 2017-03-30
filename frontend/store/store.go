@@ -7,17 +7,8 @@ import (
 	"github.com/shurcooL/Go-Package-Store/frontend/model"
 )
 
-//var Store = struct {
-//	//rpsMu sync.Mutex // TODO: Move towards a channel-based unified state manipulator.
-//	RPs   []*model.RepoPresentation
-//
-//	CheckingUpdates bool
-//}{CheckingUpdates: true}
-
 var (
-	//rpsMu sync.Mutex // TODO: Move towards a channel-based unified state manipulator.
-	rps []*model.RepoPresentation
-
+	rps             []*model.RepoPresentation
 	checkingUpdates = true
 )
 

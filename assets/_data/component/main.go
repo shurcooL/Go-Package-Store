@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
+	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
 	"github.com/shurcooL/Go-Package-Store/frontend/model"
-	gpscomponent "github.com/shurcooL/Go-Package-Store/vcomponent"
 )
 
 func main() {
