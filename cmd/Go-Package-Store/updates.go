@@ -16,7 +16,8 @@ func updatesHandler(w http.ResponseWriter, req *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if !production {
-		http.ServeFile(w, req, "/Users/Dmitri/Dropbox/Work/2013/GoLand/src/github.com/shurcooL/Go-Package-Store/page/updates/testdata/updates.json")
+		// TODO, XXX: Clean this up.
+		http.ServeFile(w, req, "/Users/Dmitri/Dropbox/Needs Processing/GPS bits/page/updates/testdata/updates.json")
 		return nil
 	}
 	jw := json.NewEncoder(w)
