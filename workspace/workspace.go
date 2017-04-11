@@ -220,9 +220,10 @@ func (p *Pipeline) AddRevision(importPath string, revision string) {
 	}
 }
 
+// LocalRepo represents a local repository on disk.
 type LocalRepo struct {
-	Path string
-	Root string
+	Path string // Full path to repository on disk.
+	Root string // Import path corresponding to the root of the repository.
 	VCS  *vcs.Cmd
 }
 
@@ -551,11 +552,24 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 	if repo.Remote.RepoURL == "" {
 		return false, "repository URL (as determined dynamically from the import path) is empty"
 	}
-	if repo.Local.Revision == "" {
-		return false, "local revision is empty"
+	if repo.Remote.Branch == "" {
+		return false, "remote branch is empty"
 	}
 	if repo.Remote.Revision == "" {
 		return false, "remote revision is empty"
+	}
+	if repo.VCS != nil {
+		// Local branch should match remote branch.
+		localBranch, err := repo.VCS.Branch(repo.Path)
+		if err != nil {
+			return false, "error determining local branch:\n" + err.Error()
+		}
+		if localBranch != repo.Remote.Branch {
+			return false, fmt.Sprintf("local branch %q doesn't match remote branch %q", localBranch, repo.Remote.Branch)
+		}
+	}
+	if repo.Local.Revision == "" {
+		return false, "local revision is empty"
 	}
 
 	if repo.Local.Revision == repo.Remote.Revision {
@@ -566,15 +580,6 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 	// Check repository state before presenting updates.
 	switch {
 	case repo.VCS != nil:
-		// Local branch should match remote branch.
-		localBranch, err := repo.VCS.Branch(repo.Path)
-		if err != nil {
-			return false, "error determining local branch:\n" + err.Error()
-		}
-		if localBranch != repo.Remote.Branch {
-			return false, fmt.Sprintf("local branch %q doesn't match remote branch %q", localBranch, repo.Remote.Branch)
-		}
-
 		// There shouldn't be a dirty working tree.
 		treeStatus, err := repo.VCS.Status(repo.Path)
 		if err != nil {
