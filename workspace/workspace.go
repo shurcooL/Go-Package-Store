@@ -548,7 +548,7 @@ func (p *Pipeline) processFilterWorker(wg *sync.WaitGroup) {
 // It checks that the Go package is on default branch, does not have a dirty working tree, and does not have the remote revision.
 // It returns a non-empty reason for why an update should be skipped, or empty string if it's not interesting (e.g., repository is up to date).
 func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
-	// Do some sanity checks.
+	// Ensure sufficient remote information is available, otherwise we can't present updates.
 	if repo.Remote.RepoURL == "" {
 		return false, "repository URL (as determined dynamically from the import path) is empty"
 	}
@@ -558,7 +558,19 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 	if repo.Remote.Revision == "" {
 		return false, "remote revision is empty"
 	}
-	if repo.VCS != nil {
+
+	// Check repository state before presenting updates, and report most useful
+	// reasons first.
+	switch {
+	case repo.VCS != nil:
+		// Local remote URL should match Repo URL derived from import path.
+		// This is the very first thing to verify, because it affects default branch.
+		if !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
+			return false, "remote URL doesn't match repo URL inferred from import path:" +
+				fmt.Sprintf("\n		  (actual) %s", repo.Local.RemoteURL) +
+				fmt.Sprintf("\n		(expected) %s", status.FormatRepoURL(repo.Local.RemoteURL, repo.Remote.RepoURL))
+		}
+
 		// Local branch should match remote branch.
 		localBranch, err := repo.VCS.Branch(repo.Path)
 		if err != nil {
@@ -567,35 +579,31 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 		if localBranch != repo.Remote.Branch {
 			return false, fmt.Sprintf("local branch %q doesn't match remote branch %q", localBranch, repo.Remote.Branch)
 		}
-	}
-	if repo.Local.Revision == "" {
-		return false, "local revision is empty"
-	}
 
-	if repo.Local.Revision == repo.Remote.Revision {
-		// Already up to date. No reason provided because it's not worth mentioning.
-		return false, ""
-	}
-
-	// Check repository state before presenting updates.
-	switch {
-	case repo.VCS != nil:
-		// There shouldn't be a dirty working tree.
-		treeStatus, err := repo.VCS.Status(repo.Path)
-		if err != nil {
-			return false, "error determining if working tree is dirty:\n" + err.Error()
-		}
-		if treeStatus != "" {
-			return false, "working tree is dirty:\n" + treeStatus
-		}
-
-		// Local remote URL should match Repo URL derived from import path.
-		if !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
+	case repo.RemoteVCS != nil:
+		// TODO: Consider taking care of this difference in remote URLs earlier, inside, e.g., subreposWorker. But need to make that play nicely with the updaters; see TODO at bottom of gps.Repo struct.
+		//
+		// Local remote URL, if set, should match Repo URL derived from import path.
+		if repo.Local.RemoteURL != "" && !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
 			return false, "remote URL doesn't match repo URL inferred from import path:" +
 				fmt.Sprintf("\n		  (actual) %s", repo.Local.RemoteURL) +
 				fmt.Sprintf("\n		(expected) %s", status.FormatRepoURL(repo.Local.RemoteURL, repo.Remote.RepoURL))
 		}
+	}
 
+	if repo.Local.Revision == "" {
+		return false, "local revision is empty"
+	}
+
+	// Check if repo is already up to date.
+	if repo.Local.Revision == repo.Remote.Revision {
+		// No reason provided because it's not worth mentioning.
+		return false, ""
+	}
+
+	// Check rest of local repository state before presenting updates,
+	// and report most useful reasons first.
+	if repo.VCS != nil {
 		// The local commit should be contained by remote. Otherwise, it means the local
 		// repository commit is actually ahead of remote, and there's nothing to update (instead, the
 		// user probably needs to push their local work to remote).
@@ -607,14 +615,13 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 			return false, fmt.Sprintf("local revision %q is ahead of remote revision %q", repo.Local.Revision, repo.Remote.Revision)
 		}
 
-	case repo.RemoteVCS != nil:
-		// TODO: Consider taking care of this difference in remote URLs earlier, inside, e.g., subreposWorker. But need to make that play nicely with the updaters; see TODO at bottom of gps.Repo struct.
-		//
-		// Local remote URL, if set, should match Repo URL derived from import path.
-		if repo.Local.RemoteURL != "" && !status.EqualRepoURLs(repo.Local.RemoteURL, repo.Remote.RepoURL) {
-			return false, "remote URL doesn't match repo URL inferred from import path:" +
-				fmt.Sprintf("\n		  (actual) %s", repo.Local.RemoteURL) +
-				fmt.Sprintf("\n		(expected) %s", status.FormatRepoURL(repo.Local.RemoteURL, repo.Remote.RepoURL))
+		// There shouldn't be a dirty working tree.
+		treeStatus, err := repo.VCS.Status(repo.Path)
+		if err != nil {
+			return false, "error determining if working tree is dirty:\n" + err.Error()
+		}
+		if treeStatus != "" {
+			return false, "working tree is dirty:\n" + treeStatus
 		}
 	}
 
