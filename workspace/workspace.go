@@ -15,6 +15,8 @@ import (
 	"golang.org/x/tools/go/vcs"
 )
 
+// GoPackageList is a list of Go packages.
+// It's implemented as a slice and map that are kept in sync, with a mutex.
 type GoPackageList struct {
 	// TODO: Merge the List and OrderedList into a single struct to better communicate that it's a single data structure.
 	sync.Mutex
@@ -22,6 +24,7 @@ type GoPackageList struct {
 	List        map[string]*RepoPresentation // Map key is repoRoot.
 }
 
+// RepoPresentation represents a repository update presentation.
 type RepoPresentation struct {
 	Repo         *gps.Repo
 	Presentation *gps.Presentation
@@ -29,12 +32,19 @@ type RepoPresentation struct {
 	UpdateState UpdateState
 }
 
+// UpdateState represents the state of an update.
+//
 // TODO: Dedup.
 type UpdateState uint8
 
 const (
+	// Available represents an available update.
 	Available UpdateState = iota
+
+	// Updating represents an update in progress.
 	Updating
+
+	// Updated represents a completed update.
 	Updated
 )
 
@@ -390,7 +400,7 @@ func (p *Pipeline) importPathWorker(wg *sync.WaitGroup) {
 				// TODO: Maybe keep track of import paths inside, etc.
 			}
 			p.repos[root] = repo
-		} else {
+			//} else {
 			// TODO: Maybe keep track of import paths inside, etc.
 		}
 		p.reposMu.Unlock()

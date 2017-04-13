@@ -6,8 +6,6 @@ import (
 	"io"
 	"net/http"
 
-	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
-	"github.com/shurcooL/htmlg"
 	"github.com/shurcooL/httperror"
 )
 
@@ -42,30 +40,16 @@ func indexHandler(w http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	renderInitialBody(w)
+	err = renderInitialBody(w)
+	if err != nil {
+		return err
+	}
 
 	_, err = io.WriteString(w, `</body></html>`)
 	return err
 }
 
 func renderInitialBody(w io.Writer) error {
-	err := htmlg.RenderComponents(w, gpscomponent.Header{})
-	if err != nil {
-		return err
-	}
-
-	_, err = io.WriteString(w, `<div class="center-max-width"><div class="content">`)
-	if err != nil {
-		return err
-	}
-
-	err = htmlg.RenderComponents(w, gpscomponent.UpdatesHeader{
-		CheckingUpdates: true,
-	})
-	if err != nil {
-		return err
-	}
-
-	_, err = io.WriteString(w, `</div></div>`)
+	_, err := io.WriteString(w, `<div style="width: 100%; text-align: center; background-color: rgb(225, 235, 245);"><span style="background-color: rgb(209, 225, 240); padding: 15px; display: inline-block;">Updates</span></div><div class="center-max-width"><div class="content"><h2 style="text-align: center;">Checking for updates...</h2></div></div>`)
 	return err
 }

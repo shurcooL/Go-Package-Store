@@ -26,17 +26,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// c is a global context.
-var c = struct {
-	pipeline *workspace.Pipeline
-
-	// updater is set based on the source of Go packages. If nil, it means
-	// we don't have support to update Go packages from the current source.
-	// It's used to update repos in the backend, and if set to nil, to disable
-	// the frontend UI for updating packages.
-	updater gps.Updater
-}{}
-
 var (
 	httpFlag       = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
 	stdinFlag      = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
@@ -66,6 +55,17 @@ Examples:
 `)
 }
 
+// c is a global context.
+var c = struct {
+	pipeline *workspace.Pipeline
+
+	// updater is set based on the source of Go packages. If nil, it means
+	// we don't have support to update Go packages from the current source.
+	// It's used to update repos in the backend, and if set to nil, to disable
+	// the frontend UI for updating packages.
+	updater gps.Updater
+}{}
+
 func main() {
 	flag.Usage = usage
 	flag.Parse()
@@ -76,7 +76,7 @@ func main() {
 	registerPresenters(c.pipeline)
 	c.updater = populatePipelineAndCreateUpdater(c.pipeline)
 	if c.updater != nil {
-		updateWorker := NewUpdateWorker(c.updater)
+		updateWorker := newUpdateWorker(c.updater)
 		updateWorker.Start()
 		http.Handle("/api/update", errorHandler(updateWorker.Handler))
 	}

@@ -1,373 +1,283 @@
 package component
 
 import (
+	"bytes"
 	"fmt"
-	"strconv"
+	"time"
 
-	"github.com/shurcooL/htmlg"
+	"github.com/gopherjs/gopherjs/js"
+	"github.com/gopherjs/vecty"
+	"github.com/gopherjs/vecty/elem"
+	"github.com/gopherjs/vecty/event"
+	"github.com/gopherjs/vecty/prop"
+	"github.com/gopherjs/vecty/style"
+	"github.com/shurcooL/Go-Package-Store/frontend/model"
 	"github.com/shurcooL/octiconssvg"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
 
+// RepoPresentation is a component for presenting a repository update.
+//
 // TODO: Dedup with workspace.RepoPresentation. Maybe.
 type RepoPresentation struct {
-	RepoRoot          string
-	ImportPathPattern string
-	LocalRevision     string
-	RemoteRevision    string
-	HomeURL           string
-	ImageURL          string
-	Changes           []Change
-	Error             string
-
-	UpdateState UpdateState
-
-	// TODO: Find a place for this.
-	UpdateSupported bool
+	vecty.Core
+	*model.RepoPresentation
 }
 
-type UpdateState uint8
-
-const (
-	Available UpdateState = iota
-	Updating
-	Updated
-)
-
-func (p RepoPresentation) Render() []*html.Node {
-	// TODO: Make this much nicer.
-	/*
-		<div class="list-entry go-package-update" id="{{.Repo.Root}}" style="position: relative;">
-			<div class="list-entry-header">
-				{{.importPathPattern()}}
-
-				<div style="float: right;">{{.updateState()}}</div>
-			</div>
-			<div class="list-entry-body">
-				<img style="float: left; border-radius: 4px;" src="{{.Presentation.Image}}" width="36" height="36">
-
-				<div>
-					{{presentationChangesAndError()}}
-				</div>
-				<div style="clear: both;"></div>
-			</div>
-		</div>
-	*/
-	innerDiv1 := htmlg.DivClass("list-entry-header",
-		&html.Node{
-			Type: html.ElementNode, Data: atom.Span.String(),
-			Attr: []html.Attribute{
-				{Key: atom.Title.String(), Val: p.ImportPathPattern},
-			},
-			FirstChild: p.importPathPattern(),
-		},
-	)
-	if n := p.updateState(); n != nil {
-		innerDiv1.AppendChild(&html.Node{
-			Type: html.ElementNode, Data: atom.Div.String(),
-			Attr: []html.Attribute{
-				{Key: atom.Style.String(), Val: "float: right;"},
-			},
-			FirstChild: n,
-		})
-	}
-	innerDiv2 := htmlg.DivClass("list-entry-body",
-		&html.Node{
-			Type: html.ElementNode, Data: atom.Img.String(),
-			Attr: []html.Attribute{
-				{Key: atom.Style.String(), Val: "float: left; border-radius: 4px;"},
-				{Key: atom.Src.String(), Val: p.ImageURL},
-				{Key: atom.Width.String(), Val: "36"},
-				{Key: atom.Height.String(), Val: "36"},
-			},
-		},
-		htmlg.Div(
-			p.presentationChangesAndError()...,
+// Render renders the component.
+func (p *RepoPresentation) Render() *vecty.HTML {
+	return elem.Div(
+		prop.Class("list-entry go-package-update"),
+		vecty.Property(atom.Id.String(), p.RepoRoot),
+		vecty.Style("position", "relative"),
+		elem.Div(
+			prop.Class("list-entry-header"),
+			elem.Span(
+				vecty.Property(atom.Title.String(), p.ImportPathPattern),
+				p.importPathPattern(),
+			),
+			elem.Div(
+				vecty.Style("float", "right"),
+				p.updateState(),
+			),
 		),
-		&html.Node{
-			Type: html.ElementNode, Data: atom.Div.String(),
-			Attr: []html.Attribute{{Key: atom.Style.String(), Val: "clear: both;"}},
-		},
+		elem.Div(
+			prop.Class("list-entry-body"),
+			elem.Image(
+				vecty.Style("float", "left"), vecty.Style("border-radius", string(style.Px(4))),
+				vecty.Property(atom.Src.String(), p.ImageURL),
+				vecty.Property(atom.Width.String(), "36"),
+				vecty.Property(atom.Height.String(), "36"),
+			),
+			elem.Div(
+				p.presentationChangesAndError()...,
+			),
+			elem.Div(
+				vecty.Style("clear", "both"),
+			),
+		),
 	)
-	div := &html.Node{
-		Type: html.ElementNode, Data: atom.Div.String(),
-		Attr: []html.Attribute{
-			{Key: atom.Class.String(), Val: "list-entry go-package-update"},
-			{Key: atom.Id.String(), Val: p.RepoRoot},
-			{Key: atom.Style.String(), Val: "position: relative;"},
-		},
-	}
-	div.AppendChild(innerDiv1)
-	div.AppendChild(innerDiv2)
-	return []*html.Node{div}
 }
 
 // TODO: Turn this into a maybeLink, etc.
-func (p RepoPresentation) importPathPattern() *html.Node {
-	/*
-		<span title="{{.Repo.ImportPathPattern}}">
-			{{if .Presentation.Home}}
-				<a href="{{.Presentation.Home}}" target="_blank"><strong>{{.Repo.ImportPathPattern}}</strong></a>
-			{{else}}
-				<strong>{{.Repo.ImportPathPattern}}</strong>
-			{{end}}
-		</span>
-	*/
-	var importPathPattern *html.Node
-	if p.HomeURL != "" {
-		importPathPattern = &html.Node{
-			Type: html.ElementNode, Data: atom.A.String(),
-			Attr: []html.Attribute{
-				{Key: atom.Href.String(), Val: p.HomeURL},
-				// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
-				{Key: atom.Target.String(), Val: "_blank"},
-			},
-			FirstChild: htmlg.Strong(p.ImportPathPattern),
-		}
-	} else {
-		importPathPattern = htmlg.Strong(p.ImportPathPattern)
+func (p *RepoPresentation) importPathPattern() *vecty.HTML {
+	switch p.HomeURL {
+	default:
+		return elem.Anchor(
+			prop.Href(p.HomeURL),
+			// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
+			vecty.Property(atom.Target.String(), "_blank"),
+			elem.Strong(vecty.Text(p.ImportPathPattern)),
+		)
+	case "":
+		return elem.Strong(vecty.Text(p.ImportPathPattern))
 	}
-	return importPathPattern
 }
 
-func (p RepoPresentation) updateState() *html.Node {
-	/*
-		{{if not updateSupported}}
-			<span style="color: gray; cursor: default;" title="Updating repos is not currently supported for this source of repos.">Update</span>
-		{{else if eq p.UpdateState Available}}
-			<a href="/api/update" onclick="UpdateRepository(event, '{{.Repo.Root | json}}');" title="go get -u -d {{.Repo.ImportPathPattern}}">Update</a>
-		{{else if eq p.UpdateState Updating}}
-			<span style="color: gray; cursor: default;">Updating...</span>
-		{{else if eq p.UpdateState Updated}}
-			{{/* Nothing. * /}}
-		{{end}}
-	*/
+func (p *RepoPresentation) updateState() *vecty.HTML {
 	if !p.UpdateSupported {
-		return &html.Node{
-			Type: html.ElementNode, Data: atom.Span.String(),
-			Attr: []html.Attribute{
-				{Key: atom.Style.String(), Val: "color: gray; cursor: default;"},
-				{Key: atom.Title.String(), Val: "Updating repos is not currently supported for this source of repos."},
-			},
-			FirstChild: htmlg.Text("Update"),
-		}
+		return elem.Span(
+			style.Color("gray"), vecty.Style("cursor", "default"),
+			vecty.Property(atom.Title.String(), "Updating repos is not currently supported for this source of repos."),
+			vecty.Text("Update"),
+		)
 	}
 	switch p.UpdateState {
-	case Available:
-		return &html.Node{
-			Type: html.ElementNode, Data: atom.A.String(),
-			Attr: []html.Attribute{
-				{Key: atom.Href.String(), Val: "/api/update"},
-				{Key: atom.Onclick.String(), Val: fmt.Sprintf("UpdateRepository(event, %q);", strconv.Quote(p.RepoRoot))},
-				//{Key: atom.Title.String(), Val: fmt.Sprintf("go get -u -d %s", p.ImportPathPattern)},
-			},
-			FirstChild: htmlg.Text("Update"),
-		}
-	case Updating:
-		return &html.Node{
-			Type: html.ElementNode, Data: atom.Span.String(),
-			Attr: []html.Attribute{
-				{Key: atom.Style.String(), Val: "color: gray; cursor: default;"},
-			},
-			FirstChild: htmlg.Text("Updating..."),
-		}
-	case Updated:
+	case model.Available:
+		return elem.Anchor(
+			prop.Href("/api/update"),
+			event.Click(func(e *vecty.Event) {
+				// TODO.
+				fmt.Printf("UpdateRepository(%q)\n", p.RepoRoot)
+				// TODO: Modifying underlying model is bad because Restore can't tell if something changed...
+				p.UpdateState = model.Updating // TODO: Do this via action.
+				started := time.Now()
+				vecty.Rerender(p)
+				fmt.Println("render RepoPresentation:", time.Since(started))
+				js.Global.Get("UpdateRepository").Invoke(p.RepoRoot)
+
+			}).PreventDefault(),
+			vecty.Text("Update"),
+		)
+	case model.Updating:
+		return elem.Span(
+			style.Color("gray"), vecty.Style("cursor", "default"),
+			vecty.Text("Updating..."),
+		)
+	case model.Updated:
+		// TODO.
 		return nil
 	default:
 		panic("unreachable")
 	}
 }
 
-func (p RepoPresentation) presentationChangesAndError() []*html.Node {
-	/*
-		{{render (presentationchanges .)}}
-		{{with .Presentation.Error}}
-			<p class="presentation-error"><strong>Error:</strong> {{.}}</p>
-		{{end}}
-	*/
-	var ns []*html.Node
-	ns = append(ns, PresentationChanges{
-		Changes:        p.Changes,
-		LocalRevision:  p.LocalRevision,
-		RemoteRevision: p.RemoteRevision,
-	}.Render()...)
-	if p.Error != "" {
-		n := &html.Node{
-			Type: html.ElementNode, Data: atom.P.String(),
-			Attr: []html.Attribute{{Key: atom.Class.String(), Val: "presentation-error"}},
-		}
-		n.AppendChild(htmlg.Strong("Error:"))
-		n.AppendChild(htmlg.Text(" "))
-		n.AppendChild(htmlg.Text(p.Error))
-		ns = append(ns, n)
+func (p *RepoPresentation) presentationChangesAndError() vecty.List {
+	return vecty.List{
+		&PresentationChanges{
+			RepoPresentation: p.RepoPresentation,
+		},
+		vecty.If(p.Error != "",
+			elem.Paragraph(
+				prop.Class("presentation-error"),
+				elem.Strong(vecty.Text("Error:")),
+				vecty.Text(" "),
+				vecty.Text(p.Error),
+			),
+		),
 	}
-	return ns
 }
 
+// PresentationChanges is a component containing changes within an update.
 type PresentationChanges struct {
-	Changes        []Change
-	LocalRevision  string // Only needed if len(Changes) == 0.
-	RemoteRevision string // Only needed if len(Changes) == 0.
+	vecty.Core
+	//Changes        []*Change
+	//LocalRevision  string // Only needed if len(Changes) == 0.
+	//RemoteRevision string // Only needed if len(Changes) == 0.
+	*model.RepoPresentation // Only uses Changes, and if len(Changes) == 0, then LocalRevision and RemoteRevision.
 }
 
-func (p PresentationChanges) Render() []*html.Node {
-	// TODO: Make this much nicer.
-	/*
-		{{with .Presentation.Changes}}
-			<ul class="changes-list">
-				{{range .}}{{render (change .)}}{{end}}
-			</ul>
-		{{else}}
-			<div class="changes-list">
-				unknown changes
-				{{with .Repo.Local.Revision}}from {{render (commitID .)}}{{end}}
-				{{with .Repo.Remote.Revision}}to {{render (commitID .)}}{{end}}
-			</div>
-		{{end}}
-	*/
+// Restore is called when the component should restore itself against a
+// previous instance of a component. The previous component may be nil or
+// of a different type than this Restorer itself, thus a type assertion
+// should be used.
+//
+// If skip = true is returned, restoration of this component's body is
+// skipped. That is, the component is not rerendered. If the component can
+// prove when Restore is called that the HTML rendered by Component.Render
+// would not change, true should be returned.
+//func (p *PresentationChanges) Restore(prev vecty.Component) (skip bool) {
+//	//fmt.Print("Restore: ")
+//	old, ok := prev.(*PresentationChanges)
+//	if !ok {
+//		//fmt.Println("not *PresentationChanges")
+//		return false
+//	}
+//	_ = old //fmt.Println("old.RepoPresentation == p.RepoPresentation:", old.RepoPresentation == p.RepoPresentation)
+//	return false
+//	//return old.RepoPresentation == p.RepoPresentation
+//}
+
+// Render renders the component.
+func (p *PresentationChanges) Render() *vecty.HTML {
+	//fmt.Println("PresentationChanges.Render()")
 	switch len(p.Changes) {
 	default:
-		var ns []*html.Node
-		for _, c := range p.Changes {
-			ns = append(ns, c.Render()...)
+		ns := vecty.List{
+			prop.Class("changes-list"),
 		}
-		ul := htmlg.ULClass("changes-list", ns...)
-		return []*html.Node{ul}
+		//for _, c := range p.Changes {
+		//	ns = append(ns, &Change{
+		//		Change: c,
+		//	})
+		//}
+		for i := range p.Changes { // TODO: Consider changing model.RepoPresentation.Changes type to []*Change to simplify this.
+			ns = append(ns, &Change{
+				Change: &p.Changes[i],
+			})
+		}
+		return elem.UnorderedList(ns...)
 	case 0:
-		var ns []*html.Node
-		ns = append(ns, htmlg.Text("unknown changes"))
-		if p.LocalRevision != "" {
-			ns = append(ns, htmlg.Text(" from "))
-			ns = append(ns, CommitID{ID: p.LocalRevision}.Render()...)
-		}
-		if p.RemoteRevision != "" {
-			ns = append(ns, htmlg.Text(" to "))
-			ns = append(ns, CommitID{ID: p.RemoteRevision}.Render()...)
-		}
-		div := htmlg.DivClass("changes-list", ns...)
-		return []*html.Node{div}
+		return elem.Div(
+			prop.Class("changes-list"),
+			vecty.Text("unknown changes"),
+			vecty.If(p.LocalRevision != "",
+				vecty.Text(" from "),
+				&CommitID{ID: p.LocalRevision},
+			),
+			vecty.If(p.RemoteRevision != "",
+				vecty.Text(" to "),
+				&CommitID{ID: p.RemoteRevision},
+			),
+		)
 	}
 }
 
 // Change is a component for a single commit message.
 type Change struct {
-	Message  string   // Commit message of this change.
-	URL      string   // URL of this change.
-	Comments Comments // Comments on this change.
+	vecty.Core
+	*model.Change
 }
 
-func (c Change) Render() []*html.Node {
-	// TODO: Make this much nicer.
-	/*
-		<li>
-			{{.Message}}
-			<span class="highlight-on-hover">
-				<a href="{{.URL}}" target="_blank" style="color: gray;" title="Commit">
-					<octiconssvg.GitCommit() />
-				</a>
-			</span>
-			<span style="float: right; margin-right: 6px;">
-				{{render (comments .Comments)}}
-			</span>
-		</li>
-	*/
-	span1 := htmlg.SpanClass("highlight-on-hover",
-		&html.Node{
-			Type: html.ElementNode, Data: atom.A.String(),
-			Attr: []html.Attribute{
-				{Key: atom.Href.String(), Val: c.URL},
+// Render renders the component.
+func (c *Change) Render() *vecty.HTML {
+	return elem.ListItem(
+		vecty.Text(c.Message),
+		elem.Span(
+			prop.Class("highlight-on-hover"),
+			elem.Anchor(
+				prop.Href(c.URL),
 				// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
-				{Key: atom.Target.String(), Val: "_blank"},
-				{Key: atom.Style.String(), Val: "color: gray;"},
-				{Key: atom.Title.String(), Val: "Commit"},
-			},
-			FirstChild: octiconssvg.GitCommit(),
-		},
+				vecty.Property(atom.Target.String(), "_blank"),
+				vecty.Style("color", "gray"),
+				vecty.Property(atom.Title.String(), "Commit"),
+				vecty.UnsafeHTML(octiconGitCommit),
+			),
+		),
+		elem.Span(
+			vecty.Style("float", "right"), vecty.Style("margin-right", string(style.Px(6))),
+			&Comments{Comments: &c.Comments},
+		),
 	)
-	span2 := &html.Node{
-		Type: html.ElementNode, Data: atom.Span.String(),
-		Attr: []html.Attribute{
-			{Key: atom.Style.String(), Val: "float: right; margin-right: 6px;"},
-		},
-	}
-	appendChildren(span2, c.Comments.Render()...)
-	li := htmlg.LI(
-		htmlg.Text(c.Message),
-		span1,
-		span2,
-	)
-	return []*html.Node{li}
 }
 
 // Comments is a component for displaying a change discussion.
+//
 // TODO: Consider inlining this into Change component, we'll see.
 type Comments struct {
-	Count int
-	URL   string
+	vecty.Core
+	*model.Comments
 }
 
-func (c Comments) Render() []*html.Node {
-	// TODO: Make this much nicer.
-	/*
-		{{if .Count}}
-		 	<a href="{{.URL}}" target="_blank" style="color: gray;" title="{{.Count}} comments"><octiconssvg.Comment() style="color: currentColor;" />{{.Count}}</a>
-		{{end}}
-	*/
+// Render renders the component.
+func (c *Comments) Render() *vecty.HTML {
 	if c.Count == 0 {
 		return nil
 	}
-	a := &html.Node{
-		Type: html.ElementNode, Data: atom.A.String(),
-		Attr: []html.Attribute{
-			{Key: atom.Href.String(), Val: c.URL},
-			// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
-			{Key: atom.Target.String(), Val: "_blank"},
-			{Key: atom.Style.String(), Val: "color: gray;"},
-			{Key: atom.Title.String(), Val: fmt.Sprintf("%d comments", c.Count)},
-		},
-	}
-	a.AppendChild(&html.Node{
-		Type: html.ElementNode, Data: atom.Span.String(),
-		Attr: []html.Attribute{
-			{Key: atom.Style.String(), Val: "color: currentColor; margin-right: 4px;"},
-		},
-		FirstChild: octiconssvg.Comment(),
-	})
-	a.AppendChild(htmlg.Text(fmt.Sprint(c.Count)))
-	return []*html.Node{a}
+	return elem.Anchor(
+		prop.Href(c.URL),
+		// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
+		vecty.Property(atom.Target.String(), "_blank"),
+		vecty.Style("color", "gray"),
+		vecty.Property(atom.Title.String(), fmt.Sprintf("%d comments", c.Count)),
+		elem.Span(
+			style.Color("currentColor"), vecty.Style("margin-right", string(style.Px(4))),
+			vecty.UnsafeHTML(octiconComment),
+		),
+		vecty.Text(fmt.Sprint(c.Count)),
+	)
 }
 
 // CommitID is a component that displays a short commit ID, with the full one available in tooltip.
 type CommitID struct {
+	vecty.Core
 	ID string
 }
 
-func (c CommitID) Render() []*html.Node {
-	// TODO: Make this much nicer.
-	// <abbr title="{{.}}"><code class="commitID">{{commitID .}}</code></abbr>{{end}}
-	code := &html.Node{
-		Type: html.ElementNode, Data: atom.Code.String(),
-		Attr: []html.Attribute{
-			{Key: atom.Class.String(), Val: "commitID"},
-		},
-		FirstChild: htmlg.Text(c.commitID()),
-	}
-	abbr := &html.Node{
-		Type: html.ElementNode, Data: atom.Abbr.String(),
-		Attr: []html.Attribute{
-			{Key: atom.Title.String(), Val: c.ID},
-		},
-		FirstChild: code,
-	}
-	return []*html.Node{abbr}
+// Render renders the component.
+func (c *CommitID) Render() *vecty.HTML {
+	return elem.Abbreviation(
+		vecty.Property(atom.Title.String(), c.ID),
+		elem.Code(
+			prop.Class("commitID"),
+			vecty.Text(c.commitID()),
+		),
+	)
 }
 
-func (c CommitID) commitID() string { return c.ID[:8] }
+func (c *CommitID) commitID() string { return c.ID[:8] }
 
-// appendChildren adds nodes cs as children of n.
-func appendChildren(n *html.Node, cs ...*html.Node) {
-	for _, c := range cs {
-		n.AppendChild(c)
+var (
+	octiconGitCommit = render(octiconssvg.GitCommit)
+	octiconComment   = render(octiconssvg.Comment)
+)
+
+func render(icon func() *html.Node) string {
+	var buf bytes.Buffer
+	err := html.Render(&buf, icon())
+	if err != nil {
+		panic(err)
 	}
+	return buf.String()
 }
