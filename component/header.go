@@ -13,10 +13,12 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
+// Header is a component that displays the header with tabs on top.
 type Header struct {
 	vecty.Core
 }
 
+// Render renders the component.
 func (*Header) Render() *vecty.HTML {
 	return elem.Div(
 		style.Width("100%"), vecty.Style("text-align", "center"), vecty.Style("background-color", "hsl(209, 51%, 92%)"),

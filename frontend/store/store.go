@@ -1,3 +1,5 @@
+// Package store is a store for updates.
+// Its contents can only be modified by appling actions.
 package store
 
 import (
@@ -12,8 +14,11 @@ var (
 	checkingUpdates = true
 )
 
+// RPs returns the repo presentations of store.
 func RPs() []*model.RepoPresentation { return rps }
-func CheckingUpdates() bool          { return checkingUpdates }
+
+// CheckingUpdates reports whether the process of checking for updates is still running.
+func CheckingUpdates() bool { return checkingUpdates }
 
 // Apply applies action a to the store.
 func Apply(a action.Action) action.Response {

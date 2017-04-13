@@ -144,10 +144,12 @@ func renderBody() {
 
 var body = &UpdatesBody{}
 
+// UpdatesBody is the entire body of the updates tab.
 type UpdatesBody struct {
 	vecty.Core
 }
 
+// Render renders the component.
 func (b *UpdatesBody) Render() *vecty.HTML {
 	return elem.Body(
 		gpscomponent.UpdatesContent(

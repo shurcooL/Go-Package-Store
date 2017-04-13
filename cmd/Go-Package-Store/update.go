@@ -10,7 +10,7 @@ import (
 	"github.com/shurcooL/httperror"
 )
 
-func NewUpdateWorker(updater gps.Updater) updateWorker {
+func newUpdateWorker(updater gps.Updater) updateWorker {
 	return updateWorker{
 		updater:        updater,
 		updateRequests: make(chan updateRequest),

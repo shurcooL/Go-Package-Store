@@ -1,6 +1,8 @@
+// Package model is a frontend data model for updates.
 package model
 
 // RepoPresentation represents a repository update presentation.
+//
 // TODO: Dedup with workspace.RepoPresentation. Maybe.
 type RepoPresentation struct {
 	RepoRoot          string
@@ -18,11 +20,17 @@ type RepoPresentation struct {
 	UpdateSupported bool
 }
 
+// UpdateState represents the state of an update.
 type UpdateState uint8
 
 const (
+	// Available represents an available update.
 	Available UpdateState = iota
+
+	// Updating represents an update in progress.
 	Updating
+
+	// Updated represents a completed update.
 	Updated
 )
 
@@ -34,6 +42,7 @@ type Change struct {
 }
 
 // Comments represents a change discussion.
+//
 // TODO: Consider inlining this into Change, we'll see.
 type Comments struct {
 	Count int

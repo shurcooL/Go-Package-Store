@@ -17,12 +17,15 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
+// RepoPresentation is a component for presenting a repository update.
+//
 // TODO: Dedup with workspace.RepoPresentation. Maybe.
 type RepoPresentation struct {
 	vecty.Core
 	*model.RepoPresentation
 }
 
+// Render renders the component.
 func (p *RepoPresentation) Render() *vecty.HTML {
 	return elem.Div(
 		prop.Class("list-entry go-package-update"),
@@ -126,6 +129,7 @@ func (p *RepoPresentation) presentationChangesAndError() vecty.List {
 	}
 }
 
+// PresentationChanges is a component containing changes within an update.
 type PresentationChanges struct {
 	vecty.Core
 	//Changes        []*Change
@@ -155,6 +159,7 @@ type PresentationChanges struct {
 //	//return old.RepoPresentation == p.RepoPresentation
 //}
 
+// Render renders the component.
 func (p *PresentationChanges) Render() *vecty.HTML {
 	//fmt.Println("PresentationChanges.Render()")
 	switch len(p.Changes) {
@@ -195,6 +200,7 @@ type Change struct {
 	*model.Change
 }
 
+// Render renders the component.
 func (c *Change) Render() *vecty.HTML {
 	return elem.ListItem(
 		vecty.Text(c.Message),
@@ -217,12 +223,14 @@ func (c *Change) Render() *vecty.HTML {
 }
 
 // Comments is a component for displaying a change discussion.
+//
 // TODO: Consider inlining this into Change component, we'll see.
 type Comments struct {
 	vecty.Core
 	*model.Comments
 }
 
+// Render renders the component.
 func (c *Comments) Render() *vecty.HTML {
 	if c.Count == 0 {
 		return nil
@@ -247,6 +255,7 @@ type CommitID struct {
 	ID string
 }
 
+// Render renders the component.
 func (c *CommitID) Render() *vecty.HTML {
 	return elem.Abbreviation(
 		vecty.Property(atom.Title.String(), c.ID),

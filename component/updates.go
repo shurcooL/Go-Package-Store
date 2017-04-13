@@ -7,6 +7,7 @@ import (
 	"github.com/shurcooL/Go-Package-Store/frontend/model"
 )
 
+// UpdatesContent returns the entire content of updates tab.
 func UpdatesContent(rps []*model.RepoPresentation, checkingUpdates bool) vecty.List {
 	return vecty.List{
 		&Header{},

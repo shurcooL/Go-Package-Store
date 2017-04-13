@@ -76,7 +76,7 @@ func main() {
 	registerPresenters(c.pipeline)
 	c.updater = populatePipelineAndCreateUpdater(c.pipeline)
 	if c.updater != nil {
-		updateWorker := NewUpdateWorker(c.updater)
+		updateWorker := newUpdateWorker(c.updater)
 		updateWorker.Start()
 		http.Handle("/api/update", errorHandler(updateWorker.Handler))
 	}

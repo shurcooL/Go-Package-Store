@@ -9,6 +9,7 @@ import (
 // Gopath is an Updater that updates Go packages in local GOPATH workspaces.
 type Gopath struct{}
 
+// Update specified repository to latest version.
 func (Gopath) Update(repo *gps.Repo) error {
 	if repo.VCS == nil || repo.Path == "" || repo.Cmd == nil {
 		return fmt.Errorf("missing information needed to update Go package in GOPATH: %#v", repo)
