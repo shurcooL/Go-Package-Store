@@ -32,7 +32,7 @@ type Repo struct {
 		// RemoteURL is the remote URL, including scheme.
 		RemoteURL string
 
-		Revision string // Revision of the default branch (not neccessarily the checked out one).
+		Revision string // Revision of the default branch (not necessarily the checked out one).
 	}
 	Remote struct {
 		// RepoURL is the repository URL, including scheme, as determined dynamically from the import path.

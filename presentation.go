@@ -2,7 +2,7 @@ package gps
 
 import "context"
 
-// Presentation provides infomation about a Go package repo with an available update.
+// Presentation provides information about a Go package repo with an available update.
 type Presentation struct {
 	HomeURL  string   // Home URL of the Go package. Optional (empty string means none available).
 	ImageURL string   // Image representing the Go package, typically its owner.
