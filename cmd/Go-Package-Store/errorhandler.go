@@ -43,7 +43,7 @@ func (h errorHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	if os.IsPermission(err) {
 		log.Println(err)
-		http.Error(w, "403 Forbidden\n\n"+err.Error(), http.StatusUnauthorized)
+		http.Error(w, "403 Forbidden\n\n"+err.Error(), http.StatusForbidden)
 		return
 	}
 
