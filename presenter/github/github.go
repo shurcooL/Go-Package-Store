@@ -46,6 +46,10 @@ func NewPresenter(httpClient *http.Client) gps.Presenter {
 		case strings.HasPrefix(repo.Remote.RepoURL, "https://go.googlesource.com/"):
 			repoName := repo.Remote.RepoURL[len("https://go.googlesource.com/"):]
 			return presentGitHubRepo(ctx, gh, repo, "golang", repoName)
+		// upspin.io.
+		case strings.HasPrefix(repo.Remote.RepoURL, "https://upspin.googlesource.com/"):
+			repoName := repo.Remote.RepoURL[len("https://upspin.googlesource.com/"):]
+			return presentGitHubRepo(ctx, gh, repo, "upspin", repoName)
 		default:
 			return nil
 		}
