@@ -75,12 +75,12 @@ func fetchLog(ctx context.Context, client *http.Client, url string) (log, error)
 // When parsing, assert that the first line has ")]}'", strip it, and parse the rest of
 // JSON normally.
 //
-// Source: http://www.chromium.org/developers/change-logs
+// Source: https://www.chromium.org/developers/change-logs.
 const header = `)]}'` + "\n"
 
 type log struct {
 	Log  []commit `json:"log"`
-	Next string   `json:"next"` // TODO: Use or remove.
+	Next string   `json:"next"`
 }
 
 type commit struct {
