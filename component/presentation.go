@@ -115,6 +115,7 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 
 func (p *RepoPresentation) presentationChangesAndError() vecty.List {
 	return vecty.List{
+		vecty.Style("word-break", "break-word"),
 		&PresentationChanges{
 			RepoPresentation: p.RepoPresentation,
 		},
