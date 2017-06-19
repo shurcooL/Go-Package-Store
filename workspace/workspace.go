@@ -632,14 +632,27 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 	// Check rest of local repository state before presenting updates,
 	// and report most useful reasons first.
 	if repo.VCS != nil {
-		// The local commit should be contained by remote. Otherwise, it means the local
-		// repository commit is actually ahead of remote, and there's nothing to update (instead, the
-		// user probably needs to push their local work to remote).
+		// Local default branch shouldn't contain remote commit.
+		// Otherwise, it means local revision is different because it's
+		// ahead of remote revision, rather than because there's an update.
 		localContainsRemoteRevision, err := repo.VCS.Contains(repo.Path, repo.Remote.Revision, repo.Remote.Branch)
 		if err != nil {
-			return false, "error determining if local commit is contained by remote:\n" + err.Error()
+			return false, "error determining if local default branch contains remote revision:\n" + err.Error()
 		}
 		if localContainsRemoteRevision {
+			// Local revision is ahead of remote revision, and there's no update.
+			// This isn't worth reporting in detail, since there's no update anyway.
+			return false, ""
+		}
+
+		// Remote default branch should contain local commit.
+		// Otherwise, it means there's an update, but it won't be able to apply
+		// cleanly because the local revision is ahead of remote revision.
+		remoteContainsLocalRevision, err := repo.VCS.RemoteContains(repo.Path, repo.Local.Revision)
+		if err != nil {
+			return false, "error determining if remote default branch contains local revision:\n" + err.Error()
+		}
+		if !remoteContainsLocalRevision {
 			return false, fmt.Sprintf("local revision %q is ahead of remote revision %q", repo.Local.Revision, repo.Remote.Revision)
 		}
 
