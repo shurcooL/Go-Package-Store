@@ -20,7 +20,7 @@ import (
 	"github.com/shurcooL/Go-Package-Store/presenter/gitiles"
 	"github.com/shurcooL/Go-Package-Store/updater"
 	"github.com/shurcooL/Go-Package-Store/workspace"
-	"github.com/shurcooL/go/open"
+	"github.com/shurcooL/go/browser"
 	"github.com/shurcooL/go/ospath"
 	"github.com/shurcooL/httpgzip"
 	"golang.org/x/oauth2"
@@ -94,7 +94,7 @@ func main() {
 
 	if production {
 		// Open a browser tab and navigate to the main page.
-		go open.Open("http://" + *httpFlag + "/updates")
+		go browser.Open("http://" + *httpFlag + "/updates")
 	}
 
 	fmt.Println("Go Package Store server is running at http://" + *httpFlag + "/updates.")
