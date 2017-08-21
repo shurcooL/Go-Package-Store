@@ -55,17 +55,6 @@ Examples:
 `)
 }
 
-// c is a global context.
-var c = struct {
-	pipeline *workspace.Pipeline
-
-	// updater is set based on the source of Go packages. If nil, it means
-	// we don't have support to update Go packages from the current source.
-	// It's used to update repos in the backend, and if set to nil, to disable
-	// the frontend UI for updating packages.
-	updater gps.Updater
-}{}
-
 func main() {
 	flag.Usage = usage
 	flag.Parse()
@@ -104,6 +93,17 @@ func main() {
 		log.Fatalln(err)
 	}
 }
+
+// c is a global context.
+var c = struct {
+	pipeline *workspace.Pipeline
+
+	// updater is set based on the source of Go packages. If nil, it means
+	// we don't have support to update Go packages from the current source.
+	// It's used to update repos in the backend, and if set to nil, to disable
+	// the frontend UI for updating packages.
+	updater gps.Updater
+}{}
 
 func registerPresenters(pipeline *workspace.Pipeline) {
 	// If we can have access to a cache directory on this system, use it for
@@ -182,7 +182,7 @@ func populatePipelineAndCreateUpdater(pipeline *workspace.Pipeline) gps.Updater 
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)
 		if err != nil {
-			log.Fatalln("Failed to read Godeps.json file", err)
+			log.Fatalln("failed to read Godeps.json file", err)
 		}
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range g.Deps {
@@ -195,7 +195,7 @@ func populatePipelineAndCreateUpdater(pipeline *workspace.Pipeline) gps.Updater 
 		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)
 		v, err := readGovendor(*govendorFlag)
 		if err != nil {
-			log.Fatalln("Failed to read vendor.json file:", err)
+			log.Fatalln("failed to read vendor.json file:", err)
 		}
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
 			for _, dependency := range v.Package {

@@ -223,17 +223,17 @@ func (p *Pipeline) AddImportPath(importPath string) {
 	p.importPaths <- importPath
 }
 
-type importPathRevision struct {
-	importPath string
-	revision   string
-}
-
 // AddRevision adds a package with specified import path and revision for processing.
 func (p *Pipeline) AddRevision(importPath string, revision string) {
 	p.importPathRevisions <- importPathRevision{
 		importPath: importPath,
 		revision:   revision,
 	}
+}
+
+type importPathRevision struct {
+	importPath string
+	revision   string
 }
 
 // LocalRepo represents a local repository on disk.
