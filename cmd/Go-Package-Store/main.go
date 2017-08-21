@@ -29,6 +29,7 @@ import (
 var (
 	httpFlag       = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
 	stdinFlag      = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
+	depFlag        = flag.String("dep", "", "Read the list of Go packages from the specified Gopkg.lock file.")
 	godepsFlag     = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps.json file.")
 	govendorFlag   = flag.String("govendor", "", "Read the list of Go packages from the specified vendor.json file.")
 	gitSubrepoFlag = flag.String("git-subrepo", "", "Look for Go packages vendored using git-subrepo in the specified vendor directory.")
@@ -45,6 +46,9 @@ Examples:
 
   # Show updates for all golang.org/x/... packages.
   go list golang.org/x/... | Go-Package-Store -stdin
+
+  # Show updates for all dependencies listed in Gopkg.lock file.
+  Go-Package-Store -dep=/path/to/repo/Gopkg.lock
 
   # Show updates for all dependencies listed in vendor.json file.
   Go-Package-Store -govendor=/path/to/repo/vendor/vendor.json
@@ -178,6 +182,25 @@ func populatePipelineAndCreateUpdater(pipeline *workspace.Pipeline) gps.Updater 
 			pipeline.Done()
 		}()
 		return updater.Gopath{}
+	case *depFlag != "":
+		fmt.Println("Reading the list of Go packages from Gopkg.lock file:", *depFlag)
+		l, err := readDepLock(*depFlag)
+		if err != nil {
+			log.Fatalln("failed to read Gopkg.lock file:", err)
+		}
+		go func() { // This needs to happen in the background because sending input will be blocked on processing.
+			for _, dependency := range l.Projects {
+				pipeline.AddRevision(dependency.Name, dependency.Revision)
+			}
+			pipeline.Done()
+		}()
+		dir := filepath.Dir(*depFlag)
+		gu, err := updater.NewDep(dir)
+		if err != nil {
+			log.Println("govendor updater is not available:", err)
+			gu = nil
+		}
+		return gu
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)
