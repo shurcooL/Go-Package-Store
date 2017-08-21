@@ -23,7 +23,7 @@ Usage
 Usage: Go-Package-Store [flags]
        [newline separated packages] | Go-Package-Store -stdin [flags]
   -dep string
-    	Read the list of Go packages from the specified Gopkg.lock file.
+    	Determine the list of Go packages from the specified Gopkg.toml file.
   -git-subrepo string
     	Look for Go packages vendored using git-subrepo in the specified vendor directory.
   -godeps string
@@ -42,8 +42,8 @@ Examples:
   # Show updates for all golang.org/x/... packages.
   go list golang.org/x/... | Go-Package-Store -stdin
 
-  # Show updates for all dependencies listed in Gopkg.lock file.
-  Go-Package-Store -dep=/path/to/repo/Gopkg.lock
+  # Show updates for all dependencies within Gopkg.toml constraints.
+  Go-Package-Store -dep=/path/to/repo/Gopkg.toml
 
   # Show updates for all dependencies listed in vendor.json file.
   Go-Package-Store -govendor=/path/to/repo/vendor/vendor.json

@@ -10,7 +10,8 @@ type Repo struct {
 	// Root is the import path corresponding to the root of the repository.
 	Root string
 
-	// Exactly one of VCS or RemoteVCS should be not nil.
+	// At most one of VCS or RemoteVCS should be not nil.
+	// If both are nil, then Local and Remote structs are expected to be already populated.
 	// TODO: Consider if it'd be better to split this into two distinct structs.
 
 	// VCS allows getting the state of the VCS.
@@ -38,7 +39,7 @@ type Repo struct {
 		// RepoURL is the repository URL, including scheme, as determined dynamically from the import path.
 		RepoURL string
 
-		Branch   string // Default branch, as determined from remote.
+		Branch   string // Default branch, as determined from remote. Only populated if VCS or RemoteVCS is non-nil.
 		Revision string // Revision of the default branch.
 	}
 

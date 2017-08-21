@@ -57,6 +57,7 @@ type Pipeline struct {
 
 	importPaths         chan string
 	importPathRevisions chan importPathRevision
+	rootRevisionLatests chan rootRevisionLatest
 	repositories        chan LocalRepo
 	subrepos            chan Subrepo
 
@@ -93,6 +94,7 @@ func NewPipeline(wd string) *Pipeline {
 
 		importPaths:         make(chan string, 64),
 		importPathRevisions: make(chan importPathRevision, 64),
+		rootRevisionLatests: make(chan rootRevisionLatest, 64),
 		repositories:        make(chan LocalRepo, 64),
 		subrepos:            make(chan Subrepo, 64),
 		unique:              make(chan *gps.Repo, 64),
@@ -130,10 +132,11 @@ func NewPipeline(wd string) *Pipeline {
 	//
 	// We populate the workspace from any of the 3 sources:
 	//
-	// 	- via AddImportPath - import paths of Go packages from the GOPATH workspace.
-	// 	- via AddRevision   - import paths of Go packages and their revisions from vendor.json or Godeps.json.
-	// 	- via AddRepository - by directly adding local VCS repositories.
-	// 	- via AddSubrepo    - by directly adding remote subrepos.
+	// 	- via AddImportPath     - import paths of Go packages from the GOPATH workspace.
+	// 	- via AddRevision       - import paths of Go packages and their revisions from vendor.json or Godeps.json.
+	// 	- via AddRevisionLatest - roots of Go packages, their revisions and latest versions via dep.
+	// 	- via AddRepository     - by directly adding local VCS repositories.
+	// 	- via AddSubrepo        - by directly adding remote subrepos.
 	//
 	// The goal of processing in stage 1 is to take in diverse possible inputs
 	// and convert them into a unique set of repositories for further processing by next stages.
@@ -153,18 +156,24 @@ func NewPipeline(wd string) *Pipeline {
 		var wg2 sync.WaitGroup
 		for range iter.N(8) {
 			wg2.Add(1)
-			go p.repositoriesWorker(&wg2)
+			go p.rootRevisionLatestWorker(&wg2)
 		}
 		var wg3 sync.WaitGroup
 		for range iter.N(8) {
 			wg3.Add(1)
-			go p.subreposWorker(&wg3)
+			go p.repositoriesWorker(&wg3)
+		}
+		var wg4 sync.WaitGroup
+		for range iter.N(8) {
+			wg4.Add(1)
+			go p.subreposWorker(&wg4)
 		}
 		go func() {
 			wg0.Wait()
 			wg1.Wait()
 			wg2.Wait()
 			wg3.Wait()
+			wg4.Wait()
 			close(p.unique)
 		}()
 	}
@@ -236,6 +245,21 @@ type importPathRevision struct {
 	revision   string
 }
 
+// AddRevisionLatest adds a package with specified root, revision and latest.
+func (p *Pipeline) AddRevisionLatest(root, revision, latest string) {
+	p.rootRevisionLatests <- rootRevisionLatest{
+		root:     root,
+		revision: revision,
+		latest:   latest,
+	}
+}
+
+type rootRevisionLatest struct {
+	root     string
+	revision string
+	latest   string
+}
+
 // LocalRepo represents a local repository on disk.
 type LocalRepo struct {
 	Path string // Full path to repository on disk.
@@ -265,6 +289,7 @@ func (p *Pipeline) AddSubrepo(s Subrepo) {
 func (p *Pipeline) Done() {
 	close(p.importPaths)
 	close(p.importPathRevisions)
+	close(p.rootRevisionLatests)
 	close(p.repositories)
 	close(p.subrepos)
 }
@@ -452,6 +477,41 @@ func (p *Pipeline) importPathRevisionWorker(wg *sync.WaitGroup) {
 	}
 }
 
+// rootRevisionLatestWorker sends unique repositories to phase 2.
+func (p *Pipeline) rootRevisionLatestWorker(wg *sync.WaitGroup) {
+	defer wg.Done()
+	for rrl := range p.rootRevisionLatests {
+		// Determine repo root.
+		// This is potentially somewhat slow.
+		rr, err := vcs.RepoRootForImportPath(rrl.root, false)
+		if err != nil {
+			log.Printf("failed to dynamically determine repo root for %v: %v\n", rrl.root, err)
+			continue
+		}
+		if rr.Root != rrl.root {
+			log.Printf("dynamically determined repo root (%q) doesn't match input root (%q)\n", rr.Root, rrl.root)
+			continue
+		}
+
+		var repo *gps.Repo
+		p.reposMu.Lock()
+		if _, ok := p.repos[rr.Root]; !ok {
+			repo = new(gps.Repo)
+			repo.Root = rr.Root
+			repo.Local.Revision = rrl.revision
+			repo.Remote.Revision = rrl.latest
+			repo.Remote.RepoURL = rr.Repo
+			p.repos[rr.Root] = repo
+		}
+		p.reposMu.Unlock()
+
+		// If new repo, send off to phase 2 channel.
+		if repo != nil {
+			p.unique <- repo
+		}
+	}
+}
+
 // repositoriesWorker sends unique repositories to phase 2.
 func (p *Pipeline) repositoriesWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -558,7 +618,8 @@ func (p *Pipeline) processFilterWorker(wg *sync.WaitGroup) {
 				continue
 			}
 		default:
-			panic("internal error: precondition failed, expected one of r.VCS or r.RemoteVCS to not be nil")
+			// Do nothing. If both r.VCS and r.RemoteVCS are nil, then we expect
+			// the Local and Remote structs to already be populated.
 		}
 
 		if ok, reason := shouldPresentUpdate(r); !ok {
@@ -580,7 +641,7 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 	if repo.Remote.RepoURL == "" {
 		return false, "repository URL (as determined dynamically from the import path) is empty"
 	}
-	if repo.Remote.Branch == "" {
+	if (repo.VCS != nil || repo.RemoteVCS != nil) && repo.Remote.Branch == "" {
 		return false, "remote branch is empty"
 	}
 	if repo.Remote.Revision == "" {
