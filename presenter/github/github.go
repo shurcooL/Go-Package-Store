@@ -9,17 +9,17 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/google/go-github/github"
-	"github.com/shurcooL/Go-Package-Store"
+	"github.com/shurcooL/Go-Package-Store/presenter"
 )
 
 // NewPresenter returns a GitHub API-powered presenter.
 // httpClient is the HTTP client to be used by the presenter for accessing the GitHub API.
 // If httpClient is nil, then http.DefaultClient is used.
-func NewPresenter(httpClient *http.Client) gps.Presenter {
+func NewPresenter(httpClient *http.Client) presenter.Presenter {
 	gh := github.NewClient(httpClient)
 	gh.UserAgent = "github.com/shurcooL/Go-Package-Store/presenter/github"
 
-	return func(ctx context.Context, repo *gps.Repo) *gps.Presentation {
+	return func(ctx context.Context, repo presenter.Repo) *presenter.Presentation {
 		switch {
 		// Import path begins with "github.com/".
 		case strings.HasPrefix(repo.Root, "github.com/"):
@@ -36,19 +36,19 @@ func NewPresenter(httpClient *http.Client) gps.Presenter {
 			}
 			return presentGitHubRepo(ctx, gh, repo, githubOwner, githubRepo)
 		// Underlying GitHub remote.
-		case strings.HasPrefix(repo.Remote.RepoURL, "https://github.com/"):
-			elems := strings.Split(strings.TrimSuffix(repo.Remote.RepoURL[len("https://"):], ".git"), "/")
+		case strings.HasPrefix(repo.RepoURL, "https://github.com/"):
+			elems := strings.Split(strings.TrimSuffix(repo.RepoURL[len("https://"):], ".git"), "/")
 			if len(elems) != 3 {
 				return nil
 			}
 			return presentGitHubRepo(ctx, gh, repo, elems[1], elems[2])
 		// Go repo remote has a GitHub mirror repo.
-		case strings.HasPrefix(repo.Remote.RepoURL, "https://go.googlesource.com/"):
-			repoName := repo.Remote.RepoURL[len("https://go.googlesource.com/"):]
+		case strings.HasPrefix(repo.RepoURL, "https://go.googlesource.com/"):
+			repoName := repo.RepoURL[len("https://go.googlesource.com/"):]
 			return presentGitHubRepo(ctx, gh, repo, "golang", repoName)
 		// upspin.io.
-		case strings.HasPrefix(repo.Remote.RepoURL, "https://upspin.googlesource.com/"):
-			repoName := repo.Remote.RepoURL[len("https://upspin.googlesource.com/"):]
+		case strings.HasPrefix(repo.RepoURL, "https://upspin.googlesource.com/"):
+			repoName := repo.RepoURL[len("https://upspin.googlesource.com/"):]
 			return presentGitHubRepo(ctx, gh, repo, "upspin", repoName)
 		default:
 			return nil
@@ -56,14 +56,14 @@ func NewPresenter(httpClient *http.Client) gps.Presenter {
 	}
 }
 
-func presentGitHubRepo(ctx context.Context, gh *github.Client, repo *gps.Repo, ghOwner, ghRepo string) *gps.Presentation {
-	p := &gps.Presentation{
+func presentGitHubRepo(ctx context.Context, gh *github.Client, repo presenter.Repo, ghOwner, ghRepo string) *presenter.Presentation {
+	p := &presenter.Presentation{
 		HomeURL:  "https://" + repo.Root,
 		ImageURL: "https://github.com/images/gravatars/gravatar-user-420.png", // Default fallback.
 	}
 
 	// This might take a while.
-	if cc, _, err := gh.Repositories.CompareCommits(ctx, ghOwner, ghRepo, repo.Local.Revision, repo.Remote.Revision); err == nil {
+	if cc, _, err := gh.Repositories.CompareCommits(ctx, ghOwner, ghRepo, repo.LocalRevision, repo.RemoteRevision); err == nil {
 		p.Changes = extractChanges(cc)
 	} else if rateLimitErr, ok := err.(*github.RateLimitError); ok {
 		setFirstError(p, rateLimitError{rateLimitErr})
@@ -83,11 +83,11 @@ func presentGitHubRepo(ctx context.Context, gh *github.Client, repo *gps.Repo, g
 	return p
 }
 
-func extractChanges(cc *github.CommitsComparison) []gps.Change {
-	var cs []gps.Change
+func extractChanges(cc *github.CommitsComparison) []presenter.Change {
+	var cs []presenter.Change
 	for i := range cc.Commits {
 		c := cc.Commits[len(cc.Commits)-1-i] // Reverse order.
-		change := gps.Change{
+		change := presenter.Change{
 			Message: firstParagraph(*c.Commit.Message),
 			URL:     *c.HTMLURL,
 		}
@@ -119,7 +119,7 @@ func (r rateLimitError) Error() string {
 }
 
 // setFirstError sets error if it's the first one. It does nothing otherwise.
-func setFirstError(p *gps.Presentation, err error) {
+func setFirstError(p *presenter.Presentation, err error) {
 	if p.Error != nil {
 		return
 	}

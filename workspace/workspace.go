@@ -10,6 +10,7 @@ import (
 
 	"github.com/bradfitz/iter"
 	"github.com/shurcooL/Go-Package-Store"
+	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/gostatus/status"
 	"github.com/shurcooL/vcsstate"
 	"golang.org/x/tools/go/vcs"
@@ -27,7 +28,7 @@ type GoPackageList struct {
 // RepoPresentation represents a repository update presentation.
 type RepoPresentation struct {
 	Repo         *gps.Repo
-	Presentation *gps.Presentation
+	Presentation *presenter.Presentation
 
 	UpdateState UpdateState
 }
@@ -53,7 +54,7 @@ type Pipeline struct {
 	wd string // Working directory. Used to resolve relative import paths.
 
 	// presenters are presenters registered with RegisterPresenter.
-	presenters []gps.Presenter
+	presenters []presenter.Presenter
 
 	importPaths         chan string
 	importPathRevisions chan importPathRevision
@@ -66,7 +67,7 @@ type Pipeline struct {
 	// processedFiltered is the output of processed repos (complete with local and remote revisions),
 	// with just enough information to decide if an update should be displayed.
 	processedFiltered chan *gps.Repo
-	// presented is the output of processed and presented repos (complete with gps.Presentation).
+	// presented is the output of processed and presented repos (complete with presenter.Presentation).
 	presented chan *RepoPresentation
 
 	reposMu sync.Mutex
@@ -223,7 +224,7 @@ func NewPipeline(wd string) *Pipeline {
 
 // RegisterPresenter registers a presenter.
 // Presenters are consulted in the same order that they were registered.
-func (p *Pipeline) RegisterPresenter(pr gps.Presenter) {
+func (p *Pipeline) RegisterPresenter(pr presenter.Presenter) {
 	p.presenters = append(p.presenters, pr)
 }
 
@@ -736,7 +737,12 @@ func (p *Pipeline) presentWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for repo := range p.processedFiltered {
 		// This part might take a while.
-		presentation := p.present(repo)
+		presentation := p.present(presenter.Repo{
+			Root:           repo.Root,
+			RepoURL:        repo.Remote.RepoURL,
+			LocalRevision:  repo.Local.Revision,
+			RemoteRevision: repo.Remote.Revision,
+		})
 
 		p.presented <- &RepoPresentation{
 			Repo:         repo,
@@ -748,15 +754,15 @@ func (p *Pipeline) presentWorker(wg *sync.WaitGroup) {
 // present takes a repository containing 1 or more Go packages, and returns a presentation for it.
 // It tries to find the best presenter for the given repository out of the registered ones,
 // but falls back to a generic presentation if there's nothing better.
-func (p *Pipeline) present(repo *gps.Repo) *gps.Presentation {
+func (p *Pipeline) present(repo presenter.Repo) *presenter.Presentation {
 	for _, presenter := range p.presenters {
 		if presentation := presenter(context.Background(), repo); presentation != nil {
 			return presentation
 		}
 	}
 
-	// Generic presentation.
-	return &gps.Presentation{
+	// Generic presentation is the fallback if no presenters matched.
+	return &presenter.Presentation{
 		HomeURL:  "https://" + repo.Root,
 		ImageURL: "https://github.com/images/gravatars/gravatar-user-420.png",
 		Changes:  nil,

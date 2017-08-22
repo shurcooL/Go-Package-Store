@@ -42,11 +42,6 @@ type Repo struct {
 		Branch   string // Default branch, as determined from remote. Only populated if VCS or RemoteVCS is non-nil.
 		Revision string // Revision of the default branch.
 	}
-
-	// TODO: Right now, all presenters use Remote.RepoURL as the canonical remote URL, so it must be
-	//       always set. This is a little confusing and redundant (since there's also Local.RemoteURL
-	//       and just RemoteURL). Should change it so there's only one canonical remote URL for
-	//       presenters to use.
 }
 
 // ImportPathPattern returns an import path pattern that matches all of the Go packages in this repo.

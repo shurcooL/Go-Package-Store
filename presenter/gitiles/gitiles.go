@@ -10,16 +10,16 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/shurcooL/Go-Package-Store"
+	"github.com/shurcooL/Go-Package-Store/presenter"
 )
 
 // NewPresenter returns a Gitiles API-powered presenter.
 // httpClient is the HTTP client to be used by the presenter for accessing the Gitiles API.
 // If httpClient is nil, then http.DefaultClient is used.
-func NewPresenter(httpClient *http.Client) gps.Presenter {
-	return func(ctx context.Context, repo *gps.Repo) *gps.Presentation {
+func NewPresenter(httpClient *http.Client) presenter.Presenter {
+	return func(ctx context.Context, repo presenter.Repo) *presenter.Presentation {
 		switch {
-		case strings.HasPrefix(repo.Remote.RepoURL, "https://code.googlesource.com/"):
+		case strings.HasPrefix(repo.RepoURL, "https://code.googlesource.com/"):
 			return presentGitilesRepo(ctx, httpClient, repo)
 		default:
 			return nil
@@ -27,14 +27,14 @@ func NewPresenter(httpClient *http.Client) gps.Presenter {
 	}
 }
 
-func presentGitilesRepo(ctx context.Context, client *http.Client, repo *gps.Repo) *gps.Presentation {
+func presentGitilesRepo(ctx context.Context, client *http.Client, repo presenter.Repo) *presenter.Presentation {
 	// This might take a while.
-	log, err := fetchLog(ctx, client, repo.Remote.RepoURL+"/+log?format=JSON")
+	log, err := fetchLog(ctx, client, repo.RepoURL+"/+log?format=JSON")
 	if err != nil {
-		return &gps.Presentation{Error: err}
+		return &presenter.Presentation{Error: err}
 	}
 
-	return &gps.Presentation{
+	return &presenter.Presentation{
 		HomeURL:  "https://" + repo.Root,
 		ImageURL: "https://ssl.gstatic.com/codesite/ph/images/defaultlogo.png",
 		Changes:  extractChanges(repo, log),
@@ -88,21 +88,21 @@ type commit struct {
 	Message string `json:"message"`
 }
 
-func extractChanges(repo *gps.Repo, l log) []gps.Change {
-	// Verify/find Repo.Remote.Revision.
+func extractChanges(repo presenter.Repo, l log) []presenter.Change {
+	// Verify/find Repo.RemoteRevision.
 	log := l.Log
-	for len(log) > 0 && log[0].Commit != repo.Remote.Revision {
+	for len(log) > 0 && log[0].Commit != repo.RemoteRevision {
 		log = log[1:]
 	}
 
-	var cs []gps.Change
+	var cs []presenter.Change
 	for _, commit := range log {
-		if commit.Commit == repo.Local.Revision {
+		if commit.Commit == repo.LocalRevision {
 			break
 		}
-		cs = append(cs, gps.Change{
+		cs = append(cs, presenter.Change{
 			Message: firstParagraph(commit.Message),
-			URL:     repo.Remote.RepoURL + "/+/" + commit.Commit + "%5e%21",
+			URL:     repo.RepoURL + "/+/" + commit.Commit + "%5e%21",
 		})
 	}
 	return cs
