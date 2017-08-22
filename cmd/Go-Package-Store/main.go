@@ -29,6 +29,7 @@ import (
 var (
 	httpFlag       = flag.String("http", "localhost:7043", "Listen for HTTP connections on this address.")
 	stdinFlag      = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
+	depFlag        = flag.String("dep", "", "Determine the list of Go packages from the specified Gopkg.toml file.")
 	godepsFlag     = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps.json file.")
 	govendorFlag   = flag.String("govendor", "", "Read the list of Go packages from the specified vendor.json file.")
 	gitSubrepoFlag = flag.String("git-subrepo", "", "Look for Go packages vendored using git-subrepo in the specified vendor directory.")
@@ -45,6 +46,9 @@ Examples:
 
   # Show updates for all golang.org/x/... packages.
   go list golang.org/x/... | Go-Package-Store -stdin
+
+  # Show updates for all dependencies within Gopkg.toml constraints.
+  Go-Package-Store -dep=/path/to/repo/Gopkg.toml
 
   # Show updates for all dependencies listed in vendor.json file.
   Go-Package-Store -govendor=/path/to/repo/vendor/vendor.json
@@ -178,6 +182,32 @@ func populatePipelineAndCreateUpdater(pipeline *workspace.Pipeline) gps.Updater 
 			pipeline.Done()
 		}()
 		return updater.Gopath{}
+	case *depFlag != "":
+		// Check dep binary exists in PATH.
+		if _, err := exec.LookPath("dep"); err != nil {
+			log.Fatalln(fmt.Errorf("dep binary is required, but not available: %v", err))
+		}
+		fmt.Println("Determining the list of Go packages from Gopkg.toml file:", *depFlag)
+		dir, err := depDir(*depFlag)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		go func() {
+			// Running dep status is pretty slow, because it tries to figure out remote updates
+			// that are within Gopkg.toml constraints. So run it in background.
+			dependencies, err := runDepStatus(dir)
+			if err != nil {
+				log.Println("failed to run dep status on Gopkg.toml file:", err)
+				dependencies = nil
+			}
+
+			// This needs to happen in the background because sending input will be blocked on processing.
+			for _, d := range dependencies {
+				pipeline.AddRevisionLatest(d.ProjectRoot, d.Revision, d.Latest)
+			}
+			pipeline.Done()
+		}()
+		return updater.Dep{Dir: dir}
 	case *godepsFlag != "":
 		fmt.Println("Reading the list of Go packages from Godeps.json file:", *godepsFlag)
 		g, err := readGodeps(*godepsFlag)
