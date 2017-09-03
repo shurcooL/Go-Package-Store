@@ -21,9 +21,9 @@ type Header struct {
 // Render renders the component.
 func (*Header) Render() *vecty.HTML {
 	return elem.Div(
-		style.Width("100%"), vecty.Style("text-align", "center"), vecty.Style("background-color", "hsl(209, 51%, 92%)"),
+		vecty.Markup(style.Width("100%"), vecty.Style("text-align", "center"), vecty.Style("background-color", "hsl(209, 51%, 92%)")),
 		elem.Span(
-			vecty.Style("background-color", "hsl(209, 51%, 88%)"), vecty.Style("padding", string(style.Px(15))), vecty.Style("display", "inline-block"),
+			vecty.Markup(vecty.Style("background-color", "hsl(209, 51%, 88%)"), vecty.Style("padding", string(style.Px(15))), vecty.Style("display", "inline-block")),
 			vecty.Text("Updates"),
 		),
 	)
@@ -96,10 +96,10 @@ func (u *updatesHeading) Render() *vecty.HTML {
 		status += "Installing Updates..."
 	}
 	return elem.Heading4(
-		vecty.Style("text-align", "left"),
+		vecty.Markup(vecty.Style("text-align", "left")),
 		vecty.Text(status),
 		elem.Span(
-			vecty.Style("float", "right"),
+			vecty.Markup(vecty.Style("float", "right")),
 			u.updateAllButton(),
 		),
 	)
@@ -108,25 +108,29 @@ func (u *updatesHeading) Render() *vecty.HTML {
 func (u *updatesHeading) updateAllButton() *vecty.HTML {
 	if !u.UpdateSupported {
 		return elem.Span(
-			style.Color("gray"), vecty.Style("cursor", "default"),
-			vecty.Property(atom.Title.String(), "Updating repos is not currently supported for this source of repos."),
+			vecty.Markup(
+				style.Color("gray"), vecty.Style("cursor", "default"),
+				vecty.Property(atom.Title.String(), "Updating repos is not currently supported for this source of repos."),
+			),
 			vecty.Text("Update All"),
 		)
 	}
 	switch {
 	case u.Available > 0:
 		return elem.Anchor(
-			prop.Href("/api/update-all"), // TODO: Should it be a separate endpoint or what?
-			event.Click(func(e *vecty.Event) {
-				// TODO.
-				fmt.Println("UpdateAll()")
-				js.Global.Get("UpdateAll").Invoke() // TODO: Do this via action?
-			}).PreventDefault(),
+			vecty.Markup(
+				prop.Href("/api/update-all"), // TODO: Should it be a separate endpoint or what?
+				event.Click(func(e *vecty.Event) {
+					// TODO.
+					fmt.Println("UpdateAll()")
+					js.Global.Get("UpdateAll").Invoke() // TODO: Do this via action?
+				}).PreventDefault(),
+			),
 			vecty.Text("Update All"),
 		)
 	case u.Available == 0:
 		return elem.Span(
-			style.Color("gray"), vecty.Style("cursor", "default"),
+			vecty.Markup(style.Color("gray"), vecty.Style("cursor", "default")),
 			vecty.Text("Update All"),
 		)
 	default:
@@ -143,7 +147,7 @@ func noUpdates() *vecty.HTML { return heading(elem.Heading2, "No Updates Availab
 
 func heading(heading func(markup ...vecty.MarkupOrComponentOrHTML) *vecty.HTML, text string) *vecty.HTML {
 	return heading(
-		vecty.Style("text-align", "center"),
+		vecty.Markup(vecty.Style("text-align", "center")),
 		vecty.Text(text),
 	)
 }
