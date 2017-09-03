@@ -145,7 +145,7 @@ func checkingForUpdates() *vecty.HTML { return heading(elem.Heading2, "Checking 
 
 func noUpdates() *vecty.HTML { return heading(elem.Heading2, "No Updates Available") }
 
-func heading(heading func(markup ...vecty.MarkupOrComponentOrHTML) *vecty.HTML, text string) *vecty.HTML {
+func heading(heading func(markup ...vecty.MarkupOrChild) *vecty.HTML, text string) *vecty.HTML {
 	return heading(
 		vecty.Markup(vecty.Style("text-align", "center")),
 		vecty.Text(text),

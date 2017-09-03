@@ -55,7 +55,7 @@ func (p *RepoPresentation) Render() *vecty.HTML {
 				),
 			),
 			elem.Div(
-				p.presentationChangesAndError()...,
+				p.presentationChangesAndError(),
 			),
 			elem.Div(
 				vecty.Markup(vecty.Style("clear", "both")),
@@ -188,7 +188,7 @@ func (p *PresentationChanges) Render() *vecty.HTML {
 				Change: &p.Changes[i],
 			})
 		}
-		return elem.UnorderedList(ns...)
+		return elem.UnorderedList(ns)
 	case 0:
 		return elem.Div(
 			vecty.Markup(prop.Class("changes-list")),

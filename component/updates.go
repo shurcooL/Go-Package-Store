@@ -14,7 +14,7 @@ func UpdatesContent(rps []*model.RepoPresentation, checkingUpdates bool) vecty.L
 		elem.Div(
 			vecty.Markup(prop.Class("center-max-width")),
 			elem.Div(
-				updatesContent(rps, checkingUpdates)...,
+				updatesContent(rps, checkingUpdates),
 			),
 		),
 	}
