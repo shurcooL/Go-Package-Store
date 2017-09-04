@@ -54,9 +54,7 @@ func (p *RepoPresentation) Render() *vecty.HTML {
 					vecty.Property(atom.Height.String(), "36"),
 				),
 			),
-			elem.Div(
-				p.presentationChangesAndError(),
-			),
+			p.presentationChangesAndError(),
 			elem.Div(
 				vecty.Markup(vecty.Style("clear", "both")),
 			),
@@ -123,8 +121,8 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 	}
 }
 
-func (p *RepoPresentation) presentationChangesAndError() vecty.List {
-	return vecty.List{
+func (p *RepoPresentation) presentationChangesAndError() *vecty.HTML {
+	return elem.Div(
 		vecty.Markup(vecty.Style("word-break", "break-word")),
 		&PresentationChanges{
 			RepoPresentation: p.RepoPresentation,
@@ -137,7 +135,7 @@ func (p *RepoPresentation) presentationChangesAndError() vecty.List {
 				vecty.Text(p.Error),
 			),
 		),
-	}
+	)
 }
 
 // PresentationChanges is a component containing changes within an update.
@@ -175,9 +173,7 @@ func (p *PresentationChanges) Render() *vecty.HTML {
 	//fmt.Println("PresentationChanges.Render()")
 	switch len(p.Changes) {
 	default:
-		ns := vecty.List{
-			vecty.Markup(prop.Class("changes-list")),
-		}
+		var ns vecty.List
 		//for _, c := range p.Changes {
 		//	ns = append(ns, &Change{
 		//		Change: c,
@@ -188,7 +184,10 @@ func (p *PresentationChanges) Render() *vecty.HTML {
 				Change: &p.Changes[i],
 			})
 		}
-		return elem.UnorderedList(ns)
+		return elem.UnorderedList(
+			vecty.Markup(prop.Class("changes-list")),
+			ns,
+		)
 	case 0:
 		return elem.Div(
 			vecty.Markup(prop.Class("changes-list")),

@@ -13,15 +13,13 @@ func UpdatesContent(rps []*model.RepoPresentation, checkingUpdates bool) vecty.L
 		&Header{},
 		elem.Div(
 			vecty.Markup(prop.Class("center-max-width")),
-			elem.Div(
-				updatesContent(rps, checkingUpdates),
-			),
+			updatesContent(rps, checkingUpdates),
 		),
 	}
 }
 
-func updatesContent(rps []*model.RepoPresentation, checkingUpdates bool) vecty.List {
-	var content = vecty.List{prop.Class("content")}
+func updatesContent(rps []*model.RepoPresentation, checkingUpdates bool) *vecty.HTML {
+	var content vecty.List
 
 	content = append(content,
 		updatesHeader{
@@ -42,5 +40,8 @@ func updatesContent(rps []*model.RepoPresentation, checkingUpdates bool) vecty.L
 		})
 	}
 
-	return content
+	return elem.Div(
+		vecty.Markup(prop.Class("content")),
+		content,
+	)
 }
