@@ -36,8 +36,8 @@ type updatesHeader struct {
 	CheckingUpdates bool
 }
 
-func (u updatesHeader) Render() vecty.List {
-	var ns vecty.List
+func (u updatesHeader) Render() []vecty.MarkupOrChild {
+	var ns []vecty.MarkupOrChild
 	// Show "Checking for updates..." while still checking.
 	if u.CheckingUpdates {
 		ns = append(ns, checkingForUpdates())

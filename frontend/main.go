@@ -155,7 +155,7 @@ func (b *UpdatesBody) Render() *vecty.HTML {
 		gpscomponent.UpdatesContent(
 			store.RPs(),
 			store.CheckingUpdates(),
-		),
+		)...,
 	)
 }
 
