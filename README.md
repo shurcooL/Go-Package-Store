@@ -35,6 +35,12 @@ Usage: Go-Package-Store [flags]
   -stdin
     	Read the list of newline separated Go packages from stdin.
 
+GitHub Access Token:
+  To display updates for private repositories on GitHub, or when
+  you've exceeded the unauthenticated rate limit, you can provide
+  a GitHub access token for Go Package Store to use via the
+  GO_PACKAGE_STORE_GITHUB_TOKEN environment variable.
+
 Examples:
   # Check for updates for all Go packages in GOPATH.
   Go-Package-Store
