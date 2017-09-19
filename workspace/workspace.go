@@ -710,7 +710,7 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 		// Remote default branch should contain local commit.
 		// Otherwise, it means there's an update, but it won't be able to apply
 		// cleanly because the local revision is ahead of remote revision.
-		remoteContainsLocalRevision, err := repo.VCS.RemoteContains(repo.Path, repo.Local.Revision)
+		remoteContainsLocalRevision, err := repo.VCS.RemoteContains(repo.Path, repo.Local.Revision, repo.Remote.Branch)
 		if err != nil {
 			return false, "error determining if remote default branch contains local revision:\n" + err.Error()
 		}
