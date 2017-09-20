@@ -28,33 +28,37 @@ type RepoPresentation struct {
 // Render renders the component.
 func (p *RepoPresentation) Render() *vecty.HTML {
 	return elem.Div(
-		prop.Class("list-entry go-package-update"),
-		vecty.Property(atom.Id.String(), p.RepoRoot),
-		vecty.Style("position", "relative"),
+		vecty.Markup(
+			prop.Class("list-entry go-package-update"),
+			vecty.Property(atom.Id.String(), p.RepoRoot),
+			vecty.Style("position", "relative"),
+		),
 		elem.Div(
-			prop.Class("list-entry-header"),
+			vecty.Markup(prop.Class("list-entry-header")),
 			elem.Span(
-				vecty.Property(atom.Title.String(), p.ImportPathPattern),
+				vecty.Markup(vecty.Property(atom.Title.String(), p.ImportPathPattern)),
 				p.importPathPattern(),
 			),
 			elem.Div(
-				vecty.Style("float", "right"),
+				vecty.Markup(vecty.Style("float", "right")),
 				p.updateState(),
 			),
 		),
 		elem.Div(
-			prop.Class("list-entry-body"),
+			vecty.Markup(prop.Class("list-entry-body")),
 			elem.Image(
-				vecty.Style("float", "left"), vecty.Style("border-radius", string(style.Px(4))),
-				vecty.Property(atom.Src.String(), p.ImageURL),
-				vecty.Property(atom.Width.String(), "36"),
-				vecty.Property(atom.Height.String(), "36"),
+				vecty.Markup(
+					vecty.Style("float", "left"), vecty.Style("border-radius", string(style.Px(4))),
+					vecty.Property(atom.Src.String(), p.ImageURL),
+					vecty.Property(atom.Width.String(), "36"),
+					vecty.Property(atom.Height.String(), "36"),
+				),
 			),
 			elem.Div(
 				p.presentationChangesAndError()...,
 			),
 			elem.Div(
-				vecty.Style("clear", "both"),
+				vecty.Markup(vecty.Style("clear", "both")),
 			),
 		),
 	)
@@ -65,9 +69,11 @@ func (p *RepoPresentation) importPathPattern() *vecty.HTML {
 	switch p.HomeURL {
 	default:
 		return elem.Anchor(
-			prop.Href(p.HomeURL),
-			// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
-			vecty.Property(atom.Target.String(), "_blank"),
+			vecty.Markup(
+				prop.Href(p.HomeURL),
+				// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
+				vecty.Property(atom.Target.String(), "_blank"),
+			),
 			elem.Strong(vecty.Text(p.ImportPathPattern)),
 		)
 	case "":
@@ -78,31 +84,35 @@ func (p *RepoPresentation) importPathPattern() *vecty.HTML {
 func (p *RepoPresentation) updateState() *vecty.HTML {
 	if !p.UpdateSupported {
 		return elem.Span(
-			style.Color("gray"), vecty.Style("cursor", "default"),
-			vecty.Property(atom.Title.String(), "Updating repos is not currently supported for this source of repos."),
+			vecty.Markup(
+				style.Color("gray"), vecty.Style("cursor", "default"),
+				vecty.Property(atom.Title.String(), "Updating repos is not currently supported for this source of repos."),
+			),
 			vecty.Text("Update"),
 		)
 	}
 	switch p.UpdateState {
 	case model.Available:
 		return elem.Anchor(
-			prop.Href("/api/update"),
-			event.Click(func(e *vecty.Event) {
-				// TODO.
-				fmt.Printf("UpdateRepository(%q)\n", p.RepoRoot)
-				// TODO: Modifying underlying model is bad because Restore can't tell if something changed...
-				p.UpdateState = model.Updating // TODO: Do this via action.
-				started := time.Now()
-				vecty.Rerender(p)
-				fmt.Println("render RepoPresentation:", time.Since(started))
-				js.Global.Get("UpdateRepository").Invoke(p.RepoRoot)
+			vecty.Markup(
+				prop.Href("/api/update"),
+				event.Click(func(e *vecty.Event) {
+					// TODO.
+					fmt.Printf("UpdateRepository(%q)\n", p.RepoRoot)
+					// TODO: Modifying underlying model is bad because Restore can't tell if something changed...
+					p.UpdateState = model.Updating // TODO: Do this via action.
+					started := time.Now()
+					vecty.Rerender(p)
+					fmt.Println("render RepoPresentation:", time.Since(started))
+					js.Global.Get("UpdateRepository").Invoke(p.RepoRoot)
 
-			}).PreventDefault(),
+				}).PreventDefault(),
+			),
 			vecty.Text("Update"),
 		)
 	case model.Updating:
 		return elem.Span(
-			style.Color("gray"), vecty.Style("cursor", "default"),
+			vecty.Markup(style.Color("gray"), vecty.Style("cursor", "default")),
 			vecty.Text("Updating..."),
 		)
 	case model.Updated:
@@ -113,15 +123,15 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 	}
 }
 
-func (p *RepoPresentation) presentationChangesAndError() vecty.List {
-	return vecty.List{
-		vecty.Style("word-break", "break-word"),
+func (p *RepoPresentation) presentationChangesAndError() []vecty.MarkupOrChild {
+	return []vecty.MarkupOrChild{
+		vecty.Markup(vecty.Style("word-break", "break-word")),
 		&PresentationChanges{
 			RepoPresentation: p.RepoPresentation,
 		},
 		vecty.If(p.Error != "",
 			elem.Paragraph(
-				prop.Class("presentation-error"),
+				vecty.Markup(prop.Class("presentation-error")),
 				elem.Strong(vecty.Text("Error:")),
 				vecty.Text(" "),
 				vecty.Text(p.Error),
@@ -165,8 +175,8 @@ func (p *PresentationChanges) Render() *vecty.HTML {
 	//fmt.Println("PresentationChanges.Render()")
 	switch len(p.Changes) {
 	default:
-		ns := vecty.List{
-			prop.Class("changes-list"),
+		ns := []vecty.MarkupOrChild{
+			vecty.Markup(prop.Class("changes-list")),
 		}
 		//for _, c := range p.Changes {
 		//	ns = append(ns, &Change{
@@ -181,7 +191,7 @@ func (p *PresentationChanges) Render() *vecty.HTML {
 		return elem.UnorderedList(ns...)
 	case 0:
 		return elem.Div(
-			prop.Class("changes-list"),
+			vecty.Markup(prop.Class("changes-list")),
 			vecty.Text("unknown changes"),
 			vecty.If(p.LocalRevision != "",
 				vecty.Text(" from "),
@@ -206,18 +216,20 @@ func (c *Change) Render() *vecty.HTML {
 	return elem.ListItem(
 		vecty.Text(c.Message),
 		elem.Span(
-			prop.Class("highlight-on-hover"),
+			vecty.Markup(prop.Class("highlight-on-hover")),
 			elem.Anchor(
-				prop.Href(c.URL),
-				// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
-				vecty.Property(atom.Target.String(), "_blank"),
-				vecty.Style("color", "gray"),
-				vecty.Property(atom.Title.String(), "Commit"),
-				vecty.UnsafeHTML(octiconGitCommit),
+				vecty.Markup(
+					prop.Href(c.URL),
+					// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
+					vecty.Property(atom.Target.String(), "_blank"),
+					vecty.Style("color", "gray"),
+					vecty.Property(atom.Title.String(), "Commit"),
+					vecty.UnsafeHTML(octiconGitCommit),
+				),
 			),
 		),
 		elem.Span(
-			vecty.Style("float", "right"), vecty.Style("margin-right", string(style.Px(6))),
+			vecty.Markup(vecty.Style("float", "right"), vecty.Style("margin-right", string(style.Px(6)))),
 			&Comments{Comments: &c.Comments},
 		),
 	)
@@ -237,14 +249,18 @@ func (c *Comments) Render() *vecty.HTML {
 		return nil
 	}
 	return elem.Anchor(
-		prop.Href(c.URL),
-		// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
-		vecty.Property(atom.Target.String(), "_blank"),
-		vecty.Style("color", "gray"),
-		vecty.Property(atom.Title.String(), fmt.Sprintf("%d comments", c.Count)),
+		vecty.Markup(
+			prop.Href(c.URL),
+			// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
+			vecty.Property(atom.Target.String(), "_blank"),
+			vecty.Style("color", "gray"),
+			vecty.Property(atom.Title.String(), fmt.Sprintf("%d comments", c.Count)),
+		),
 		elem.Span(
-			style.Color("currentColor"), vecty.Style("margin-right", string(style.Px(4))),
-			vecty.UnsafeHTML(octiconComment),
+			vecty.Markup(
+				style.Color("currentColor"), vecty.Style("margin-right", string(style.Px(4))),
+				vecty.UnsafeHTML(octiconComment),
+			),
 		),
 		vecty.Text(fmt.Sprint(c.Count)),
 	)
@@ -259,9 +275,9 @@ type CommitID struct {
 // Render renders the component.
 func (c *CommitID) Render() *vecty.HTML {
 	return elem.Abbreviation(
-		vecty.Property(atom.Title.String(), c.ID),
+		vecty.Markup(vecty.Property(atom.Title.String(), c.ID)),
 		elem.Code(
-			prop.Class("commitID"),
+			vecty.Markup(prop.Class("commitID")),
 			vecty.Text(c.commitID()),
 		),
 	)

@@ -8,11 +8,11 @@ import (
 )
 
 // UpdatesContent returns the entire content of updates tab.
-func UpdatesContent(rps []*model.RepoPresentation, checkingUpdates bool) vecty.List {
-	return vecty.List{
+func UpdatesContent(rps []*model.RepoPresentation, checkingUpdates bool) []vecty.MarkupOrChild {
+	return []vecty.MarkupOrChild{
 		&Header{},
 		elem.Div(
-			prop.Class("center-max-width"),
+			vecty.Markup(prop.Class("center-max-width")),
 			elem.Div(
 				updatesContent(rps, checkingUpdates)...,
 			),
@@ -20,8 +20,10 @@ func UpdatesContent(rps []*model.RepoPresentation, checkingUpdates bool) vecty.L
 	}
 }
 
-func updatesContent(rps []*model.RepoPresentation, checkingUpdates bool) vecty.List {
-	var content = vecty.List{prop.Class("content")}
+func updatesContent(rps []*model.RepoPresentation, checkingUpdates bool) []vecty.MarkupOrChild {
+	var content = []vecty.MarkupOrChild{
+		vecty.Markup(prop.Class("content")),
+	}
 
 	content = append(content,
 		updatesHeader{
