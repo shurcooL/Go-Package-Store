@@ -18,7 +18,7 @@ var Assets = union.New(map[string]http.FileSystem{
 })
 
 func importPathToDir(importPath string) string {
-	p, err := build.Import(importPath, "", build.FindOnly|build.IgnoreVendor)
+	p, err := build.Import(importPath, "", build.FindOnly)
 	if err != nil {
 		log.Fatalln(err)
 	}
