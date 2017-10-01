@@ -32,28 +32,25 @@ func (*Header) Render() *vecty.HTML {
 // updatesHeader combines checkingForUpdates, noUpdates and updatesHeading
 // into one high level component.
 type updatesHeader struct {
-	RPs             []*model.RepoPresentation
-	CheckingUpdates bool
+	vecty.Core
+	RPs             []*model.RepoPresentation `vecty:"prop"`
+	CheckingUpdates bool                      `vecty:"prop"`
 }
 
-func (u updatesHeader) Render() []vecty.MarkupOrChild {
-	var ns []vecty.MarkupOrChild
-	// Show "Checking for updates..." while still checking.
-	if u.CheckingUpdates {
-		ns = append(ns, checkingForUpdates())
-	}
+func (u updatesHeader) Render() *vecty.HTML {
 	available, updating, supported := u.status()
-	// Show "No Updates Available" if we're done checking and there are no remaining updates.
-	if !u.CheckingUpdates && available == 0 && !updating {
-		ns = append(ns, noUpdates())
-	}
-	// Show number of updates available and Update All button.
-	ns = append(ns, &updatesHeading{
-		Available:       available,
-		Updating:        updating,
-		UpdateSupported: supported, // TODO: Fetch this value from backend once.
-	})
-	return ns
+	return elem.Div(
+		// Show "Checking for updates..." while still checking.
+		vecty.If(u.CheckingUpdates, checkingForUpdates()),
+		// Show "No Updates Available" if we're done checking and there are no remaining updates.
+		vecty.If(!u.CheckingUpdates && available == 0 && !updating, noUpdates()),
+		// Show number of updates available and Update All button.
+		&updatesHeading{
+			Available:       available,
+			Updating:        updating,
+			UpdateSupported: supported,
+		},
+	)
 }
 
 // status returns available, updating, supported updates in u.RPs.
@@ -74,11 +71,11 @@ func (u updatesHeader) status() (available uint, updating bool, supported bool) 
 // whether updates are installing, and an Update All button.
 type updatesHeading struct {
 	vecty.Core
-	Available uint
-	Updating  bool
+	Available uint `vecty:"prop"`
+	Updating  bool `vecty:"prop"`
 
 	// TODO: Find a place for this.
-	UpdateSupported bool
+	UpdateSupported bool `vecty:"prop"`
 }
 
 func (u *updatesHeading) Render() *vecty.HTML {
@@ -105,41 +102,36 @@ func (u *updatesHeading) Render() *vecty.HTML {
 	)
 }
 
+func (u *updatesHeading) updateAll(*vecty.Event) {
+	// TODO.
+	fmt.Println("UpdateAll()")
+	js.Global.Get("UpdateAll").Invoke() // TODO: Do this via action?
+}
+
 func (u *updatesHeading) updateAllButton() *vecty.HTML {
-	if !u.UpdateSupported {
-		return elem.Span(
-			vecty.Markup(
-				style.Color("gray"), vecty.Style("cursor", "default"),
-				vecty.Property(atom.Title.String(), "Updating repos is not currently supported for this source of repos."),
-			),
-			vecty.Text("Update All"),
-		)
-	}
 	switch {
-	case u.Available > 0:
+	case u.Available > 0 && u.UpdateSupported:
 		return elem.Anchor(
 			vecty.Markup(
 				prop.Href("/api/update-all"), // TODO: Should it be a separate endpoint or what?
-				event.Click(func(e *vecty.Event) {
-					// TODO.
-					fmt.Println("UpdateAll()")
-					js.Global.Get("UpdateAll").Invoke() // TODO: Do this via action?
-				}).PreventDefault(),
+				event.Click(u.updateAll).PreventDefault(),
 			),
 			vecty.Text("Update All"),
 		)
-	case u.Available == 0:
+	case u.Available == 0 || !u.UpdateSupported:
 		return elem.Span(
-			vecty.Markup(style.Color("gray"), vecty.Style("cursor", "default")),
+			vecty.Markup(
+				style.Color("gray"), vecty.Style("cursor", "default"),
+				vecty.MarkupIf(!u.UpdateSupported,
+					vecty.Property(atom.Title.String(), "Updating repos is not currently supported for this source of repos."),
+				),
+			),
 			vecty.Text("Update All"),
 		)
 	default:
 		panic("unreachable")
 	}
 }
-
-// InstalledUpdates is a heading for installed updates.
-func InstalledUpdates() *vecty.HTML { return heading(elem.Heading3, "Installed Updates") }
 
 func checkingForUpdates() *vecty.HTML { return heading(elem.Heading2, "Checking for updates...") }
 
