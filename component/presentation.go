@@ -22,7 +22,12 @@ import (
 // TODO: Dedup with workspace.RepoPresentation. Maybe.
 type RepoPresentation struct {
 	vecty.Core
-	*model.RepoPresentation
+	*model.RepoPresentation `vecty:"prop"`
+}
+
+// Key implements vecty.Keyer
+func (p *RepoPresentation) Key() interface{} {
+	return p.RepoRoot
 }
 
 // Render renders the component.
@@ -54,9 +59,7 @@ func (p *RepoPresentation) Render() *vecty.HTML {
 					vecty.Property(atom.Height.String(), "36"),
 				),
 			),
-			elem.Div(
-				p.presentationChangesAndError()...,
-			),
+			p.presentationChangesAndError(),
 			elem.Div(
 				vecty.Markup(vecty.Style("clear", "both")),
 			),
@@ -123,8 +126,8 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 	}
 }
 
-func (p *RepoPresentation) presentationChangesAndError() []vecty.MarkupOrChild {
-	return []vecty.MarkupOrChild{
+func (p *RepoPresentation) presentationChangesAndError() *vecty.HTML {
+	return elem.Div(
 		vecty.Markup(vecty.Style("word-break", "break-word")),
 		&PresentationChanges{
 			RepoPresentation: p.RepoPresentation,
@@ -137,7 +140,7 @@ func (p *RepoPresentation) presentationChangesAndError() []vecty.MarkupOrChild {
 				vecty.Text(p.Error),
 			),
 		),
-	}
+	)
 }
 
 // PresentationChanges is a component containing changes within an update.
@@ -146,7 +149,7 @@ type PresentationChanges struct {
 	//Changes        []*Change
 	//LocalRevision  string // Only needed if len(Changes) == 0.
 	//RemoteRevision string // Only needed if len(Changes) == 0.
-	*model.RepoPresentation // Only uses Changes, and if len(Changes) == 0, then LocalRevision and RemoteRevision.
+	*model.RepoPresentation `vecty:"prop"` // Only uses Changes, and if len(Changes) == 0, then LocalRevision and RemoteRevision.
 }
 
 // Restore is called when the component should restore itself against a
@@ -175,20 +178,16 @@ func (p *PresentationChanges) Render() *vecty.HTML {
 	//fmt.Println("PresentationChanges.Render()")
 	switch len(p.Changes) {
 	default:
-		ns := []vecty.MarkupOrChild{
-			vecty.Markup(prop.Class("changes-list")),
-		}
-		//for _, c := range p.Changes {
-		//	ns = append(ns, &Change{
-		//		Change: c,
-		//	})
-		//}
+		var changes vecty.List
 		for i := range p.Changes { // TODO: Consider changing model.RepoPresentation.Changes type to []*Change to simplify this.
-			ns = append(ns, &Change{
+			changes = append(changes, &Change{
 				Change: &p.Changes[i],
 			})
 		}
-		return elem.UnorderedList(ns...)
+		return elem.UnorderedList(
+			vecty.Markup(prop.Class("changes-list")),
+			changes,
+		)
 	case 0:
 		return elem.Div(
 			vecty.Markup(prop.Class("changes-list")),
@@ -208,7 +207,12 @@ func (p *PresentationChanges) Render() *vecty.HTML {
 // Change is a component for a single commit message.
 type Change struct {
 	vecty.Core
-	*model.Change
+	*model.Change `vecty:"prop"`
+}
+
+// Key implements vecty.Keyer
+func (c *Change) Key() interface{} {
+	return c.URL
 }
 
 // Render renders the component.
@@ -240,7 +244,7 @@ func (c *Change) Render() *vecty.HTML {
 // TODO: Consider inlining this into Change component, we'll see.
 type Comments struct {
 	vecty.Core
-	*model.Comments
+	*model.Comments `vecty:"prop"`
 }
 
 // Render renders the component.
@@ -269,7 +273,7 @@ func (c *Comments) Render() *vecty.HTML {
 // CommitID is a component that displays a short commit ID, with the full one available in tooltip.
 type CommitID struct {
 	vecty.Core
-	ID string
+	ID string `vecty:"prop"`
 }
 
 // Render renders the component.
