@@ -22,7 +22,7 @@ import (
 // TODO: Dedup with workspace.RepoPresentation. Maybe.
 type RepoPresentation struct {
 	vecty.Core
-	*model.RepoPresentation
+	*model.RepoPresentation `vecty:"prop"`
 }
 
 // Render renders the component.
@@ -146,7 +146,7 @@ type PresentationChanges struct {
 	//Changes        []*Change
 	//LocalRevision  string // Only needed if len(Changes) == 0.
 	//RemoteRevision string // Only needed if len(Changes) == 0.
-	*model.RepoPresentation // Only uses Changes, and if len(Changes) == 0, then LocalRevision and RemoteRevision.
+	*model.RepoPresentation `vecty:"prop"` // Only uses Changes, and if len(Changes) == 0, then LocalRevision and RemoteRevision.
 }
 
 // Restore is called when the component should restore itself against a
@@ -208,7 +208,7 @@ func (p *PresentationChanges) Render() *vecty.HTML {
 // Change is a component for a single commit message.
 type Change struct {
 	vecty.Core
-	*model.Change
+	*model.Change `vecty:"prop"`
 }
 
 // Render renders the component.
@@ -240,7 +240,7 @@ func (c *Change) Render() *vecty.HTML {
 // TODO: Consider inlining this into Change component, we'll see.
 type Comments struct {
 	vecty.Core
-	*model.Comments
+	*model.Comments `vecty:"prop"`
 }
 
 // Render renders the component.
@@ -269,7 +269,7 @@ func (c *Comments) Render() *vecty.HTML {
 // CommitID is a component that displays a short commit ID, with the full one available in tooltip.
 type CommitID struct {
 	vecty.Core
-	ID string
+	ID string `vecty:"prop"`
 }
 
 // Render renders the component.

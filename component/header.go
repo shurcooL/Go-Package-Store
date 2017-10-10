@@ -74,11 +74,11 @@ func (u updatesHeader) status() (available uint, updating bool, supported bool) 
 // whether updates are installing, and an Update All button.
 type updatesHeading struct {
 	vecty.Core
-	Available uint
-	Updating  bool
+	Available uint `vecty:"prop"`
+	Updating  bool `vecty:"prop"`
 
 	// TODO: Find a place for this.
-	UpdateSupported bool
+	UpdateSupported bool `vecty:"prop"`
 }
 
 func (u *updatesHeading) Render() *vecty.HTML {
