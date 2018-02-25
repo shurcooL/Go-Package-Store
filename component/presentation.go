@@ -26,15 +26,15 @@ type RepoPresentation struct {
 }
 
 // Render renders the component.
-func (p *RepoPresentation) Render() *vecty.HTML {
+func (p *RepoPresentation) Render() vecty.ComponentOrHTML {
 	return elem.Div(
 		vecty.Markup(
-			prop.Class("list-entry go-package-update"),
+			vecty.Class("list-entry go-package-update"),
 			vecty.Property(atom.Id.String(), p.RepoRoot),
 			vecty.Style("position", "relative"),
 		),
 		elem.Div(
-			vecty.Markup(prop.Class("list-entry-header")),
+			vecty.Markup(vecty.Class("list-entry-header")),
 			elem.Span(
 				vecty.Markup(vecty.Property(atom.Title.String(), p.ImportPathPattern)),
 				p.importPathPattern(),
@@ -45,7 +45,7 @@ func (p *RepoPresentation) Render() *vecty.HTML {
 			),
 		),
 		elem.Div(
-			vecty.Markup(prop.Class("list-entry-body")),
+			vecty.Markup(vecty.Class("list-entry-body")),
 			elem.Image(
 				vecty.Markup(
 					vecty.Style("float", "left"), vecty.Style("border-radius", string(style.Px(4))),
@@ -131,7 +131,7 @@ func (p *RepoPresentation) presentationChangesAndError() []vecty.MarkupOrChild {
 		},
 		vecty.If(p.Error != "",
 			elem.Paragraph(
-				vecty.Markup(prop.Class("presentation-error")),
+				vecty.Markup(vecty.Class("presentation-error")),
 				elem.Strong(vecty.Text("Error:")),
 				vecty.Text(" "),
 				vecty.Text(p.Error),
@@ -171,12 +171,12 @@ type PresentationChanges struct {
 //}
 
 // Render renders the component.
-func (p *PresentationChanges) Render() *vecty.HTML {
+func (p *PresentationChanges) Render() vecty.ComponentOrHTML {
 	//fmt.Println("PresentationChanges.Render()")
 	switch len(p.Changes) {
 	default:
 		ns := []vecty.MarkupOrChild{
-			vecty.Markup(prop.Class("changes-list")),
+			vecty.Markup(vecty.Class("changes-list")),
 		}
 		//for _, c := range p.Changes {
 		//	ns = append(ns, &Change{
@@ -191,7 +191,7 @@ func (p *PresentationChanges) Render() *vecty.HTML {
 		return elem.UnorderedList(ns...)
 	case 0:
 		return elem.Div(
-			vecty.Markup(prop.Class("changes-list")),
+			vecty.Markup(vecty.Class("changes-list")),
 			vecty.Text("unknown changes"),
 			vecty.If(p.LocalRevision != "",
 				vecty.Text(" from "),
@@ -212,11 +212,11 @@ type Change struct {
 }
 
 // Render renders the component.
-func (c *Change) Render() *vecty.HTML {
+func (c *Change) Render() vecty.ComponentOrHTML {
 	return elem.ListItem(
 		vecty.Text(c.Message),
 		elem.Span(
-			vecty.Markup(prop.Class("highlight-on-hover")),
+			vecty.Markup(vecty.Class("highlight-on-hover")),
 			elem.Anchor(
 				vecty.Markup(
 					prop.Href(c.URL),
@@ -244,7 +244,7 @@ type Comments struct {
 }
 
 // Render renders the component.
-func (c *Comments) Render() *vecty.HTML {
+func (c *Comments) Render() vecty.ComponentOrHTML {
 	if c.Count == 0 {
 		return nil
 	}
@@ -273,11 +273,11 @@ type CommitID struct {
 }
 
 // Render renders the component.
-func (c *CommitID) Render() *vecty.HTML {
+func (c *CommitID) Render() vecty.ComponentOrHTML {
 	return elem.Abbreviation(
 		vecty.Markup(vecty.Property(atom.Title.String(), c.ID)),
 		elem.Code(
-			vecty.Markup(prop.Class("commitID")),
+			vecty.Markup(vecty.Class("commitID")),
 			vecty.Text(c.commitID()),
 		),
 	)

@@ -3,7 +3,6 @@ package component
 import (
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
-	"github.com/gopherjs/vecty/prop"
 	"github.com/shurcooL/Go-Package-Store/frontend/model"
 )
 
@@ -12,7 +11,7 @@ func UpdatesContent(rps []*model.RepoPresentation, checkingUpdates bool) []vecty
 	return []vecty.MarkupOrChild{
 		&Header{},
 		elem.Div(
-			vecty.Markup(prop.Class("center-max-width")),
+			vecty.Markup(vecty.Class("center-max-width")),
 			elem.Div(
 				updatesContent(rps, checkingUpdates)...,
 			),
@@ -22,7 +21,7 @@ func UpdatesContent(rps []*model.RepoPresentation, checkingUpdates bool) []vecty
 
 func updatesContent(rps []*model.RepoPresentation, checkingUpdates bool) []vecty.MarkupOrChild {
 	var content = []vecty.MarkupOrChild{
-		vecty.Markup(prop.Class("content")),
+		vecty.Markup(vecty.Class("content")),
 	}
 
 	content = append(content,

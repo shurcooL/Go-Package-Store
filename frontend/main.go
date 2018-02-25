@@ -150,7 +150,7 @@ type UpdatesBody struct {
 }
 
 // Render renders the component.
-func (b *UpdatesBody) Render() *vecty.HTML {
+func (b *UpdatesBody) Render() vecty.ComponentOrHTML {
 	return elem.Body(
 		gpscomponent.UpdatesContent(
 			store.RPs(),

@@ -15,7 +15,7 @@ type UpdatesBody struct {
 	vecty.Core
 }
 
-func (*UpdatesBody) Render() *vecty.HTML {
+func (*UpdatesBody) Render() vecty.ComponentOrHTML {
 	return elem.Body(
 		gpscomponent.UpdatesContent(
 			mockComponentRPs,
