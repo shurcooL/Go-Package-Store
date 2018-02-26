@@ -29,7 +29,7 @@ type RepoPresentation struct {
 func (p *RepoPresentation) Render() vecty.ComponentOrHTML {
 	return elem.Div(
 		vecty.Markup(
-			vecty.Class("list-entry go-package-update"),
+			vecty.Class("list-entry", "go-package-update"),
 			vecty.Property(atom.Id.String(), p.RepoRoot),
 			vecty.Style("position", "relative"),
 		),
