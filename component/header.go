@@ -19,7 +19,7 @@ type Header struct {
 }
 
 // Render renders the component.
-func (*Header) Render() *vecty.HTML {
+func (*Header) Render() vecty.ComponentOrHTML {
 	return elem.Div(
 		vecty.Markup(style.Width("100%"), vecty.Style("text-align", "center"), vecty.Style("background-color", "hsl(209, 51%, 92%)")),
 		elem.Span(
@@ -81,7 +81,7 @@ type updatesHeading struct {
 	UpdateSupported bool `vecty:"prop"`
 }
 
-func (u *updatesHeading) Render() *vecty.HTML {
+func (u *updatesHeading) Render() vecty.ComponentOrHTML {
 	if u.Available == 0 && !u.Updating {
 		return nil
 	}
