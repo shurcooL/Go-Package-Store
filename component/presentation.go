@@ -12,7 +12,7 @@ import (
 	"github.com/gopherjs/vecty/prop"
 	"github.com/gopherjs/vecty/style"
 	"github.com/shurcooL/Go-Package-Store/frontend/model"
-	"github.com/shurcooL/octiconssvg"
+	"github.com/shurcooL/octicon"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -286,8 +286,8 @@ func (c *CommitID) Render() vecty.ComponentOrHTML {
 func (c *CommitID) commitID() string { return c.ID[:8] }
 
 var (
-	octiconGitCommit = render(octiconssvg.GitCommit)
-	octiconComment   = render(octiconssvg.Comment)
+	octiconGitCommit = render(octicon.GitCommit)
+	octiconComment   = render(octicon.Comment)
 )
 
 func render(icon func() *html.Node) string {
