@@ -43,14 +43,18 @@ func run() {
 	// Initial frontend render.
 	vecty.RenderBody(body)
 
+	// Start the scheduler loop.
 	go scheduler()
 
+	// Start streaming repo presentations from the backend.
 	err := stream()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
+// stream streams the list of repo presentations from the backend,
+// and appends them to the store as they arrive.
 func stream() error {
 	started := time.Now()
 	defer func() { fmt.Println("stream:", time.Since(started)) }()
@@ -61,7 +65,7 @@ func stream() error {
 	}
 	defer resp.Body.Close()
 	dec := json.NewDecoder(resp.Body)
-	for /*len(store.RPs()) < 10*/ {
+	for {
 		var rp model.RepoPresentation
 		err := dec.Decode(&rp)
 		if err == io.EOF {
@@ -77,28 +81,14 @@ func stream() error {
 	return nil
 }
 
-type actionAndResponse struct {
-	Action action.Action
-	RespCh chan<- action.Response
-}
-
-var (
-	actionCh = make(chan actionAndResponse) // TODO: Consider/try buffered channel of size 10.
-	renderCh <-chan time.Time
-)
-
-func apply(a action.Action) action.Response {
-	respCh := make(chan action.Response)
-	actionCh <- actionAndResponse{Action: a, RespCh: respCh}
-	resp := <-respCh
-	return resp
-}
-
+// scheduler runs a loop that is responsible for
+// applying actions to the store as they're made available,
+// and rendering the body after processing new actions.
+//
+// It coalesces temporally adjacent actions, processing
+// them in batches without performing rendering in between.
 func scheduler() {
-	//var renderOn = make(chan struct{})
-	//close(renderOn)
-
-	//forceRenderCh := time.Tick(5000 * time.Millisecond)
+	var renderCh <-chan time.Time
 
 	for {
 		select {
@@ -106,33 +96,30 @@ func scheduler() {
 			resp := store.Apply(a.Action)
 			a.RespCh <- resp
 
-			// Don't render (needlessly) after *action.SetUpdating, etc.
-			// TODO: Move this elsewhere (into store.Apply somehow?).
-			// THINK: Can't do this, need to update heading after all.
-			//if _, ok := a.Action.(*action.SetUpdating); ok {
-			//	break
-			//}
-
 			renderCh = time.After(10 * time.Millisecond)
 		case <-renderCh:
 			renderBody()
 			renderCh = nil
-			//runtime.Gosched()
-
-			// TODO: Add another case that forces a re-render to happen at least once every
-			//       500 milliseconds or so (in case there are never-ending actions that
-			//       take a while to get through; we still want to display some progress).
-			//case <-forceRenderCh:
-			//	if renderCh == nil {
-			//		break
-			//	}
-			//	renderBody()
-			//	renderCh = nil
 		}
-
-		//time.Sleep(time.Second)
-		//runtime.Gosched()
 	}
+}
+
+// TODO: Consider using time.NewTimer and Timer.Stop instead of time.After.
+
+var actionCh = make(chan actionAndResponse) // TODO: Consider/try buffered channel of size 10.
+
+type actionAndResponse struct {
+	Action action.Action
+	RespCh chan<- action.Response
+}
+
+// apply applies the given action to the store,
+// and returns the response.
+func apply(a action.Action) action.Response {
+	respCh := make(chan action.Response)
+	actionCh <- actionAndResponse{Action: a, RespCh: respCh}
+	resp := <-respCh
+	return resp
 }
 
 func renderBody() {

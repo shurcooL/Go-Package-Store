@@ -18,6 +18,8 @@ type Dep struct {
 	Dir string
 }
 
+// Update specified repository to latest version by calling
+// "dep ensure -update <repo-root>" in d.Dir directory.
 func (d Dep) Update(repo *gps.Repo) error {
 	cmd := exec.Command("dep", "ensure", "-update", repo.Root)
 	fmt.Println(strings.Join(cmd.Args, " "))
