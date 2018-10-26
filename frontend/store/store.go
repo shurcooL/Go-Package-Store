@@ -10,12 +10,16 @@ import (
 )
 
 var (
-	rps             []*model.RepoPresentation
+	active          []*model.RepoPresentation
+	history         []*model.RepoPresentation
 	checkingUpdates = true
 )
 
-// RPs returns the repo presentations of store.
-func RPs() []*model.RepoPresentation { return rps }
+// Active returns the active repo presentations in store.
+func Active() []*model.RepoPresentation { return active }
+
+// History returns the historical repo presentations in store.
+func History() []*model.RepoPresentation { return history }
 
 // CheckingUpdates reports whether the process of checking for updates is still running.
 func CheckingUpdates() bool { return checkingUpdates }
@@ -24,12 +28,16 @@ func CheckingUpdates() bool { return checkingUpdates }
 func Apply(a action.Action) action.Response {
 	switch a := a.(type) {
 	case *action.AppendRP:
-		rps = append(rps, a.RP)
-		moveUp(rps, a.RP)
+		switch a.RP.UpdateState {
+		case model.Available, model.Updating:
+			active = append(active, a.RP)
+		case model.Updated:
+			history = append(history, a.RP)
+		}
 		return nil
 
 	case *action.SetUpdating:
-		for _, rp := range rps {
+		for _, rp := range active {
 			if rp.RepoRoot == a.RepoRoot {
 				rp.UpdateState = model.Updating
 				return nil
@@ -39,7 +47,7 @@ func Apply(a action.Action) action.Response {
 
 	case *action.SetUpdatingAll:
 		var repoRoots []string
-		for _, rp := range rps {
+		for _, rp := range active {
 			if rp.UpdateState == model.Available {
 				repoRoots = append(repoRoots, rp.RepoRoot)
 				rp.UpdateState = model.Updating
@@ -51,10 +59,18 @@ func Apply(a action.Action) action.Response {
 		return &action.SetUpdatingAllResponse{RepoRoots: repoRoots}
 
 	case *action.SetUpdated:
-		moveDown(rps, a.RepoRoot)
-		for _, rp := range rps {
+		for i, rp := range active {
 			if rp.RepoRoot == a.RepoRoot {
+				// Remove from active.
+				copy(active[i:], active[i+1:])
+				active = active[:len(active)-1]
+
+				// Set UpdateState.
 				rp.UpdateState = model.Updated
+
+				// Append to history.
+				history = append(history, rp)
+
 				return nil
 			}
 		}
@@ -66,28 +82,5 @@ func Apply(a action.Action) action.Response {
 
 	default:
 		panic(fmt.Errorf("%v (type %T) is not a valid action", a, a))
-	}
-}
-
-// TODO: Both moveDown and moveUp can be inlined and simplified.
-
-// moveDown moves root down the rps towards all other updated.
-func moveDown(rps []*model.RepoPresentation, root string) {
-	var i int
-	for ; rps[i].RepoRoot != root; i++ { // i is the current package about to be updated.
-	}
-	for ; i+1 < len(rps) && rps[i+1].UpdateState != model.Updated; i++ {
-		rps[i], rps[i+1] = rps[i+1], rps[i] // Swap the two.
-	}
-}
-
-// moveUp moves last entry up the rps above all other updated entries, unless rp is already updated.
-func moveUp(rps []*model.RepoPresentation, rp *model.RepoPresentation) {
-	// TODO: The "unless rp is already updated" part might not be needed if more strict about possible cases.
-	if rp.UpdateState == model.Updated {
-		return
-	}
-	for i := len(rps) - 1; i-1 >= 0 && rps[i-1].UpdateState == model.Updated; i-- {
-		rps[i], rps[i-1] = rps[i-1], rps[i] // Swap the two.
 	}
 }

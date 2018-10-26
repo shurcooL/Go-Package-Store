@@ -18,13 +18,14 @@ type UpdatesBody struct {
 func (*UpdatesBody) Render() vecty.ComponentOrHTML {
 	return elem.Body(
 		gpscomponent.UpdatesContent(
-			mockComponentRPs,
+			mockActive,
+			mockHistory,
 			true,
 		)...,
 	)
 }
 
-var mockComponentRPs = []*model.RepoPresentation{
+var mockActive = []*model.RepoPresentation{
 	{
 		RepoRoot:          "github.com/gopherjs/gopherjs",
 		ImportPathPattern: "github.com/gopherjs/gopherjs/...",
@@ -95,6 +96,9 @@ var mockComponentRPs = []*model.RepoPresentation{
 		UpdateState:       model.Available,
 		UpdateSupported:   true,
 	},
+}
+
+var mockHistory = []*model.RepoPresentation{
 	{
 		RepoRoot:          "golang.org/x/image",
 		ImportPathPattern: "golang.org/x/image/...",

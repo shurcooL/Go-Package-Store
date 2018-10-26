@@ -32,22 +32,34 @@ func (*Header) Render() vecty.ComponentOrHTML {
 // updatesHeader combines checkingForUpdates, noUpdates and updatesHeading
 // into one high level component.
 type updatesHeader struct {
-	RPs             []*model.RepoPresentation
+	Active          []*model.RepoPresentation
 	CheckingUpdates bool
 }
 
 func (u updatesHeader) Render() []vecty.MarkupOrChild {
 	var ns []vecty.MarkupOrChild
-	// Show "Checking for updates..." while still checking.
-	if u.CheckingUpdates {
-		ns = append(ns, checkingForUpdates())
-	}
-	available, updating, supported := u.status()
-	// Show "No Updates Available" if we're done checking and there are no remaining updates.
-	if !u.CheckingUpdates && available == 0 && !updating {
-		ns = append(ns, noUpdates())
+	switch {
+	case u.CheckingUpdates:
+		// Show "Checking for updates..." while still checking.
+		ns = append(ns, heading(elem.Heading2, "Checking for updates..."))
+	case !u.CheckingUpdates && len(u.Active) > 0:
+		// Show "Updates Available" if we're done checking and there are active updates.
+		ns = append(ns, heading(elem.Heading2, "Updates Available"))
+	case !u.CheckingUpdates && len(u.Active) == 0:
+		// Show "No Updates Available" if we're done checking and there are no remaining updates.
+		ns = append(ns,
+			elem.Heading2(
+				vecty.Markup(vecty.Style("text-align", "center"), vecty.Style("margin-bottom", "2px")),
+				vecty.Text("No Updates Available"),
+			),
+			elem.Heading4(
+				vecty.Markup(vecty.Style("text-align", "center"), vecty.Style("margin-top", "2px"), vecty.Style("font-weight", "normal")),
+				vecty.Text("All your Go packages are up to date"),
+			),
+		)
 	}
 	// Show number of updates available and Update All button.
+	available, updating, supported := u.status()
 	ns = append(ns, &updatesHeading{
 		Available:       available,
 		Updating:        updating,
@@ -56,9 +68,9 @@ func (u updatesHeader) Render() []vecty.MarkupOrChild {
 	return ns
 }
 
-// status returns available, updating, supported updates in u.RPs.
+// status reports available, updating, supported updates in u.Active.
 func (u updatesHeader) status() (available uint, updating bool, supported bool) {
-	for _, rp := range u.RPs {
+	for _, rp := range u.Active {
 		switch rp.UpdateState {
 		case model.Available:
 			available++
@@ -137,13 +149,6 @@ func (u *updatesHeading) updateAllButton() *vecty.HTML {
 		panic("unreachable")
 	}
 }
-
-// InstalledUpdates is a heading for installed updates.
-func InstalledUpdates() *vecty.HTML { return heading(elem.Heading3, "Installed Updates") }
-
-func checkingForUpdates() *vecty.HTML { return heading(elem.Heading2, "Checking for updates...") }
-
-func noUpdates() *vecty.HTML { return heading(elem.Heading2, "No Updates Available") }
 
 func heading(heading func(markup ...vecty.MarkupOrChild) *vecty.HTML, text string) *vecty.HTML {
 	return heading(

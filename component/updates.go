@@ -7,37 +7,49 @@ import (
 )
 
 // UpdatesContent returns the entire content of updates tab.
-func UpdatesContent(rps []*model.RepoPresentation, checkingUpdates bool) []vecty.MarkupOrChild {
+func UpdatesContent(active, history []*model.RepoPresentation, checkingUpdates bool) []vecty.MarkupOrChild {
 	return []vecty.MarkupOrChild{
 		&Header{},
 		elem.Div(
 			vecty.Markup(vecty.Class("center-max-width")),
 			elem.Div(
-				updatesContent(rps, checkingUpdates)...,
+				updatesContent(active, history, checkingUpdates)...,
 			),
 		),
 	}
 }
 
-func updatesContent(rps []*model.RepoPresentation, checkingUpdates bool) []vecty.MarkupOrChild {
+func updatesContent(active, history []*model.RepoPresentation, checkingUpdates bool) []vecty.MarkupOrChild {
 	var content = []vecty.MarkupOrChild{
 		vecty.Markup(vecty.Class("content")),
 	}
 
+	// History with "Recently Installed Updates" heading, if any.
+	if len(history) > 0 {
+		content = append(content, heading(elem.Heading3, "Recently Installed Updates"))
+
+		for _, rp := range history {
+			content = append(content, &RepoPresentation{
+				RepoPresentation: rp,
+			})
+		}
+
+		// Spacer at the bottom.
+		content = append(content, elem.Div(
+			vecty.Markup(vecty.Style("height", "60px")),
+		))
+	}
+
+	// Updates header.
 	content = append(content,
 		updatesHeader{
-			RPs:             rps,
+			Active:          active,
 			CheckingUpdates: checkingUpdates,
 		}.Render()...,
 	)
 
-	wroteInstalledUpdates := false
-	for _, rp := range rps {
-		if rp.UpdateState == model.Updated && !wroteInstalledUpdates {
-			content = append(content, InstalledUpdates())
-			wroteInstalledUpdates = true
-		}
-
+	// Active updates.
+	for _, rp := range active {
 		content = append(content, &RepoPresentation{
 			RepoPresentation: rp,
 		})
