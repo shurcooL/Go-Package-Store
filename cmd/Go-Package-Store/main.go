@@ -165,7 +165,7 @@ func registerPresenters(pipeline *workspace.Pipeline) {
 func populatePipelineAndCreateUpdater(pipeline *workspace.Pipeline) gps.Updater {
 	switch {
 	case !production:
-		fmt.Println("Using no real packages (hit /mock.html endpoint for mocks).")
+		fmt.Println("Using no real packages (hit /mock.html or /component.html endpoint for mocks).")
 		pipeline.Done()
 		return updater.Mock{}
 	default:

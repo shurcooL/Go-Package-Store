@@ -140,7 +140,8 @@ type UpdatesBody struct {
 func (b *UpdatesBody) Render() vecty.ComponentOrHTML {
 	return elem.Body(
 		gpscomponent.UpdatesContent(
-			store.RPs(),
+			store.Active(),
+			store.History(),
 			store.CheckingUpdates(),
 		)...,
 	)
