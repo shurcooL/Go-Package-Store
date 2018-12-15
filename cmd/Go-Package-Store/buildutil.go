@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/shurcooL/Go-Package-Store/workspace"
-	"github.com/shurcooL/go/trim"
 	"github.com/shurcooL/vcsstate"
 	"golang.org/x/tools/go/vcs"
 )
@@ -90,13 +89,13 @@ func parseGitRepoFile(dir string) (remote string, commit string, _ error) {
 	if err != nil {
 		return "", "", err
 	}
-	remote = trim.LastNewline(string(remoteBytes))
+	remote = strings.TrimSuffix(string(remoteBytes), "\n")
 
 	commitBytes, err := exec.Command("git", "config", "--file", filepath.Join(dir, ".gitrepo"), "subrepo.commit").Output()
 	if err != nil {
 		return "", "", err
 	}
-	commit = trim.LastNewline(string(commitBytes))
+	commit = strings.TrimSuffix(string(commitBytes), "\n")
 
 	return remote, commit, nil
 }
