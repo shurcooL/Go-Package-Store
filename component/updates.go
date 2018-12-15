@@ -46,9 +46,9 @@ func updatesContent(active, history []*model.RepoPresentation, checkingUpdates b
 			vecty.Text("Recently Installed Updates"),
 		))
 
-		for _, rp := range history {
+		for i := len(history) - 1; i >= 0; i-- {
 			content = append(content, &RepoPresentation{
-				RepoPresentation: rp,
+				RepoPresentation: history[i],
 			})
 		}
 	}

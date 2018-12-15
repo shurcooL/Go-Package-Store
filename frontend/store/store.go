@@ -10,15 +10,17 @@ import (
 )
 
 var (
-	active          []*model.RepoPresentation
-	history         []*model.RepoPresentation
+	active          []*model.RepoPresentation // Latest at the end.
+	history         []*model.RepoPresentation // Latest at the end.
 	checkingUpdates = true
 )
 
 // Active returns the active repo presentations in store.
+// Most recently added ones are last.
 func Active() []*model.RepoPresentation { return active }
 
 // History returns the historical repo presentations in store.
+// Most recently added ones are last.
 func History() []*model.RepoPresentation { return history }
 
 // CheckingUpdates reports whether the process of checking for updates is still running.
