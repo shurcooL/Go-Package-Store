@@ -16,13 +16,45 @@ import (
 	"golang.org/x/tools/go/vcs"
 )
 
-// GoPackageList is a list of Go packages.
-// It's implemented as two slices and map that are kept in sync, with a mutex.
-type GoPackageList struct {
-	sync.Mutex
-	Active  []*RepoPresentation          // Active repo presentations, latest at the end.
-	History []*RepoPresentation          // Historical repo presentations, latest at the end.
-	ByRoot  map[string]*RepoPresentation // Map key is repoRoot.
+// Pipeline for processing a Go workspace, where each repo has local and remote components.
+type Pipeline struct {
+	wd string // Working directory. Used to resolve relative import paths.
+
+	// presenters are presenters registered with RegisterPresenter.
+	presenters []presenter.Presenter
+
+	importPaths         chan string
+	importPathRevisions chan importPathRevision
+	rootRevisionLatests chan rootRevisionLatest
+	repositories        chan LocalRepo
+	subrepos            chan Subrepo
+
+	// unique is the output of finding unique repositories from diverse possible inputs.
+	unique chan *gps.Repo
+	// processedFiltered is the output of processed repos (complete with local and remote revisions),
+	// with just enough information to decide if an update should be displayed.
+	processedFiltered chan *gps.Repo
+	// presented is the output of processed and presented repos (complete with presenter.Presentation).
+	presented chan *RepoPresentation
+
+	reposMu sync.Mutex
+	repos   map[string]*gps.Repo // Map key is the import path corresponding to the root of the repository.
+
+	newObserver chan observerRequest
+	observers   map[chan *RepoPresentation]struct{}
+
+	// Packages is the working list of Go packages.
+	// It's implemented as two slices and a map kept in sync, protected by a mutex.
+	Packages struct {
+		sync.Mutex
+		Active  []*RepoPresentation          // Active repo presentations, latest at the end.
+		History []*RepoPresentation          // Historical repo presentations, latest at the end.
+		ByRoot  map[string]*RepoPresentation // Map key is repoRoot.
+	}
+}
+
+type observerRequest struct {
+	Response chan chan *RepoPresentation
 }
 
 // RepoPresentation represents a repository update presentation.
@@ -49,39 +81,6 @@ const (
 	Updated
 )
 
-// Pipeline for processing a Go workspace, where each repo has local and remote components.
-type Pipeline struct {
-	wd string // Working directory. Used to resolve relative import paths.
-
-	// presenters are presenters registered with RegisterPresenter.
-	presenters []presenter.Presenter
-
-	importPaths         chan string
-	importPathRevisions chan importPathRevision
-	rootRevisionLatests chan rootRevisionLatest
-	repositories        chan LocalRepo
-	subrepos            chan Subrepo
-
-	// unique is the output of finding unique repositories from diverse possible inputs.
-	unique chan *gps.Repo
-	// processedFiltered is the output of processed repos (complete with local and remote revisions),
-	// with just enough information to decide if an update should be displayed.
-	processedFiltered chan *gps.Repo
-	// presented is the output of processed and presented repos (complete with presenter.Presentation).
-	presented chan *RepoPresentation
-
-	reposMu sync.Mutex
-	repos   map[string]*gps.Repo // Map key is the import path corresponding to the root of the repository.
-
-	newObserver   chan observerRequest
-	observers     map[chan *RepoPresentation]struct{}
-	GoPackageList *GoPackageList
-}
-
-type observerRequest struct {
-	Response chan chan *RepoPresentation
-}
-
 // NewPipeline creates a Pipeline with working directory wd.
 // Working directory is used to resolve relative import paths.
 //
@@ -104,10 +103,10 @@ func NewPipeline(wd string) *Pipeline {
 
 		repos: make(map[string]*gps.Repo),
 
-		newObserver:   make(chan observerRequest),
-		observers:     make(map[chan *RepoPresentation]struct{}),
-		GoPackageList: &GoPackageList{ByRoot: make(map[string]*RepoPresentation)},
+		newObserver: make(chan observerRequest),
+		observers:   make(map[chan *RepoPresentation]struct{}),
 	}
+	p.Packages.ByRoot = make(map[string]*RepoPresentation)
 
 	// It is a lot of work to
 	// find all Go packages in one's GOPATH workspace (or vendor.json file),
@@ -329,15 +328,15 @@ Outer:
 			}
 
 			// Append repoPresentation to current list.
-			p.GoPackageList.Lock()
+			p.Packages.Lock()
 			switch repoPresentation.UpdateState {
 			case Available, Updating:
-				p.GoPackageList.Active = append(p.GoPackageList.Active, repoPresentation)
+				p.Packages.Active = append(p.Packages.Active, repoPresentation)
 			case Updated:
-				p.GoPackageList.History = append(p.GoPackageList.History, repoPresentation)
+				p.Packages.History = append(p.Packages.History, repoPresentation)
 			}
-			p.GoPackageList.ByRoot[repoPresentation.Repo.Root] = repoPresentation
-			p.GoPackageList.Unlock()
+			p.Packages.ByRoot[repoPresentation.Repo.Root] = repoPresentation
+			p.Packages.Unlock()
 
 			// Send new repoPresentation to all existing observers.
 			for ch := range p.observers {
@@ -346,15 +345,15 @@ Outer:
 			}
 		// New observer request.
 		case req := <-p.newObserver:
-			p.GoPackageList.Lock()
-			ch := make(chan *RepoPresentation, len(p.GoPackageList.Active)+len(p.GoPackageList.History))
-			for _, repoPresentation := range p.GoPackageList.Active {
+			p.Packages.Lock()
+			ch := make(chan *RepoPresentation, len(p.Packages.Active)+len(p.Packages.History))
+			for _, repoPresentation := range p.Packages.Active {
 				ch <- repoPresentation
 			}
-			for _, repoPresentation := range p.GoPackageList.History {
+			for _, repoPresentation := range p.Packages.History {
 				ch <- repoPresentation
 			}
-			p.GoPackageList.Unlock()
+			p.Packages.Unlock()
 
 			p.observers[ch] = struct{}{}
 
@@ -370,15 +369,15 @@ Outer:
 
 	// Respond to new observer requests directly.
 	for req := range p.newObserver {
-		p.GoPackageList.Lock()
-		ch := make(chan *RepoPresentation, len(p.GoPackageList.Active)+len(p.GoPackageList.History))
-		for _, repoPresentation := range p.GoPackageList.Active {
+		p.Packages.Lock()
+		ch := make(chan *RepoPresentation, len(p.Packages.Active)+len(p.Packages.History))
+		for _, repoPresentation := range p.Packages.Active {
 			ch <- repoPresentation
 		}
-		for _, repoPresentation := range p.GoPackageList.History {
+		for _, repoPresentation := range p.Packages.History {
 			ch <- repoPresentation
 		}
-		p.GoPackageList.Unlock()
+		p.Packages.Unlock()
 
 		close(ch)
 

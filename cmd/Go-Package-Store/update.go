@@ -56,9 +56,9 @@ func (u updateWorker) Start() {
 
 func (u updateWorker) run() {
 	for ur := range u.updateRequests {
-		c.pipeline.GoPackageList.Lock()
-		rp, ok := c.pipeline.GoPackageList.ByRoot[ur.Root]
-		c.pipeline.GoPackageList.Unlock()
+		c.pipeline.Packages.Lock()
+		rp, ok := c.pipeline.Packages.ByRoot[ur.Root]
+		c.pipeline.Packages.Unlock()
 		if !ok {
 			ur.ResponseChan <- fmt.Errorf("root %q not found", ur.Root)
 			continue
@@ -69,30 +69,30 @@ func (u updateWorker) run() {
 		}
 
 		// Mark repo as updating.
-		c.pipeline.GoPackageList.Lock()
-		c.pipeline.GoPackageList.ByRoot[ur.Root].UpdateState = workspace.Updating
-		c.pipeline.GoPackageList.Unlock()
+		c.pipeline.Packages.Lock()
+		c.pipeline.Packages.ByRoot[ur.Root].UpdateState = workspace.Updating
+		c.pipeline.Packages.Unlock()
 
 		updateError := u.updater.Update(rp.Repo)
 
 		if updateError == nil {
-			c.pipeline.GoPackageList.Lock()
-			for i, rp := range c.pipeline.GoPackageList.Active {
+			c.pipeline.Packages.Lock()
+			for i, rp := range c.pipeline.Packages.Active {
 				if rp.Repo.Root == ur.Root {
 					// Remove from active.
-					copy(c.pipeline.GoPackageList.Active[i:], c.pipeline.GoPackageList.Active[i+1:])
-					c.pipeline.GoPackageList.Active = c.pipeline.GoPackageList.Active[:len(c.pipeline.GoPackageList.Active)-1]
+					copy(c.pipeline.Packages.Active[i:], c.pipeline.Packages.Active[i+1:])
+					c.pipeline.Packages.Active = c.pipeline.Packages.Active[:len(c.pipeline.Packages.Active)-1]
 
 					// Mark repo as updated.
 					rp.UpdateState = workspace.Updated
 
 					// Append to history.
-					c.pipeline.GoPackageList.History = append(c.pipeline.GoPackageList.History, rp)
+					c.pipeline.Packages.History = append(c.pipeline.Packages.History, rp)
 
 					break
 				}
 			}
-			c.pipeline.GoPackageList.Unlock()
+			c.pipeline.Packages.Unlock()
 		}
 
 		ur.ResponseChan <- updateError
