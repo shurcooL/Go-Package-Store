@@ -57,7 +57,7 @@ func (u updateWorker) Start() {
 func (u updateWorker) run() {
 	for ur := range u.updateRequests {
 		c.pipeline.GoPackageList.Lock()
-		rp, ok := c.pipeline.GoPackageList.List[ur.Root]
+		rp, ok := c.pipeline.GoPackageList.ByRoot[ur.Root]
 		c.pipeline.GoPackageList.Unlock()
 		if !ok {
 			ur.ResponseChan <- fmt.Errorf("root %q not found", ur.Root)
@@ -70,16 +70,28 @@ func (u updateWorker) run() {
 
 		// Mark repo as updating.
 		c.pipeline.GoPackageList.Lock()
-		c.pipeline.GoPackageList.List[ur.Root].UpdateState = workspace.Updating
+		c.pipeline.GoPackageList.ByRoot[ur.Root].UpdateState = workspace.Updating
 		c.pipeline.GoPackageList.Unlock()
 
 		updateError := u.updater.Update(rp.Repo)
 
 		if updateError == nil {
-			// Move down and mark repo as updated.
 			c.pipeline.GoPackageList.Lock()
-			moveDown(c.pipeline.GoPackageList.OrderedList, ur.Root)
-			c.pipeline.GoPackageList.List[ur.Root].UpdateState = workspace.Updated
+			for i, rp := range c.pipeline.GoPackageList.Active {
+				if rp.Repo.Root == ur.Root {
+					// Remove from active.
+					copy(c.pipeline.GoPackageList.Active[i:], c.pipeline.GoPackageList.Active[i+1:])
+					c.pipeline.GoPackageList.Active = c.pipeline.GoPackageList.Active[:len(c.pipeline.GoPackageList.Active)-1]
+
+					// Mark repo as updated.
+					rp.UpdateState = workspace.Updated
+
+					// Append to history.
+					c.pipeline.GoPackageList.History = append(c.pipeline.GoPackageList.History, rp)
+
+					break
+				}
+			}
 			c.pipeline.GoPackageList.Unlock()
 		}
 
@@ -92,16 +104,3 @@ func (u updateWorker) run() {
 //       get updated, etc.) haphazardly present both in backend and frontend,
 //       need to think about that. Probably want to unify workspace.RepoPresentation
 //       and component.RepoPresentation types, maybe. Try it.
-//       Also probably want to try separating available updates from completed updates.
-//       That should simplify some logic, and will make it easier to maintain history
-//       of updates in the future.
-
-// moveDown moves root down the orderedList towards all other updated.
-func moveDown(orderedList []*workspace.RepoPresentation, root string) {
-	var i int
-	for ; orderedList[i].Repo.Root != root; i++ { // i is the current package about to be updated.
-	}
-	for ; i+1 < len(orderedList) && orderedList[i+1].UpdateState != workspace.Updated; i++ {
-		orderedList[i], orderedList[i+1] = orderedList[i+1], orderedList[i] // Swap the two.
-	}
-}

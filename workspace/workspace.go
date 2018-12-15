@@ -17,12 +17,12 @@ import (
 )
 
 // GoPackageList is a list of Go packages.
-// It's implemented as a slice and map that are kept in sync, with a mutex.
+// It's implemented as two slices and map that are kept in sync, with a mutex.
 type GoPackageList struct {
-	// TODO: Merge the List and OrderedList into a single struct to better communicate that it's a single data structure.
 	sync.Mutex
-	OrderedList []*RepoPresentation          // OrderedList has the same contents as List, but gives it a stable order.
-	List        map[string]*RepoPresentation // Map key is repoRoot.
+	Active  []*RepoPresentation          // Active repo presentations, latest at the end.
+	History []*RepoPresentation          // Historical repo presentations, latest at the end.
+	ByRoot  map[string]*RepoPresentation // Map key is repoRoot.
 }
 
 // RepoPresentation represents a repository update presentation.
@@ -106,7 +106,7 @@ func NewPipeline(wd string) *Pipeline {
 
 		newObserver:   make(chan observerRequest),
 		observers:     make(map[chan *RepoPresentation]struct{}),
-		GoPackageList: &GoPackageList{List: make(map[string]*RepoPresentation)},
+		GoPackageList: &GoPackageList{ByRoot: make(map[string]*RepoPresentation)},
 	}
 
 	// It is a lot of work to
@@ -330,9 +330,13 @@ Outer:
 
 			// Append repoPresentation to current list.
 			p.GoPackageList.Lock()
-			p.GoPackageList.OrderedList = append(p.GoPackageList.OrderedList, repoPresentation)
-			moveUp(p.GoPackageList.OrderedList, repoPresentation)
-			p.GoPackageList.List[repoPresentation.Repo.Root] = repoPresentation
+			switch repoPresentation.UpdateState {
+			case Available, Updating:
+				p.GoPackageList.Active = append(p.GoPackageList.Active, repoPresentation)
+			case Updated:
+				p.GoPackageList.History = append(p.GoPackageList.History, repoPresentation)
+			}
+			p.GoPackageList.ByRoot[repoPresentation.Repo.Root] = repoPresentation
 			p.GoPackageList.Unlock()
 
 			// Send new repoPresentation to all existing observers.
@@ -343,8 +347,11 @@ Outer:
 		// New observer request.
 		case req := <-p.newObserver:
 			p.GoPackageList.Lock()
-			ch := make(chan *RepoPresentation, len(p.GoPackageList.OrderedList))
-			for _, repoPresentation := range p.GoPackageList.OrderedList {
+			ch := make(chan *RepoPresentation, len(p.GoPackageList.Active)+len(p.GoPackageList.History))
+			for _, repoPresentation := range p.GoPackageList.Active {
+				ch <- repoPresentation
+			}
+			for _, repoPresentation := range p.GoPackageList.History {
 				ch <- repoPresentation
 			}
 			p.GoPackageList.Unlock()
@@ -364,8 +371,11 @@ Outer:
 	// Respond to new observer requests directly.
 	for req := range p.newObserver {
 		p.GoPackageList.Lock()
-		ch := make(chan *RepoPresentation, len(p.GoPackageList.OrderedList))
-		for _, repoPresentation := range p.GoPackageList.OrderedList {
+		ch := make(chan *RepoPresentation, len(p.GoPackageList.Active)+len(p.GoPackageList.History))
+		for _, repoPresentation := range p.GoPackageList.Active {
+			ch <- repoPresentation
+		}
+		for _, repoPresentation := range p.GoPackageList.History {
 			ch <- repoPresentation
 		}
 		p.GoPackageList.Unlock()
@@ -373,16 +383,6 @@ Outer:
 		close(ch)
 
 		req.Response <- ch
-	}
-}
-
-// moveUp moves last entry up the orderedList above all other updated entries, unless rp is already updated.
-func moveUp(orderedList []*RepoPresentation, rp *RepoPresentation) {
-	if rp.UpdateState == Updated {
-		return
-	}
-	for i := len(orderedList) - 1; i-1 >= 0 && orderedList[i-1].UpdateState == Updated; i-- {
-		orderedList[i], orderedList[i-1] = orderedList[i-1], orderedList[i] // Swap the two.
 	}
 }
 
