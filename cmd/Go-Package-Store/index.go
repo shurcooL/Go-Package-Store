@@ -11,6 +11,7 @@ import (
 var headHTML = template.Must(template.New("").Parse(`<html>
 	<head>
 		<title>Go Package Store</title>
+		<link href="/assets/fonts/fonts.css" rel="stylesheet" type="text/css" />
 		<link href="/assets/style.css" rel="stylesheet" type="text/css" />
 		<script async src="/frontend.js" type="text/javascript"></script>
 		{{if .Production}}<script type="text/javascript">

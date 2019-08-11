@@ -1,5 +1,5 @@
 body {
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: Go;
 	font-size: 14px;
 	line-height: 1.428571429;
 	margin: 0px;
@@ -68,6 +68,7 @@ li:hover .highlight-on-hover {
 }
 
 .commitID {
+	font-family: "Go Mono";
 	background-color: rgb(238, 238, 238);
 	padding: 1px 4px;
 }

@@ -54,6 +54,7 @@ func componentHandler(w http.ResponseWriter, req *http.Request) error {
 	_, err := io.WriteString(w, `<html>
 	<head>
 		<title>Go Package Store</title>
+		<link href="/assets/fonts/fonts.css" rel="stylesheet" type="text/css" />
 		<link href="/assets/style.css" rel="stylesheet" type="text/css" />
 		<script async src="/assets/component/component.js" type="text/javascript"></script>
 	</head>

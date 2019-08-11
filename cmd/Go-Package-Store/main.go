@@ -81,9 +81,11 @@ func main() {
 	}
 	http.Handle("/api/updates", errorHandler(updatesHandler))
 	http.Handle("/updates", errorHandler(indexHandler))
-	fileServer := httpgzip.FileServer(assets.Assets, httpgzip.FileServerOptions{ServeError: httpgzip.Detailed})
-	http.Handle("/assets/", fileServer)
-	http.Handle("/frontend.js", fileServer)
+	assetsFS := httpgzip.FileServer(assets.Assets, httpgzip.FileServerOptions{ServeError: httpgzip.Detailed})
+	http.Handle("/assets/", assetsFS)
+	http.Handle("/frontend.js", assetsFS)
+	fontsFS := httpgzip.FileServer(assets.Fonts, httpgzip.FileServerOptions{ServeError: httpgzip.Detailed})
+	http.Handle("/assets/fonts/", http.StripPrefix("/assets/fonts", fontsFS))
 
 	// Start listening first.
 	listener, err := net.Listen("tcp", *httpFlag)
