@@ -41,13 +41,16 @@ func main() {
 
 func run() {
 	// Initial frontend render.
-	vecty.RenderBody(body)
+	err := vecty.RenderInto("body", body)
+	if err != nil {
+		panic(fmt.Errorf("internal error: unexpected error from vecty.RenderInto: %v", err))
+	}
 
 	// Start the scheduler loop.
 	go scheduler()
 
 	// Start streaming repo presentations from the backend.
-	err := stream()
+	err = stream()
 	if err != nil {
 		log.Println(err)
 	}
