@@ -50,6 +50,6 @@ func indexHandler(w http.ResponseWriter, req *http.Request) error {
 }
 
 func renderInitialBody(w io.Writer) error {
-	_, err := io.WriteString(w, `<div style="width: 100%; text-align: center; background-color: rgb(225, 235, 245);"><span style="background-color: rgb(209, 225, 240); padding: 15px; display: inline-block;">Updates</span></div><div class="center-max-width"><div class="content"><h2 style="text-align: center;">Checking for updates...</h2></div></div>`)
+	_, err := io.WriteString(w, `<header style="width: 100%; text-align: center;"><span style="padding: 15px; display: inline-block;">Updates</span></header><div class="center-max-width"><div class="content"><h2 style="text-align: center;">Checking for updates...</h2></div></div>`)
 	return err
 }

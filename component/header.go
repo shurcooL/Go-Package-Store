@@ -20,10 +20,10 @@ type Header struct {
 
 // Render renders the component.
 func (*Header) Render() vecty.ComponentOrHTML {
-	return elem.Div(
-		vecty.Markup(style.Width("100%"), vecty.Style("text-align", "center"), vecty.Style("background-color", "hsl(209, 51%, 92%)")),
+	return elem.Header(
+		vecty.Markup(style.Width("100%"), vecty.Style("text-align", "center")),
 		elem.Span(
-			vecty.Markup(vecty.Style("background-color", "hsl(209, 51%, 88%)"), vecty.Style("padding", string(style.Px(15))), vecty.Style("display", "inline-block")),
+			vecty.Markup(vecty.Style("padding", string(style.Px(15))), vecty.Style("display", "inline-block")),
 			vecty.Text("Updates"),
 		),
 	)

@@ -222,7 +222,6 @@ func (c *Change) Render() vecty.ComponentOrHTML {
 					prop.Href(c.URL),
 					// TODO: Add rel="noopener", see https://dev.to/ben/the-targetblank-vulnerability-by-example.
 					vecty.Property(atom.Target.String(), "_blank"),
-					vecty.Style("color", "gray"),
 					vecty.Property(atom.Title.String(), "Commit"),
 					vecty.UnsafeHTML(octiconGitCommit),
 				),

@@ -4,6 +4,12 @@ body {
 	line-height: 1.428571429;
 	margin: 0px;
 }
+header {
+	background-color: hsl(209, 51%, 92%);
+}
+header span {
+	background-color: hsl(209, 51%, 88%);
+}
 div.center-max-width {
 	max-width: 900px;
 	margin-left: auto;
@@ -24,11 +30,6 @@ a:hover, a span:hover {
 h2 {
 	margin-top: 40px;
 	margin-bottom: 40px;
-}
-
-span.smaller {
-	font-size: 11px;
-	color: gray;
 }
 
 div.list-entry {
@@ -71,4 +72,32 @@ li:hover .highlight-on-hover {
 	font-family: "Go Mono";
 	background-color: rgb(238, 238, 238);
 	padding: 1px 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+	body {
+		color: white;
+		background-color: hsl(210, 15%, 22%);
+	}
+	header {
+		background-color: hsl(209, 51%, 21%);
+	}
+	header span {
+		background-color: hsl(209, 51%, 16%);
+	}
+	div.list-entry {
+		border-color: hsl(210, 15%, 32%);
+	}
+	div.list-entry-header {
+		border-color: hsl(210, 15%, 28%);
+	}
+	div.list-entry-header {
+		background-color: hsl(210, 15%, 18%);
+	}
+	.highlight-on-hover a {
+		color: #ddd;
+	}
+	.commitID {
+		background-color: hsl(210, 15%, 32%);
+	}
 }
