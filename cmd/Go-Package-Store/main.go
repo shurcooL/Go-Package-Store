@@ -3,18 +3,22 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
-	"github.com/shurcooL/Go-Package-Store"
+	gps "github.com/shurcooL/Go-Package-Store"
 	"github.com/shurcooL/Go-Package-Store/assets"
 	"github.com/shurcooL/Go-Package-Store/presenter/github"
 	"github.com/shurcooL/Go-Package-Store/presenter/gitiles"
@@ -24,6 +28,7 @@ import (
 	"github.com/shurcooL/go/ospath"
 	"github.com/shurcooL/httpgzip"
 	"golang.org/x/oauth2"
+	"golang.org/x/xerrors"
 )
 
 var (
@@ -171,14 +176,49 @@ func populatePipelineAndCreateUpdater(pipeline *workspace.Pipeline) gps.Updater 
 		pipeline.Done()
 		return updater.Mock{}
 	default:
-		fmt.Println("Using all Go packages in GOPATH.")
-		go func() { // This needs to happen in the background because sending input will be blocked on processing.
-			forEachRepository(func(r workspace.LocalRepo) {
-				pipeline.AddRepository(r)
-			})
+		// Get the GOMOD value, use it to determine if godoc is being invoked in module mode.
+		goModFile, err := goMod()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to determine go env GOMOD value: %v", err)
+			goModFile = "" // Fall back to GOPATH mode.
+		}
+
+		if goModFile != "" {
+			fmt.Printf("using module mode; GOMOD=%s\n", goModFile)
+
+			mods, err := buildList(goModFile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to determine the build list of the main module: %v", err)
+				os.Exit(1)
+			}
+
+			// Bind module trees into Go root.
+			for _, m := range mods {
+				if m.Update == nil || m.Indirect {
+					continue
+				}
+				pipeline.AddModule(workspace.Module{
+					Path:     m.Path,
+					Version:  m.Version,
+					Update:   m.Update.Version,
+					Indirect: m.Indirect,
+				})
+			}
 			pipeline.Done()
-		}()
-		return updater.Gopath{}
+
+			return updater.Mock{}
+		} else {
+			fmt.Println("using GOPATH mode")
+
+			fmt.Println("Using all Go packages in GOPATH.")
+			go func() { // This needs to happen in the background because sending input will be blocked on processing.
+				forEachRepository(func(r workspace.LocalRepo) {
+					pipeline.AddRepository(r)
+				})
+				pipeline.Done()
+			}()
+			return updater.Gopath{}
+		}
 	case *stdinFlag:
 		fmt.Println("Reading the list of newline separated Go packages from stdin.")
 		go func() { // This needs to happen in the background because sending input will be blocked on processing.
@@ -265,6 +305,70 @@ func populatePipelineAndCreateUpdater(pipeline *workspace.Pipeline) gps.Updater 
 		}()
 		return nil // An updater for this can easily be added by anyone who uses this style of vendoring.
 	}
+}
+
+// goMod returns the go env GOMOD value in the current directory
+// by invoking the go command.
+//
+// GOMOD is documented at https://golang.org/cmd/go/#hdr-Environment_variables:
+//
+// 	The absolute path to the go.mod of the main module,
+// 	or the empty string if not using modules.
+//
+func goMod() (string, error) {
+	out, err := exec.Command("go", "env", "-json", "GOMOD").Output()
+	if ee := (*exec.ExitError)(nil); xerrors.As(err, &ee) {
+		return "", fmt.Errorf("go command exited unsuccessfully: %v\n%s", ee.ProcessState.String(), ee.Stderr)
+	} else if err != nil {
+		return "", err
+	}
+	var env struct {
+		GoMod string
+	}
+	err = json.Unmarshal(out, &env)
+	if err != nil {
+		return "", err
+	}
+	return env.GoMod, nil
+}
+
+// buildList determines the build list in the current directory
+// by invoking the go command. It should only be used when operating
+// in module mode.
+//
+// See https://golang.org/cmd/go/#hdr-The_main_module_and_the_build_list.
+func buildList(goMod string) ([]mod, error) {
+	if goMod == os.DevNull {
+		// Empty build list.
+		return nil, nil
+	}
+
+	out, err := exec.Command("go", "list", "-m", "-u", "-json", "all").Output()
+	if ee := (*exec.ExitError)(nil); xerrors.As(err, &ee) {
+		return nil, fmt.Errorf("go command exited unsuccessfully: %v\n%s", ee.ProcessState.String(), ee.Stderr)
+	} else if err != nil {
+		return nil, err
+	}
+	var mods []mod
+	for dec := json.NewDecoder(bytes.NewReader(out)); ; {
+		var m mod
+		err := dec.Decode(&m)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+		mods = append(mods, m)
+	}
+	return mods, nil
+}
+
+type mod struct {
+	Path     string     // Module path.
+	Version  string     // Module version.
+	Time     *time.Time // Time version was created.
+	Update   *mod       // Available update, if any.
+	Indirect bool       // Is this module only an indirect dependency of main module?
 }
 
 // wd is current working directory at process start.

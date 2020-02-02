@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/bradfitz/iter"
-	"github.com/shurcooL/Go-Package-Store"
+	gps "github.com/shurcooL/Go-Package-Store"
 	"github.com/shurcooL/Go-Package-Store/presenter"
 	"github.com/shurcooL/gostatus/status"
 	"github.com/shurcooL/vcsstate"
@@ -23,6 +23,7 @@ type Pipeline struct {
 	// presenters are presenters registered with RegisterPresenter.
 	presenters []presenter.Presenter
 
+	modules             chan Module
 	importPaths         chan string
 	importPathRevisions chan importPathRevision
 	rootRevisionLatests chan rootRevisionLatest
@@ -92,6 +93,7 @@ func NewPipeline(wd string) *Pipeline {
 	p := &Pipeline{
 		wd: wd,
 
+		modules:             make(chan Module, 64),
 		importPaths:         make(chan string, 64),
 		importPathRevisions: make(chan importPathRevision, 64),
 		rootRevisionLatests: make(chan rootRevisionLatest, 64),
@@ -143,6 +145,11 @@ func NewPipeline(wd string) *Pipeline {
 	// When finished, all unique repositories are sent to p.unique channel
 	// and the channel is closed.
 	{
+		var wg5 sync.WaitGroup
+		for range iter.N(8) {
+			wg5.Add(1)
+			go p.moduleWorker(&wg5)
+		}
 		var wg0 sync.WaitGroup
 		for range iter.N(8) {
 			wg0.Add(1)
@@ -169,6 +176,7 @@ func NewPipeline(wd string) *Pipeline {
 			go p.subreposWorker(&wg4)
 		}
 		go func() {
+			wg5.Wait()
 			wg0.Wait()
 			wg1.Wait()
 			wg2.Wait()
@@ -225,6 +233,17 @@ func NewPipeline(wd string) *Pipeline {
 // Presenters are consulted in the same order that they were registered.
 func (p *Pipeline) RegisterPresenter(pr presenter.Presenter) {
 	p.presenters = append(p.presenters, pr)
+}
+
+type Module struct {
+	Path     string
+	Version  string
+	Update   string
+	Indirect bool
+}
+
+func (p *Pipeline) AddModule(mod Module) {
+	p.modules <- mod
 }
 
 // AddImportPath adds a package with specified import path for processing.
@@ -287,6 +306,7 @@ func (p *Pipeline) AddSubrepo(s Subrepo) {
 
 // Done should be called after the workspace is finished being populated.
 func (p *Pipeline) Done() {
+	close(p.modules)
 	close(p.importPaths)
 	close(p.importPathRevisions)
 	close(p.rootRevisionLatests)
@@ -382,6 +402,34 @@ Outer:
 		close(ch)
 
 		req.Response <- ch
+	}
+}
+
+// moduleWorker sends unique modules to phase 2.
+func (p *Pipeline) moduleWorker(wg *sync.WaitGroup) {
+	defer wg.Done()
+	for mod := range p.modules {
+		// Determine repo root.
+		// This is potentially somewhat slow.
+		rr, err := vcs.RepoRootForImportPath(mod.Path, false)
+		if err != nil {
+			log.Printf("failed to dynamically determine repo root for %v: %v\n", mod.Path, err)
+			continue
+		}
+		if rr.Root != mod.Path {
+			log.Printf("dynamically determined repo root (%q) doesn't match module path (%q)\n", rr.Root, mod.Path)
+			continue
+		}
+
+		repo := new(gps.Repo)
+		repo.Root = rr.Root
+		repo.Indirect = mod.Indirect
+		repo.Local.Revision = mod.Version
+		repo.Remote.Revision = mod.Update
+		repo.Remote.RepoURL = rr.Repo
+
+		// Send off to phase 2 channel.
+		p.unique <- repo
 	}
 }
 
@@ -735,12 +783,21 @@ func shouldPresentUpdate(repo *gps.Repo) (ok bool, reason string) {
 func (p *Pipeline) presentWorker(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for repo := range p.processedFiltered {
+		// TODO: Find optimal place for this.
+		localRev, remoteRev := repo.Local.Revision, repo.Remote.Revision
+		if _, _, rev, _, ok := parsePseudoVersion(localRev); ok {
+			localRev = rev
+		}
+		if _, _, rev, _, ok := parsePseudoVersion(remoteRev); ok {
+			remoteRev = rev
+		}
+
 		// This part might take a while.
 		presentation := p.present(presenter.Repo{
 			Root:           repo.Root,
 			RepoURL:        repo.Remote.RepoURL,
-			LocalRevision:  repo.Local.Revision,
-			RemoteRevision: repo.Remote.Revision,
+			LocalRevision:  localRev,
+			RemoteRevision: remoteRev,
 		})
 
 		p.presented <- &RepoPresentation{

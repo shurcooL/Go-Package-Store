@@ -195,11 +195,13 @@ func (p *PresentationChanges) Render() vecty.ComponentOrHTML {
 			vecty.Text("unknown changes"),
 			vecty.If(p.LocalRevision != "",
 				vecty.Text(" from "),
-				&CommitID{ID: p.LocalRevision},
+				//&CommitID{ID: p.LocalRevision},
+				vecty.Text(p.LocalRevision),
 			),
 			vecty.If(p.RemoteRevision != "",
 				vecty.Text(" to "),
-				&CommitID{ID: p.RemoteRevision},
+				//&CommitID{ID: p.RemoteRevision},
+				vecty.Text(p.RemoteRevision),
 			),
 		)
 	}

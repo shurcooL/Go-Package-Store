@@ -10,6 +10,8 @@ type Repo struct {
 	// Root is the import path corresponding to the root of the repository.
 	Root string
 
+	Indirect bool // TODO.
+
 	// At most one of VCS or RemoteVCS should be not nil.
 	// If both are nil, then Local and Remote structs are expected to be already populated.
 	// TODO: Consider if it'd be better to split this into two distinct structs.
@@ -49,5 +51,12 @@ type Repo struct {
 //
 // 	"github.com/owner/repo/..."
 func (r Repo) ImportPathPattern() string {
-	return r.Root + "/..."
+	// TODO: Update doc, method name.
+	s := r.Root + "/... (" + r.Local.Revision + " → " + r.Remote.Revision
+	if r.Indirect {
+		s += "; indirect)"
+	} else {
+		s += ")"
+	}
+	return s
 }
