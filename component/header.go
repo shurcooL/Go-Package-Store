@@ -1,9 +1,11 @@
+// +build js
+
 package component
 
 import (
 	"fmt"
+	"syscall/js"
 
-	"github.com/gopherjs/gopherjs/js"
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
 	"github.com/gopherjs/vecty/event"
@@ -132,7 +134,7 @@ func (u *updatesHeading) updateAllButton() *vecty.HTML {
 				event.Click(func(e *vecty.Event) {
 					// TODO.
 					fmt.Println("UpdateAll()")
-					js.Global.Get("UpdateAll").Invoke() // TODO: Do this via action?
+					js.Global().Get("UpdateAll").Invoke() // TODO: Do this via action?
 				}).PreventDefault(),
 			),
 			vecty.Text("Update All"),

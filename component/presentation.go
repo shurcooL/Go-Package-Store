@@ -1,11 +1,13 @@
+// +build js
+
 package component
 
 import (
 	"bytes"
 	"fmt"
+	"syscall/js"
 	"time"
 
-	"github.com/gopherjs/gopherjs/js"
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
 	"github.com/gopherjs/vecty/event"
@@ -104,7 +106,7 @@ func (p *RepoPresentation) updateState() *vecty.HTML {
 					started := time.Now()
 					vecty.Rerender(p)
 					fmt.Println("render RepoPresentation:", time.Since(started))
-					js.Global.Get("UpdateRepository").Invoke(p.RepoRoot)
+					js.Global().Get("UpdateRepository").Invoke(p.RepoRoot)
 
 				}).PreventDefault(),
 			),

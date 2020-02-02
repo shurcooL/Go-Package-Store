@@ -1,3 +1,5 @@
+// +build js
+
 // Command frontend runs on frontend of Go Package Store.
 package main
 
@@ -9,23 +11,30 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"syscall/js"
 	"time"
 
-	"github.com/gopherjs/gopherjs/js"
 	"github.com/gopherjs/vecty"
 	"github.com/gopherjs/vecty/elem"
 	gpscomponent "github.com/shurcooL/Go-Package-Store/component"
 	"github.com/shurcooL/Go-Package-Store/frontend/action"
 	"github.com/shurcooL/Go-Package-Store/frontend/model"
 	"github.com/shurcooL/Go-Package-Store/frontend/store"
-	"honnef.co/go/js/dom"
+	"honnef.co/go/js/dom/v2"
 )
 
 var document = dom.GetWindow().Document().(dom.HTMLDocument)
 
 func main() {
-	js.Global.Set("UpdateRepository", UpdateRepository)
-	js.Global.Set("UpdateAll", UpdateAll)
+	js.Global().Set("UpdateRepository", js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+		root := args[0].String()
+		UpdateRepository(root)
+		return nil
+	}))
+	js.Global().Set("UpdateAll", js.FuncOf(func(js.Value, []js.Value) interface{} {
+		UpdateAll()
+		return nil
+	}))
 
 	switch readyState := document.ReadyState(); readyState {
 	case "loading":
