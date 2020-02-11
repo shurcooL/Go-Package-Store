@@ -206,7 +206,7 @@ func populatePipelineAndCreateUpdater(pipeline *workspace.Pipeline) gps.Updater 
 			}
 			pipeline.Done()
 
-			return updater.Mock{}
+			return updater.GoMod{}
 		} else {
 			fmt.Println("using GOPATH mode")
 
