@@ -28,8 +28,6 @@ Usage: Go-Package-Store [flags]
     	Look for Go packages vendored using git-subrepo in the specified vendor directory.
   -godeps string
     	Read the list of Go packages from the specified Godeps.json file.
-  -govendor string
-    	Read the list of Go packages from the specified vendor.json file.
   -http string
     	Listen for HTTP connections on this address. (default "localhost:7043")
   -stdin
@@ -50,9 +48,6 @@ Examples:
 
   # Show updates for all dependencies within Gopkg.toml constraints.
   Go-Package-Store -dep=/path/to/repo/Gopkg.toml
-
-  # Show updates for all dependencies listed in vendor.json file.
-  Go-Package-Store -govendor=/path/to/repo/vendor/vendor.json
 
   # Show updates for all Go packages vendored using git-subrepo
   # in the specified vendor directory.

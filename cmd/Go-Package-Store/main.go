@@ -31,7 +31,6 @@ var (
 	stdinFlag      = flag.Bool("stdin", false, "Read the list of newline separated Go packages from stdin.")
 	depFlag        = flag.String("dep", "", "Determine the list of Go packages from the specified Gopkg.toml file.")
 	godepsFlag     = flag.String("godeps", "", "Read the list of Go packages from the specified Godeps.json file.")
-	govendorFlag   = flag.String("govendor", "", "Read the list of Go packages from the specified vendor.json file.")
 	gitSubrepoFlag = flag.String("git-subrepo", "", "Look for Go packages vendored using git-subrepo in the specified vendor directory.")
 )
 
@@ -55,9 +54,6 @@ Examples:
 
   # Show updates for all dependencies within Gopkg.toml constraints.
   Go-Package-Store -dep=/path/to/repo/Gopkg.toml
-
-  # Show updates for all dependencies listed in vendor.json file.
-  Go-Package-Store -govendor=/path/to/repo/vendor/vendor.json
 
   # Show updates for all Go packages vendored using git-subrepo
   # in the specified vendor directory.
@@ -229,26 +225,6 @@ func populatePipelineAndCreateUpdater(pipeline *workspace.Pipeline) gps.Updater 
 			pipeline.Done()
 		}()
 		return nil
-	case *govendorFlag != "":
-		fmt.Println("Reading the list of Go packages from vendor.json file:", *govendorFlag)
-		v, err := readGovendor(*govendorFlag)
-		if err != nil {
-			log.Fatalln("failed to read vendor.json file:", err)
-		}
-		go func() { // This needs to happen in the background because sending input will be blocked on processing.
-			for _, dependency := range v.Package {
-				pipeline.AddRevision(dependency.Path, dependency.Revision)
-			}
-			pipeline.Done()
-		}()
-		// TODO: Consider setting a better directory for govendor command than current working directory.
-		//       Perhaps the parent directory of vendor.json file?
-		gu, err := updater.NewGovendor("")
-		if err != nil {
-			log.Println("govendor updater is not available:", err)
-			gu = nil
-		}
-		return gu
 	case *gitSubrepoFlag != "":
 		if _, err := exec.LookPath("git"); err != nil {
 			log.Fatalln(fmt.Errorf("git binary is required, but not available: %v", err))
