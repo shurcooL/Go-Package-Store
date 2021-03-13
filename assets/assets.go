@@ -1,4 +1,4 @@
-// +build dev
+//go:build dev
 
 package assets
 
